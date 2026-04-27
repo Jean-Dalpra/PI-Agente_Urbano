@@ -1,0 +1,50 @@
+{
+    "jeandalpra": {
+        "password": "$2y$10$UgCyOycWe\/0cvEhyfRooneLzzHbtvcZvbmX1HgzbHmYNnRYMJGwoe",
+        "created_at": "2025-12-01T00:56:59+01:00"
+    },
+    "guibitch": {
+        "password": "$2y$10$jukqZbu4F30Mz3YbSmbJ2OFfWT.72PphkgT4XMX\/4xaiEvLpdaoUy",
+        "created_at": "2025-12-01T11:54:03+01:00"
+    },
+    "leoamaisis": {
+        "password": "$2y$10$TyAAoa\/3QFtYYPGZ8HW3n.ZF9oY6xrFD9DASKnZb3DV6MEpnc4zpa",
+        "created_at": "2025-12-06T13:17:21+01:00"
+    },
+    "jalin rabei": {
+        "password": "$2y$10$GzObSYM6797xSLO7wu7uguAXtu9RTf\/VgW12aGzwOsepyL11npewi",
+        "created_at": "2025-12-06T14:13:05+01:00"
+    },
+    "migs chupa": {
+        "password": "$2y$10$Y1BXjjUZrcGr1dj7wZ4An.\/eV5woOsJlaNTq9xlZO593XBB8HjwPC",
+        "created_at": "2025-12-06T14:27:27+01:00"
+    },
+    "subsurf": {
+        "password": "$2y$10$Gr6KFZsYgyjan4fUrNJugOAXsf5i8YXIADoNXXOojlJ1A\/8TO7dH6",
+        "created_at": "2025-12-06T15:03:50+01:00"
+    },
+    "vidro": {
+        "password": "$2y$10$2tHWYzIkVHRHLkPe66wkKeVDlUc5zLIATup2RhuHsjQYKJKYs8IQO",
+        "created_at": "2026-01-26T00:23:41+01:00"
+    },
+    "omega": {
+        "password": "$2y$10$1afqoGAOW9OThz9jKd\/Z3e\/h8UMroW35J5.czJrHdveJVAzFxuTbS",
+        "created_at": "2026-01-27T13:16:06+01:00"
+    },
+    "dotta": {
+        "password": "$2y$10$\/j9UFag1xeEscmGSWqrWieEbdDBMDuxLIKbqST\/mCOrQcKB7S1ZmK",
+        "created_at": "2026-02-07T13:26:05+01:00"
+    },
+    "batata": {
+        "password": "$2y$10$Cg4PePh8MZ8pNeD5L4XysOAsjrBTfNZgQ0Z0Iqr9ku.L0OdTx7SlK",
+        "created_at": "2026-02-26T11:20:23+01:00"
+    },
+    "miguelnigs": {
+        "password": "$2y$10$2xoLKOB9b653jPh8ZEcLNO\/fK\/MN\/Oc9DnVDezXlAyCXR4A3X9olS",
+        "created_at": "2026-02-27T12:01:25+01:00"
+    },
+    "Kidjean": {
+        "password": "$2y$10$LujMmuwUPfZtCeLg\/NYUs.dC8PEhPNct51fYreXxuTgJYvi83iLGq",
+        "created_at": "2026-03-18T21:01:52+01:00"
+    }
+}

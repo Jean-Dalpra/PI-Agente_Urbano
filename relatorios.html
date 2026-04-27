@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Relatórios - Agente Urbano</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="shortcut icon"
+        href="./imagens/urbanoide.png"
+        type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        
+        .page-content {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .report-list-container {
+            margin-top: 20px;
+            display: grid;
+            gap: 20px;
+        }
+
+        .report-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-left: 5px solid var(--cor-principal);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: box-shadow 0.3s;
+        }
+
+        .report-card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .report-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .report-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .report-meta i {
+            margin-right: 5px;
+        }
+
+        .tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        .tag-status-Pendente {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .tag-status-Em-Análise {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .tag-status-Em-Andamento {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .tag-status-Resolvido {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .tag-prioridade-baixa {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+
+        .tag-prioridade-media {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+
+        .tag-prioridade-alta {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .tag-prioridade-urgente {
+            background-color: #f5c6cb;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .report-actions {
+            margin-top: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .view-details-btn {
+            padding: 6px 12px;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.9em;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .view-details-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .share-btn {
+            padding: 6px 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .share-btn:hover {
+            background-color: #218838;
+        }
+
+
+
+        /* Modal de compartilhamento */
+        .share-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .share-modal.open {
+            display: flex;
+        }
+
+        .share-modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .share-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .share-modal-header h3 {
+            margin: 0;
+            font-size: 1.2em;
+            color: var(--dark-text);
+        }
+
+        .share-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .share-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .share-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .share-option:hover {
+            border-color: var(--primary-color);
+            background-color: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .share-option i {
+            font-size: 1.5em;
+            margin-bottom: 6px;
+        }
+
+        .share-option span {
+            font-size: 0.8em;
+            text-align: center;
+        }
+
+        .copy-link-section {
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        .copy-link-input {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .copy-link-input input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85em;
+            word-break: break-all;
+        }
+
+        .copy-link-input button {
+            padding: 8px 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .copy-link-input button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Modal QR Code */
+
+
+        /* Barra de pesquisa e filtros */
+        .search-filter-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            flex: 1;
+            min-width: 250px;
+            gap: 8px;
+        }
+
+        #search-reports {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95em;
+            transition: border-color 0.2s;
+        }
+
+        #search-reports:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+        }
+
+        .filter-btn {
+            padding: 10px 18px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .filter-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .reset-filters-btn {
+            padding: 10px 14px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+
+        .reset-filters-btn:hover {
+            background-color: #5a6268;
+        }
+
+        /* Modal de filtros */
+        .filter-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .filter-modal.open {
+            display: flex;
+        }
+
+        .filter-modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .filter-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .filter-modal-header h3 {
+            margin: 0;
+            font-size: 1.3em;
+            color: var(--dark-text);
+        }
+
+        .filter-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .filter-group {
+            margin-bottom: 20px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark-text);
+            font-size: 0.95em;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+        }
+
+        .filter-modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .filter-modal-actions button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .apply-filters-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .apply-filters-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .cancel-filters-btn {
+            background-color: #e9ecef;
+            color: var(--dark-text);
+        }
+
+        .cancel-filters-btn:hover {
+            background-color: #dee2e6;
+        }
+
+        .active-filters-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+            font-size: 0.9em;
+        }
+
+        .filter-tag {
+            background-color: #e7f3ff;
+            color: var(--primary-color);
+            padding: 4px 10px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-tag button {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-weight: bold;
+            padding: 0;
+            font-size: 1.1em;
+        }
+    </style>
+    <div vw class="enabled">
+        <div vw-access-button class="active"></div>
+        <div vw-plugin-wrapper>
+            <div class="vw-plugin-top-wrapper"></div>
+        </div>
+    </div>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>
+        new window.VLibras.Widget('https://vlibras.gov.br/app');
+    </script>
+</head>
+
+<body class="dashboard-page" style="background-color: #E1F2E1;">
+    <div class="header-nav">
+        <div class="logo">
+            <a href="index.html"><img src="imagens/urbanoide.png" alt="Urbanoide" class="logo-icon"> Agente Urbano</a>
+        </div>
+        <nav class="main-menu">
+            <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="mapa.html"><i class="fas fa-map"></i> Mapa</a>
+            <a href="relatorios.html" class="active"><i class="fas fa-list-alt"></i> Relatórios</a>
+        </nav>
+
+        <div class="user-actions">
+            <a href="mapa.html" id="novo-relatorio-btn" class="new-report-btn">+ Novo Problema</a>
+            <div id="profile-btn" class="profile-button">
+                <img id="user-avatar" src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
+                <span id="user-name-text" class="user-name">Entrar</span>
+            </div>
+        </div>
+    </div>
+
+
+    <main class="page-content">
+        <section class="page-header">
+            <h1 style="font-size: 6vh;">Relatórios de Problemas</h1>
+            <p class="subtitle" id="report-count-display">Carregando...</p>
+        </section>
+
+        <!--
+            Barra de pesquisa e filtros
+            - Input de busca por título/descrição
+            - Botão de filtro para abrir modal com opções de categoria, data e status
+            - Exibição de filtros ativos aplicados
+        -->
+        <div class="search-filter-bar">
+            <div class="search-input-wrapper">
+                <input 
+                    type="text" 
+                    id="search-reports" 
+                    placeholder="Pesquisar por título ou descrição..." 
+                    autocomplete="off"
+                >
+                <button id="filter-btn" class="filter-btn">
+                    <i class="fas fa-filter"></i> Filtros
+                </button>
+            </div>
+            <button id="reset-filters-btn" class="reset-filters-btn" style="display: none;">
+                <i class="fas fa-times"></i> Limpar Filtros
+            </button>
+        </div>
+
+        <!-- Exibição de filtros ativos -->
+        <div id="active-filters" class="active-filters-display"></div>
+
+        <!-- Modal de filtros -->
+        <div id="filter-modal" class="filter-modal">
+            <div class="filter-modal-content">
+                <div class="filter-modal-header">
+                    <h3>Filtros de Relatórios</h3>
+                    <button class="filter-modal-close" id="filter-modal-close">&times;</button>
+                </div>
+
+                <div class="filter-group">
+                    <label for="filter-category">Categoria</label>
+                    <select id="filter-category">
+                        <option value="">Todas as categorias</option>
+                        <option value="iluminacao">Iluminação</option>
+                        <option value="asfalto">Asfalto</option>
+                        <option value="limpeza">Limpeza</option>
+                        <option value="agua-esgoto">Água/Esgoto</option>
+                        <option value="transporte">Transporte</option>
+                        <option value="assistencial">Assistencial</option>
+                        <option value="meteorologico">Meteorológico</option>
+                        <option value="mobilidade">Mobilidade</option>
+                        <option value="saude">Saúde</option>
+                        <option value="seguranca">Segurança</option>
+                        <option value="acessibilidade">Acessibilidade</option>
+                        <option value="eletricidade">Eletricidade</option>
+                        <option value="meio-ambiente">Meio Ambiente</option>
+                        <option value="estrutura">Estrutura</option>
+                        <option value="drenagem">Drenagem</option>
+                        <option value="obras">Obras</option>
+                        <option value="ciclismo">Ciclismo</option>
+                        <option value="ma-gestao">Má Gestão</option>
+                        <option value="outros">Outros</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="filter-status">Situação</label>
+                    <select id="filter-status">
+                        <option value="">Todas as situações</option>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Em Análise">Em Análise</option>
+                        <option value="Em Andamento">Em Andamento</option>
+                        <option value="Resolvido">Resolvido</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="filter-date-from">Data de início</label>
+                    <input type="date" id="filter-date-from">
+                </div>
+
+                <div class="filter-group">
+                    <label for="filter-date-to">Data de término</label>
+                    <input type="date" id="filter-date-to">
+                </div>
+
+                <div class="filter-modal-actions">
+                    <button id="cancel-filters-btn" class="cancel-filters-btn">Cancelar</button>
+                    <button id="apply-filters-btn" class="apply-filters-btn">Aplicar Filtros</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="report-list-container" id="report-list-container">
+        </div>
+    </main>
+
+    <div id="auth-modal" class="modal hidden">
+        <div class="modal-content profile-modal">
+            <span class="close-btn auth-close-btn">&times;</span>
+            <h2 id="auth-title">Entrar</h2>
+
+            <form id="auth-form" class="profile-form">
+                <div class="profile-image-container" style="display: none; margin-bottom: 15px;">
+                    <img id="profile-image" src="https://www.gravatar.com/avatar/?d=mp" alt="Profile"
+                        style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;">
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <input type="file" id="profile-image-input" name="avatar" accept="image/*"
+                            style="display: none;">
+                        <button type="button" id="change-image-btn" style="margin-top: 0;">Escolher Arquivo</button>
+                        <button type="button" id="take-photo-btn" style="margin-top: 0;">Tirar Foto</button>
+                    </div>
+                    <video id="profile-video" autoplay playsinline
+                        style="display:none; width:100px; height:100px; border-radius:50%; object-fit:cover; margin-top:10px;"></video>
+                    <button type="button" id="capture-photo-btn" style="display:none; margin-top:5px;">Capturar</button>
+                </div>
+                <div class="form-group">
+                    <label for="auth-username">Usuário</label>
+                    <input type="text" id="auth-username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="auth-password">Senha</label>
+                    <input type="password" id="auth-password" name="password" required>
+                </div>
+                <div class="form-buttons" style="margin-top:20px;">
+                    <button type="submit" id="auth-submit" class="submit-btn">Entrar</button>
+                    <button type="button" id="switch-to-register" class="cancel-btn">Registrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de compartilhamento -->
+    <div id="share-modal" class="share-modal">
+        <div class="share-modal-content">
+            <div class="share-modal-header">
+                <h3>Compartilhar Relatório</h3>
+                <button class="share-modal-close" onclick="closeShareModal()">&times;</button>
+            </div>
+
+            <div class="share-options">
+                <a class="share-option" id="share-whatsapp" href="#" target="_blank" title="Compartilhar no WhatsApp">
+                    <i class="fab fa-whatsapp" style="color: #25D366;"></i>
+                    <span>WhatsApp</span>
+                </a>
+                <a class="share-option" id="share-facebook" href="#" target="_blank" title="Compartilhar no Facebook">
+                    <i class="fab fa-facebook" style="color: #1877F2;"></i>
+                    <span>Facebook</span>
+                </a>
+                <a class="share-option" id="share-twitter" href="#" target="_blank" title="Compartilhar no Twitter">
+                    <i class="fab fa-twitter" style="color: #1DA1F2;"></i>
+                    <span>Twitter</span>
+                </a>
+                <a class="share-option" id="share-linkedin" href="#" target="_blank" title="Compartilhar no LinkedIn">
+                    <i class="fab fa-linkedin" style="color: #0A66C2;"></i>
+                    <span>LinkedIn</span>
+                </a>
+                <a class="share-option" id="share-telegram" href="#" target="_blank" title="Compartilhar no Telegram">
+                    <i class="fab fa-telegram" style="color: #0088cc;"></i>
+                    <span>Telegram</span>
+                </a>
+                <button class="share-option" id="share-qrcode" onclick="toggleQRCodeInModal()" type="button" title="Gerar QR Code">
+                    <i class="fas fa-qrcode" style="color: #6f42c1;"></i>
+                    <span>QR Code</span>
+                </button>
+            </div>
+
+            <!-- QR Code dentro do modal de compartilhamento -->
+            <div id="qrcode-in-share" style="display: none; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
+                <p style="margin: 0 0 10px 0; font-weight: 600; color: var(--dark-text);">QR Code:</p>
+                <div id="qrcode-inline" style="text-align: center; margin-bottom: 10px;"></div>
+                <button type="button" onclick="downloadQRCodeFromShare()" style="width: 100%; padding: 10px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                    <i class="fas fa-download"></i> Baixar QR Code
+                </button>
+            </div>
+
+            <div class="copy-link-section">
+                <label style="font-weight: 600; margin-bottom: 8px; display: block;">Copiar link:</label>
+                <div class="copy-link-input">
+                    <input type="text" id="share-link" readonly placeholder="Link do relatório">
+                    <button onclick="copyShareLink()">Copiar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+
+        const reportListContainer = document.getElementById('report-list-container');
+        const reportCountDisplay = document.getElementById('report-count-display');
+
+        const statusColors = {
+            'Pendente': '#dc3545', 
+            'Em Análise': '#ffc107', 
+            'Em Andamento': '#ffc107', 
+            'Resolvido': '#28a745' 
+        };
+
+        function formatBrazilianDate(dateString) {
+            if (!dateString) return 'Data não disponível';
+            try {
+    
+                const date = new Date(dateString.replace(' ', 'T'));
+
+                if (isNaN(date.getTime())) {
+                    return dateString;
+                }
+
+                return date.toLocaleDateString('pt-BR') + ', ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            } catch {
+                return dateString;
+            }
+        }
+
+        function renderReports(problems) {
+            reportListContainer.innerHTML = ''; 
+            if (!problems || problems.length === 0) {
+                reportListContainer.innerHTML = '<p>Nenhum relatório encontrado.</p>';
+                reportCountDisplay.textContent = 'Nenhum relatório exibido.';
+                return;
+            }
+
+            problems.forEach(problem => {
+                const borderColor = statusColors[problem.status] || '#6c757d';
+
+                const statusTag = `<span class="tag tag-status-${problem.status.replace(/\s/g, '-') || 'outros'}">${problem.status}</span>`;
+    
+                const priorityTag = `<span class="tag tag-prioridade-${problem.prioridade.toLowerCase() || 'baixa'}">${problem.prioridade || 'Baixa'}</span>`;
+
+                const reportDetailsUrl = `detalhes-relatorio.html?id=${problem.id || '0'}`;
+
+                const cardHtml = `
+            <div class="report-card" style="border-left-color: ${borderColor};">
+                <div class="report-header">
+                    <div class="report-title">
+                        ${problem.titulo || 'Problema sem Título'}
+                        ${statusTag}
+                        ${priorityTag}
+                    </div>
+                    <div class="report-id">ID: ${problem.id || 'N/A'}</div>
+                </div>
+                
+                <p>${problem.descricao || 'Nenhuma descrição fornecida.'}</p>
+                
+                <div class="report-meta">
+                    <span>
+                        <i class="fas fa-map-marker-alt"></i> 
+                        ${problem.endereco || `Lat: ${problem.latitude}, Lng: ${problem.longitude}`}
+                    </span>
+                    <span>
+                        <i class="fas fa-calendar-alt"></i> 
+                        ${formatBrazilianDate(problem.data_criacao)}
+                    </span>
+                    <span>
+                        <i class="fas fa-tag"></i> 
+                        ${problem.tipo || 'Outros'}
+                    </span>
+                </div>
+
+                <div class="report-actions">
+                    <a href="${reportDetailsUrl}" target="_blank" class="view-details-btn"><i class="fas fa-eye"></i> Ver Detalhes</a>
+                    <button class="share-btn" onclick="openShareModal(${problem.id}, '${problem.titulo.replace(/'/g, "\\'")}')"><i class="fas fa-share-alt"></i> Compartilhar</button>
+                </div>
+            </div>
+        `;
+
+                reportListContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
+
+            reportCountDisplay.textContent = `Total de ${problems.length} relatórios exibidos.`;
+        }
+
+        /**
+         * Estado global para armazenar todos os relatórios e filtros aplicados
+         */
+        let allReports = [];
+        let currentFilters = {
+            search: '',
+            category: '',
+            status: '',
+            dateFrom: '',
+            dateTo: ''
+        };
+
+        /**
+         * Aplica filtros de pesquisa e categoria aos relatórios
+         * Retorna uma lista filtrada baseada no estado `currentFilters`
+         */
+        function getFilteredReports() {
+            return allReports.filter(problem => {
+                // Filtro de pesquisa (título e descrição)
+                const searchLower = currentFilters.search.toLowerCase();
+                const matchesSearch = !searchLower ||
+                    (problem.titulo && problem.titulo.toLowerCase().includes(searchLower)) ||
+                    (problem.descricao && problem.descricao.toLowerCase().includes(searchLower));
+
+                // Filtro de categoria
+                const matchesCategory = !currentFilters.category ||
+                    (problem.tipo && problem.tipo.toLowerCase() === currentFilters.category.toLowerCase());
+
+                // Filtro de status
+                const matchesStatus = !currentFilters.status ||
+                    (problem.status && problem.status === currentFilters.status);
+
+                // Filtro de data
+                let matchesDate = true;
+                if (currentFilters.dateFrom || currentFilters.dateTo) {
+                    const problemDate = new Date(problem.data_criacao);
+                    if (currentFilters.dateFrom) {
+                        const dateFrom = new Date(currentFilters.dateFrom);
+                        matchesDate = matchesDate && problemDate >= dateFrom;
+                    }
+                    if (currentFilters.dateTo) {
+                        const dateTo = new Date(currentFilters.dateTo);
+                        dateTo.setHours(23, 59, 59, 999); // Inclui até o final do dia
+                        matchesDate = matchesDate && problemDate <= dateTo;
+                    }
+                }
+
+                return matchesSearch && matchesCategory && matchesStatus && matchesDate;
+            });
+        }
+
+        /**
+         * Atualiza a exibição dos filtros ativos
+         */
+        function updateActiveFiltersDisplay() {
+            const activeFiltersDiv = document.getElementById('active-filters');
+            const resetBtn = document.getElementById('reset-filters-btn');
+            const hasActiveFilters = currentFilters.search || currentFilters.category || 
+                                    currentFilters.status || currentFilters.dateFrom || 
+                                    currentFilters.dateTo;
+
+            if (!hasActiveFilters) {
+                activeFiltersDiv.innerHTML = '';
+                resetBtn.style.display = 'none';
+                return;
+            }
+
+            resetBtn.style.display = 'inline-block';
+            let filtersHtml = '';
+
+            if (currentFilters.search) {
+                filtersHtml += `<span class="filter-tag">Pesquisa: "${currentFilters.search}" <button onclick="clearFilterField('search')">✕</button></span>`;
+            }
+            if (currentFilters.category) {
+                const categoryNames = {
+                    'iluminacao': 'Iluminação',
+                    'asfalto': 'Asfalto',
+                    'limpeza': 'Limpeza',
+                    'agua-esgoto': 'Água/Esgoto',
+                    'transporte': 'Transporte',
+                    'assistencial': 'Assistencial',
+                    'meteorologico': 'Meteorológico',
+                    'mobilidade': 'Mobilidade',
+                    'saude': 'Saúde',
+                    'seguranca': 'Segurança',
+                    'acessibilidade': 'Acessibilidade',
+                    'eletricidade': 'Eletricidade',
+                    'meio-ambiente': 'Meio Ambiente',
+                    'estrutura': 'Estrutura',
+                    'drenagem': 'Drenagem',
+                    'obras': 'Obras',
+                    'ciclismo': 'Ciclismo',
+                    'ma-gestao': 'Má Gestão',
+                    'outros': 'Outros'
+                };
+                filtersHtml += `<span class="filter-tag">Categoria: ${categoryNames[currentFilters.category] || currentFilters.category} <button onclick="clearFilterField('category')">✕</button></span>`;
+            }
+            if (currentFilters.status) {
+                filtersHtml += `<span class="filter-tag">Situação: ${currentFilters.status} <button onclick="clearFilterField('status')">✕</button></span>`;
+            }
+            if (currentFilters.dateFrom) {
+                filtersHtml += `<span class="filter-tag">De: ${new Date(currentFilters.dateFrom).toLocaleDateString('pt-BR')} <button onclick="clearFilterField('dateFrom')">✕</button></span>`;
+            }
+            if (currentFilters.dateTo) {
+                filtersHtml += `<span class="filter-tag">Até: ${new Date(currentFilters.dateTo).toLocaleDateString('pt-BR')} <button onclick="clearFilterField('dateTo')">✕</button></span>`;
+            }
+
+            activeFiltersDiv.innerHTML = filtersHtml;
+        }
+
+        /**
+         * Limpa um filtro específico e reaplica os filtros
+         */
+        function clearFilterField(field) {
+            currentFilters[field] = '';
+            updateFilterInputs();
+            applyFiltersAndRender();
+        }
+
+        /**
+         * Atualiza os inputs do modal com o estado atual de filtros
+         */
+        function updateFilterInputs() {
+            document.getElementById('search-reports').value = currentFilters.search;
+            document.getElementById('filter-category').value = currentFilters.category;
+            document.getElementById('filter-status').value = currentFilters.status;
+            document.getElementById('filter-date-from').value = currentFilters.dateFrom;
+            document.getElementById('filter-date-to').value = currentFilters.dateTo;
+        }
+
+        /**
+         * Aplica filtros e renderiza os relatórios filtrados
+         */
+        function applyFiltersAndRender() {
+            const filteredReports = getFilteredReports();
+            renderReports(filteredReports);
+            updateActiveFiltersDisplay();
+        }
+
+        /**
+         * Reseta todos os filtros
+         */
+        function resetAllFilters() {
+            currentFilters = {
+                search: '',
+                category: '',
+                status: '',
+                dateFrom: '',
+                dateTo: ''
+            };
+            updateFilterInputs();
+            applyFiltersAndRender();
+        }
+
+        /**
+         * Inicializa os event listeners para pesquisa e filtros
+         */
+        function initSearchAndFilters() {
+            // Barra de pesquisa (busca em tempo real)
+            const searchInput = document.getElementById('search-reports');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    currentFilters.search = e.target.value;
+                    applyFiltersAndRender();
+                });
+            }
+
+            // Botão de filtro (abre modal)
+            const filterBtn = document.getElementById('filter-btn');
+            const filterModal = document.getElementById('filter-modal');
+            const filterModalClose = document.getElementById('filter-modal-close');
+            const cancelFiltersBtn = document.getElementById('cancel-filters-btn');
+            const applyFiltersBtn = document.getElementById('apply-filters-btn');
+            const resetFiltersBtn = document.getElementById('reset-filters-btn');
+
+            if (filterBtn) {
+                filterBtn.addEventListener('click', () => {
+                    filterModal.classList.add('open');
+                    updateFilterInputs();
+                });
+            }
+
+            if (filterModalClose) {
+                filterModalClose.addEventListener('click', () => {
+                    filterModal.classList.remove('open');
+                });
+            }
+
+            if (cancelFiltersBtn) {
+                cancelFiltersBtn.addEventListener('click', () => {
+                    filterModal.classList.remove('open');
+                });
+            }
+
+            if (filterModal) {
+                filterModal.addEventListener('click', (e) => {
+                    if (e.target === filterModal) {
+                        filterModal.classList.remove('open');
+                    }
+                });
+            }
+
+            // Aplicar filtros do modal
+            if (applyFiltersBtn) {
+                applyFiltersBtn.addEventListener('click', () => {
+                    currentFilters.category = document.getElementById('filter-category').value;
+                    currentFilters.status = document.getElementById('filter-status').value;
+                    currentFilters.dateFrom = document.getElementById('filter-date-from').value;
+                    currentFilters.dateTo = document.getElementById('filter-date-to').value;
+                    filterModal.classList.remove('open');
+                    applyFiltersAndRender();
+                });
+            }
+
+            // Botão de resetar filtros
+            if (resetFiltersBtn) {
+                resetFiltersBtn.addEventListener('click', resetAllFilters);
+            }
+        }
+
+        function fetchReports() {
+            fetch('api.php?action=get_problems')
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { throw new Error(text); });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.success === false) {
+                        reportListContainer.innerHTML = `<p style="color: red;">Erro ao carregar: ${data.message}</p>`;
+                        reportCountDisplay.textContent = 'Erro de API.';
+                    } else if (Array.isArray(data)) {
+                        allReports = data;
+                        applyFiltersAndRender();
+                    } else {
+                        reportListContainer.innerHTML = '<p>Formato de dados da API inválido.</p>';
+                        reportCountDisplay.textContent = 'Erro de API.';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro de rede ou formato de dados:', error);
+                    reportListContainer.innerHTML = `<p style="color: red;">Erro ao conectar ou dados inválidos: ${error.message}</p>`;
+                    reportCountDisplay.textContent = 'Erro de Conexão.';
+                });
+        }
+
+     
+        let currentUser = null;
+
+        function initAuth() {
+        
+            const profileBtn = document.getElementById('profile-btn');
+            const userNameText = document.getElementById('user-name-text');
+            const userAvatar = document.getElementById('user-avatar');
+            const authModal = document.getElementById('auth-modal');
+            const authForm = document.getElementById('auth-form');
+            const authTitle = document.getElementById('auth-title');
+            const switchToRegisterBtn = document.getElementById('switch-to-register');
+            const authCloseBtn = document.querySelector('.auth-close-btn');
+            const googleLoginBtn = document.getElementById('google-login');
+            const profileImageInput = document.getElementById('profile-image-input');
+            const changeImageBtn = document.getElementById('change-image-btn');
+            const profileImage = document.getElementById('profile-image');
+            const takePhotoBtn = document.getElementById('take-photo-btn');
+            const profileVideo = document.getElementById('profile-video');
+            const capturePhotoBtn = document.getElementById('capture-photo-btn');
+
+            let mediaStream = null;
+
+            function updateAuthUI() {
+                if (!profileBtn || !userNameText || !userAvatar) return;
+                if (currentUser) {
+                    userNameText.textContent = currentUser;
+                    profileBtn.style.cursor = 'pointer';
+                    const savedAvatar = localStorage.getItem(`avatar_${currentUser}`);
+                    if (savedAvatar) {
+                        userAvatar.src = savedAvatar;
+                        if (profileImage) profileImage.src = savedAvatar;
+                    }
+                    document.querySelector('.profile-image-container').style.display = 'block';
+                } else {
+                    userNameText.textContent = 'Entrar';
+                    userAvatar.src = 'https://www.gravatar.com/avatar/?d=mp';
+                    const profileImageContainer = document.querySelector('.profile-image-container');
+                    if (profileImageContainer) profileImageContainer.style.display = 'none';
+                    document.querySelectorAll('.edit-btn, .del-btn').forEach(btn => {
+                        btn.style.display = 'none';
+                    });
+                }
+            }
+
+            function fetchCurrentUser() {
+                fetch('api.php?action=current_user')
+                    .then(r => r.json())
+                    .then(data => {
+                        currentUser = data.username || null;
+                        updateAuthUI();
+                    });
+            }
+
+            let authMode = 'login';
+
+            if (takePhotoBtn && profileVideo && capturePhotoBtn) {
+                takePhotoBtn.addEventListener('click', async () => {
+                    try {
+                        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        profileVideo.srcObject = mediaStream;
+                        profileVideo.style.display = 'block';
+                        capturePhotoBtn.style.display = 'inline-block';
+                        if (profileImage) profileImage.style.display = 'none';
+                    } catch (err) {
+                        alert('Não foi possível acessar a câmera: ' + err.message);
+                    }
+                });
+
+                capturePhotoBtn.addEventListener('click', () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = profileVideo.videoWidth;
+                    canvas.height = profileVideo.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(profileVideo, 0, 0, canvas.width, canvas.height);
+                    const imageDataUrl = canvas.toDataURL('image/png');
+                    if (profileImage) {
+                        profileImage.src = imageDataUrl;
+                        profileImage.style.display = 'block';
+                    }
+                    profileVideo.style.display = 'none';
+                    capturePhotoBtn.style.display = 'none';
+                    if (mediaStream) {
+                        mediaStream.getTracks().forEach(track => track.stop());
+                        mediaStream = null;
+                    }
+                });
+            }
+
+            if (profileBtn) profileBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const authUsernameInput = document.getElementById('auth-username');
+
+                if (currentUser) {
+            
+                    authMode = 'profile';
+                    authTitle.textContent = 'Meu Perfil';
+                    authUsernameInput.value = currentUser;
+                   
+                    authUsernameInput.disabled = true;
+                    if (changeImageBtn) changeImageBtn.style.display = 'none'; 
+                    if (takePhotoBtn) takePhotoBtn.style.display = 'none';
+               
+                    if (profileVideo) {
+                        profileVideo.style.display = 'none';
+                    }
+                    if (capturePhotoBtn) {
+                        capturePhotoBtn.style.display = 'none';
+                    }
+                    if (mediaStream) {
+                        mediaStream.getTracks().forEach(track => track.stop());
+                        mediaStream = null;
+                    }
+
+                    if (profileImage) {
+                        profileImage.style.display = 'block';
+
+                        const savedAvatar = localStorage.getItem(`avatar_${currentUser}`);
+                        if (savedAvatar) {
+                            profileImage.src = savedAvatar;
+                        } else {
+                            profileImage.src = 'https://www.gravatar.com/avatar/?d=mp';
+                        }
+                    }
+
+                    document.getElementById('auth-password').closest('.form-group').style.display = 'none';
+                    document.getElementById('auth-submit').style.display = 'none';
+                    switchToRegisterBtn.textContent = 'Deslogar';
+                    document.querySelector('.profile-image-container').style.display = 'block';
+
+                } else {
+            
+                    authMode = 'login';
+                    if (authTitle) authTitle.textContent = 'Entrar';
+                    authUsernameInput.value = '';
+
+                    authUsernameInput.disabled = false; 
+                    if (changeImageBtn) changeImageBtn.style.display = 'none'; 
+                    if (takePhotoBtn) takePhotoBtn.style.display = 'none';    
+
+                    document.getElementById('auth-password').closest('.form-group').style.display = 'block';
+                    document.getElementById('auth-submit').textContent = 'Entrar';
+                    document.getElementById('auth-submit').style.display = 'block';
+                    switchToRegisterBtn.textContent = 'Registrar';
+                    document.querySelector('.profile-image-container').style.display = 'none';
+                }
+                if (authModal) {
+                    authModal.classList.remove('hidden');
+                }
+            });
+
+            if (authCloseBtn) authCloseBtn.addEventListener('click', () => {
+                if (authModal) {
+                    authModal.classList.add('hidden');
+                    if (profileVideo && mediaStream) {
+                        profileVideo.srcObject = null; 
+                        mediaStream.getTracks().forEach(track => track.stop());
+                        mediaStream = null;
+                    }
+                }
+            });
+
+            if (authModal) {
+                authModal.addEventListener('click', (e) => {
+                    if (e.target === authModal) {
+                        authModal.classList.add('hidden');
+            
+                        if (profileVideo && mediaStream) {
+                            profileVideo.srcObject = null;
+                            mediaStream.getTracks().forEach(track => track.stop());
+                            mediaStream = null;
+                        }
+                    }
+                });
+            }
+
+            if (switchToRegisterBtn) switchToRegisterBtn.addEventListener('click', () => {
+                if (authMode === 'profile') {
+                    if (confirm('Deseja realmente sair?')) {
+                        fetch('api.php?action=logout').then(r => r.json()).then(() => {
+                    
+                            currentUser = null;
+                            window.location.reload();
+                        });
+                    }
+                    return;
+                }
+
+                authMode = authMode === 'login' ? 'register' : 'login';
+                if (authTitle) authTitle.textContent = authMode === 'login' ? 'Entrar' : 'Registrar';
+
+                const imageContainer = document.querySelector('.profile-image-container');
+                const isRegister = authMode === 'register';
+
+                if (imageContainer) imageContainer.style.display = isRegister ? 'block' : 'none';
+
+                if (changeImageBtn) changeImageBtn.style.display = isRegister ? 'inline-block' : 'none';
+                if (takePhotoBtn) takePhotoBtn.style.display = isRegister ? 'inline-block' : 'none';
+                document.getElementById('auth-username').disabled = false; 
+
+
+                document.getElementById('auth-password').closest('.form-group').style.display = 'block';
+
+                const submitBtn = document.getElementById('auth-submit');
+                if (submitBtn) submitBtn.textContent = authMode === 'login' ? 'Entrar' : 'Registrar';
+                if (submitBtn) submitBtn.style.display = 'block'; 
+
+                switchToRegisterBtn.textContent = authMode === 'login' ? 'Registrar' : 'Entrar';
+            });
+
+            if (changeImageBtn) changeImageBtn.addEventListener('click', () => {
+                profileImageInput.click();
+            });
+
+            if (profileImageInput) {
+                profileImageInput.addEventListener('change', function (e) {
+                    const file = this.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            const imageDataUrl = e.target.result;
+                            profileImage.src = imageDataUrl;
+                            profileImage.style.display = 'block';
+                            if (profileVideo) profileVideo.style.display = 'none';
+                            if (capturePhotoBtn) capturePhotoBtn.style.display = 'none';
+                            if (currentUser) {
+                                localStorage.setItem(`avatar_${currentUser}`, imageDataUrl);
+                                userAvatar.src = imageDataUrl;
+                            }
+                        }
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+
+            if (googleLoginBtn) googleLoginBtn.addEventListener('click', () => {
+                alert('Em breve: Login com Google!');
+            });
+
+            if (authForm) authForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = new FormData(authForm);
+                const url = authMode === 'login' ? 'api.php?action=login' : 'api.php?action=register';
+
+                if (authMode === 'register' && profileImageInput.files[0]) {
+                    formData.append('avatar', profileImageInput.files[0]);
+                }
+
+                fetch(url, { method: 'POST', body: formData })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) {
+                            currentUser = res.username;
+
+                            if (authMode === 'register' && profileImage.src !== 'https://www.gravatar.com/avatar/?d=mp') {
+                                localStorage.setItem(`avatar_${currentUser}`, profileImage.src);
+                            }
+
+                            alert(res.message);
+                            window.location.reload();
+                        } else {
+                            alert(res.message || 'Erro no login/registro');
+                        }
+                    }).catch(err => console.error(err));
+            });
+            fetchCurrentUser();
+
+        }
+
+        /**
+         * Variáveis globais para compartilhamento e QR Code
+         */
+        let currentShareReportId = null;
+        let currentShareReportTitle = '';
+        let qrcodeInstance = null;
+        let isQRCodeVisible = false;
+
+        /**
+         * Abre o modal de compartilhamento
+         */
+        function openShareModal(reportId, reportTitle) {
+            currentShareReportId = reportId;
+            currentShareReportTitle = reportTitle;
+            isQRCodeVisible = false;
+            
+            // URL do relatório (ajuste conforme sua estrutura)
+            const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+            const reportUrl = `${baseUrl}/detalhes-relatorio.html?id=${reportId}`;
+            
+            // Atualiza links de compartilhamento
+            const urlEncoded = encodeURIComponent(reportUrl);
+            const titleEncoded = encodeURIComponent(reportTitle);
+            
+            document.getElementById('share-whatsapp').href = `https://wa.me/?text=${titleEncoded}%20${urlEncoded}`;
+            document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${urlEncoded}`;
+            document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${titleEncoded}&url=${urlEncoded}`;
+            document.getElementById('share-linkedin').href = `https://www.linkedin.com/sharing/share-offsite/?url=${urlEncoded}`;
+            document.getElementById('share-telegram').href = `https://t.me/share/url?url=${urlEncoded}&text=${titleEncoded}`;
+            
+            // Link para copiar
+            document.getElementById('share-link').value = reportUrl;
+            
+            // Oculta QR Code
+            document.getElementById('qrcode-in-share').style.display = 'none';
+            document.getElementById('qrcode-inline').innerHTML = '';
+            
+            // Abre modal
+            document.getElementById('share-modal').classList.add('open');
+        }
+
+        /**
+         * Fecha o modal de compartilhamento
+         */
+        function closeShareModal() {
+            document.getElementById('share-modal').classList.remove('open');
+            currentShareReportId = null;
+            currentShareReportTitle = '';
+        }
+
+        /**
+         * Copia o link para a área de transferência
+         */
+        function copyShareLink() {
+            const linkInput = document.getElementById('share-link');
+            linkInput.select();
+            document.execCommand('copy');
+            alert('Link copiado para a área de transferência!');
+        }
+
+        /**
+         * Alterna a visibilidade do QR Code dentro do modal de compartilhamento
+         */
+        function toggleQRCodeInModal() {
+            const qrcodeDiv = document.getElementById('qrcode-in-share');
+            const qrcodeInline = document.getElementById('qrcode-inline');
+            const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+            const reportUrl = `${baseUrl}/detalhes-relatorio.html?id=${currentShareReportId}`;
+            
+            if (isQRCodeVisible) {
+                // Oculta QR Code
+                qrcodeDiv.style.display = 'none';
+                qrcodeInline.innerHTML = '';
+                isQRCodeVisible = false;
+            } else {
+                // Mostra QR Code
+                qrcodeInline.innerHTML = '';
+                qrcodeInstance = new QRCode(qrcodeInline, {
+                    text: reportUrl,
+                    width: 200,
+                    height: 200,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                qrcodeDiv.style.display = 'block';
+                isQRCodeVisible = true;
+            }
+        }
+
+        /**
+         * Baixa o QR Code como imagem PNG (a partir do modal de compartilhamento)
+         */
+        function downloadQRCodeFromShare() {
+            const qrcodeCanvas = document.querySelector('#qrcode-inline canvas');
+            if (!qrcodeCanvas) {
+                alert('QR Code não gerado. Tente novamente.');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.href = qrcodeCanvas.toDataURL('image/png');
+            link.download = `qrcode-relatorio-${currentShareReportId}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Fecha modais ao clicar fora deles
+        document.addEventListener('click', (e) => {
+            const shareModal = document.getElementById('share-modal');
+            
+            if (e.target === shareModal) {
+                closeShareModal();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initAuth();
+            initSearchAndFilters();
+            fetchReports(); 
+        });
+    </script>
+</body>
+
+</html>

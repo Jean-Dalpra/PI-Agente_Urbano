@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <!--
+        mapa.html - Página do mapa principal
+        Propósito: exibe o mapa interativo, busca, legendas, e modais para criação/edição de relatórios.
+        Principais seções nesta página:
+        - header-nav: navegação superior e ações do usuário
+        - photon-search-container: campo de busca (usa Google Places Autocomplete)
+        - map-container: elemento do mapa e controles (legenda, modo satélite/streetview)
+        - auth-modal / report-modal / streetview-modal: modais reutilizáveis
+        - ui-message-modal / ui-toast-container: componentes de UI para mensagens/toasts
+        - filter-sidebar: painel lateral para filtros e estatísticas
+        Scripts no final carregam Leaflet, Geocoder, Google Maps API e `script.js`.
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa - Agente Urbano</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="shortcut icon" href="./imagens/urbanoide.png" type="image/x-icon">
+
+    <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+
+
+        /* Ícone de alerta em triângulo amarelo com tooltip de categorias */
+        .legend-alert-icon {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            width: 40px;
+            left: 25px;
+            height: 40px;
+        }
+
+        .legend-alert-triangle {
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 35px solid #FFC107;
+            position: relative;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .legend-alert-triangle::after {
+            content: '!';
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            font-weight: bold;
+            color: #000;
+            line-height: 1;
+        }
+
+        .legend-categories-tooltip {
+            display: grid;
+            position: absolute;
+            bottom: 82px;
+            right: 1.5rem;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10001;
+            text-align: left;
+            font-size: 15px;
+            color: #333;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            width: clamp(240px, 32vw, 380px);
+            max-width: 80vw;
+            max-height: clamp(220px, 65vh, 440px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .legend-alert-icon:hover .legend-categories-tooltip {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .legend-alert-icon.pin-open .legend-categories-tooltip {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+
+        .legend-categories-tooltip .category-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 0;
+            padding: 5px 7px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-left: 4px;
+        }
+
+        .legend-categories-tooltip .category-row:hover {
+            background-color: #f0f0f0;
+        }
+
+        .legend-categories-tooltip .category-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-categories-tooltip .category-row i {
+            width: 16px !important;
+            text-align: center;
+            flex-shrink: 0;
+            font-size: 18px;
+            margin-right: 14px;
+        }
+
+        .legend-categories-tooltip .category-name {
+            flex: 1;
+            white-space: normal;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .leaflet-marker-pane .leaflet-marker-icon {
+            transition: opacity 0.25s ease, filter 0.2s ease, transform 0.25s ease;
+            will-change: transform;
+        }
+
+        .leaflet-marker-pane .leaflet-marker-icon.dimmed {
+            opacity: 0.3;
+            filter: grayscale(100%);
+        }
+
+        .leaflet-marker-pane .leaflet-marker-icon.highlighted {
+            filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.8));
+            z-index: 999;
+        }
+
+        /* evitar "cubes" brancos ao carregar tiles: manter transparente, mas preservar transição para zoom */
+        .leaflet-container .leaflet-tile {
+            background-color: transparent;
+            /* deixa transição para zoom in/out ocorrer suavemente */
+        }
+
+        .enabled {
+            left: initial;
+            right: 0px;
+            top: 50%;
+            bottom: initial;
+            transform: translateY(calc(-50% - 40px)) !important;
+            background-color: transparent !important;
+        }
+
+        /* botão do VLibras sem fundo, ícone no tom azul */
+        [vw-access-button] {
+            background: transparent !important;
+            border-color: transparent !important;
+        }
+
+        [vw-access-button] .access-button {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        /* coloração do ícone */
+        [vw-access-button] .access-button img,
+        [vw-access-button] .access-button svg {
+            filter: brightness(0) saturate(100%) invert(31%) sepia(88%) saturate(2384%) hue-rotate(197deg) brightness(95%) contrast(101%);
+        }
+
+        /* posiciona o botão do UserWay logo abaixo do VLibras para não colidirem */
+        /* força o UserWay a ficar próximo ao VLibras (meio da tela, levemente abaixo) */
+        #userwayAccessibilityIcon,
+        #userwayAccessibilityIcon>div,
+        .userway_widget,
+        .userway-widget-button,
+        .userway_accessibility_icon {
+            position: fixed !important;
+            right: -14px !important;
+            left: auto !important;
+            top: auto !important;
+            bottom: calc(50% - 40px) !important;
+            transform: none !important;
+            background: #007bff !important;
+            border: none !important;
+            border-radius: 50% !important;
+            padding: 0px !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+        }
+
+        /* mantém a logo original (brancos intactos) sem aplicar filtro de cor */
+        #userwayAccessibilityIcon img,
+        #userwayAccessibilityIcon svg,
+        .userway-widget-button img,
+        .userway-widget-button svg,
+        .userway_accessibility_icon img,
+        .userway_accessibility_icon svg {
+            filter: none !important;
+            mix-blend-mode: normal !important;
+        }
+    </style>
+</head>
+
+<body class="map-page">
+
+    <div vw class="enabled">
+        <div vw-access-button class="active"></div>
+        <div vw-plugin-wrapper>
+            <div class="vw-plugin-top-wrapper"></div>
+        </div>
+    </div>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>
+        new window.VLibras.Widget('https://vlibras.gov.br/app');
+    </script>
+    <script class="widgetdeacessibilidade" src="https://cdn.userway.org/widget.js" data-account="lqELz1dV9X"></script>
+
+    <!-- Header/navigation: logo, links e ações (novo relatório, perfil) -->
+    <div class="header-nav">
+        <div class="logo">
+            <a href="index.html">
+                <img src="imagens/urbanoide.png" alt="Urbanoide" class="logo-icon">
+                Agente Urbano
+            </a>
+        </div>
+        <nav class="main-menu">
+            <a href="dashboard.php" class=""><i id="desenho" class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="mapa.html" class="active"><i class="fas fa-map"></i> Mapa</a>
+            <a href="relatorios.html" class=""><i class="fas fa-list-alt"></i> Relatórios</a>
+        </nav>
+        <div class="user-actions">
+            <a href="mapa.html" id="novo-relatorio-btn" class="new-report-btn">+ Novo Problema</a>
+            <div id="profile-btn" class="profile-button">
+                <img id="user-avatar" src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
+                <span id="user-name-text" class="user-name">Entrar</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contêiner de busca: campo de pesquisa e área de resultados.
+            - `#photon-search`: input usado pelo Google Places Autocomplete (quando presente).
+            - `#photon-results`: lista interna usada como fallback/customizada para resultados.
+            Nota: o controlador Google Places renderiza seu próprio dropdown (`.pac-*`),
+            portanto estilos e comportamentos podem variar entre provedores.
+        -->
+    <div id="photon-search-container">
+        <input type="text" id="photon-search" placeholder="Pesquisar local...">
+        <ul id="photon-results"></ul>
+    </div>
+
+    <!-- Contêiner do mapa: área principal onde o mapa Leaflet é inicializado e os marcadores são desenhados.
+            IDs e elementos referenciados pelo JavaScript:
+            - `#map`: elemento principal do mapa (obrigatório para Leaflet)
+            - `#legend-container`: legenda de categorias
+            - botões em `#map-mode-selector`: controle de camadas/centro/Street View
+            - `#novo-relatorio-btn`: abre `#report-modal` para criação de novo relatório
+            - `#report-modal` / `#report-form`: campos esperados pelo JS (ex.: `titulo`, `descricao`, `imagem_upload`, `form-latitude`, `form-longitude`, `endereco`)
+        -->
+    <main class="map-container">
+        <div id="map"></div>
+
+        <!-- Legend: mostra as categorias dos problemas mapeados -->
+        <div id="legend-container">
+            <h4 style="margin-top: -7px; margin-bottom: 2px;">Categorias</h4>
+            <div class="legend-alert-icon" title="Passe o mouse para ver todas as categorias">
+                <div class="legend-alert-triangle"></div>
+                <div class="legend-categories-tooltip">
+                    <div class="category-row">
+                        <i class="fas fa-lightbulb" style="width: 16px; text-align: center; color: #FFC107;"></i>
+                        <span class="category-name">Iluminação</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-road" style="width: 16px; text-align: center; color: #0056b3;"></i>
+                        <span class="category-name">Asfalto</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-trash-alt" style="width: 16px; text-align: center; color: #28A745;"></i>
+                        <span class="category-name">Limpeza</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-water" style="width: 16px; text-align: center; color: #DC3545;"></i>
+                        <span class="category-name">Água/Esgoto</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-bus" style="width: 16px; text-align: center; color: #FF6B35;"></i>
+                        <span class="category-name">Transporte</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-hand-holding-heart"
+                            style="width: 16px; text-align: center; color: #E91E63;"></i>
+                        <span class="category-name">Assistencial</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-cloud" style="width: 16px; text-align: center; color: #2196F3;"></i>
+                        <span class="category-name">Meteorológico</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-person-walking" style="width: 16px; text-align: center; color: #FF9800;"></i>
+                        <span class="category-name">Mobilidade</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-hospital" style="width: 16px; text-align: center; color: #4CAF50;"></i>
+                        <span class="category-name">Saúde</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-shield-alt" style="width: 16px; text-align: center; color: #F44336;"></i>
+                        <span class="category-name">Segurança</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-wheelchair" style="width: 16px; text-align: center; color: #9C27B0;"></i>
+                        <span class="category-name">Acessibilidade</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-bolt" style="width: 16px; text-align: center; color: #FFEB3B;"></i>
+                        <span class="category-name">Eletricidade</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-leaf" style="width: 16px; text-align: center; color: #00BCD4;"></i>
+                        <span class="category-name">Meio Ambiente</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-building" style="width: 16px; text-align: center; color: #795548;"></i>
+                        <span class="category-name">Estrutura</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-droplet" style="width: 16px; text-align: center; color: #3F51B5;"></i>
+                        <span class="category-name">Drenagem</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-tools" style="width: 16px; text-align: center; color: #FF5722;"></i>
+                        <span class="category-name">Obras</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-bicycle" style="width: 16px; text-align: center; color: #8BC34A;"></i>
+                        <span class="category-name">Ciclismo</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-exclamation-triangle"
+                            style="width: 16px; text-align: center; color: #673AB7;"></i>
+                        <span class="category-name">Má Gestão</span>
+                    </div>
+                    <div class="category-row">
+                        <i class="fas fa-map-marker-alt" style="width: 16px; text-align: center; color: #6C757D;"></i>
+                        <span class="category-name">Outros</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map mode selector: botões para alternar entre Mapa / Satélite / Street View e outras ações -->
+        <div id="map-mode-selector">
+            <button id="mode-street-btn" class="map-mode-btn active-mode"><i class="fas fa-road"></i> Mapa</button>
+            <button id="mode-sat-btn" class="map-mode-btn"><i class="fas fa-satellite"></i> Satélite</button>
+
+            <button id="mode-streetview-btn" class="map-mode-btn" title="Ver Street View">
+                <i class="fas fa-street-view"></i>
+            </button>
+            <button id="recenter-btn" class="map-mode-btn" title="Voltar para sua localização">
+                <i class="fas fa-location-crosshairs"></i>
+            </button>
+            <button id="open-filter-btn" class="map-mode-btn" title="Filtros e Estatísticas">
+                <i class="fas fa-filter"></i>
+            </button>
+        </div>
+    </main>
+
+    <!-- Modal de autenticação: login/registro e perfil do usuário -->
+    <div id="auth-modal" class="modal hidden">
+        <div class="modal-content profile-modal">
+            <span class="close-btn auth-close-btn">&times;</span>
+            <h2 id="auth-title">Entrar</h2>
+
+            <form id="auth-form" class="profile-form">
+                <div class="profile-image-container" style="display: none; margin-bottom: 15px;">
+                    <img id="profile-image" src="https://www.gravatar.com/avatar/?d=mp" alt="Profile"
+                        style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;">
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <input type="file" id="profile-image-input" name="avatar" accept="image/*"
+                            style="display: none;">
+                        <button type="button" id="change-image-btn" style="margin-top: 0;">Escolher Arquivo</button>
+                        <button type="button" id="take-photo-btn" style="margin-top: 0;">Tirar Foto</button>
+                    </div>
+                    <video id="profile-video" autoplay playsinline
+                        style="display:none; width:100px; height:100px; border-radius:50%; object-fit:cover; margin-top:10px;"></video>
+                    <button type="button" id="capture-photo-btn" style="display:none; margin-top:5px;">Capturar</button>
+                </div>
+                <div class="form-group">
+                    <label for="auth-username">Usuário</label>
+                    <input type="text" id="auth-username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="auth-password">Senha</label>
+                    <input type="password" id="auth-password" name="password" required>
+                </div>
+                <div class="form-buttons" style="margin-top:20px;">
+                    <button type="submit" id="auth-submit" class="submit-btn">Entrar</button>
+                    <button type="button" id="switch-to-register" class="cancel-btn">Registrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de relatório: formulário para criar/editar um relatório (inclui upload de imagem) -->
+    <div id="report-modal" class="modal hidden">
+        <div class="modal-content large-modal">
+            <span class="close-btn report-close-btn">&times;</span>
+            <h2>Reportar Problema</h2>
+
+            <form id="report-form" enctype="multipart/form-data">
+
+                <label for="titulo">Título do Problema *</label>
+                <input type="text" id="titulo" name="titulo" placeholder="Ex: Buraco na rua principal" required>
+
+                <label for="descricao">Descrição Detalhada *</label>
+                <textarea id="descricao" name="descricao" rows="4" placeholder="Descreva o problema em detalhes..."
+                    required></textarea>
+
+                <div class="form-row three-columns">
+                    <div class="form-group category-group">
+                        <label for="tipo">Categoria</label>
+                        <select id="tipo" name="categoria" required>
+                            <option value="" disabled selected>Selecione uma categoria</option>
+                            <option value="iluminacao">Iluminação Pública</option>
+                            <option value="asfalto">Asfalto / Buraco na Rua</option>
+                            <option value="limpeza">Limpeza / Lixo Acumulado</option>
+                            <option value="agua-esgoto">Água / Esgoto</option>
+                            <option value="transporte">Transporte Público</option>
+                            <option value="assistencial">Assistencial</option>
+                            <option value="meteorologico">Meteorológico</option>
+                            <option value="mobilidade">Mobilidade</option>
+                            <option value="saude">Saúde</option>
+                            <option value="seguranca">Segurança</option>
+                            <option value="acessibilidade">Acessibilidade</option>
+                            <option value="eletricidade">Eletricidade</option>
+                            <option value="meio-ambiente">Meio Ambiente</option>
+                            <option value="estrutura">Estrutura</option>
+                            <option value="drenagem">Drenagem</option>
+                            <option value="obras">Obras</option>
+                            <option value="ciclismo">Ciclismo</option>
+                            <option value="ma-gestao">Má Gestão</option>
+                            <option value="outros">Outros</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="prioridade">Prioridade</label>
+                        <select id="prioridade" name="prioridade">
+                            <option value="baixa" selected>Baixa</option>
+                            <option value="media">Média</option>
+                            <option value="alta">Alta</option>
+                            <option value="urgente">Urgente</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status">Status da Situação</label>
+                        <select id="status" name="status">
+                            <option value="Pendente" selected>Pendente</option>
+                            <option value="Em Análise">Em Análise</option>
+                            <option value="Em Andamento">Em Andamento</option>
+                            <option value="Resolvido">Resolvido</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="imagem_upload">Imagem (Opcional)</label>
+                    <div class="form-row image-row">
+                        <input type="file" id="imagem_upload" name="imagem_upload" accept="image/*"
+                            style="display: none;">
+
+                        <input type="text" id="file-name-display" placeholder="Nenhum arquivo selecionado" readonly>
+
+                        <button type="button" class="secondary-btn" id="upload-btn-styled">
+                            <i class="fas fa-upload"></i> Selecionar Arquivo
+                        </button>
+                    </div>
+                </div>
+
+                <label for="endereco">Localização</label>
+                <div class="form-row location-row">
+                    <input type="text" id="endereco" name="endereco" placeholder="Endereço aproximado" required
+                        readonly>
+                    <button type="button" id="select-on-map-btn" class="secondary-btn"><i
+                            class="fas fa-map-marker-alt"></i> Selecionar no Mapa</button>
+                </div>
+
+                <input type="hidden" id="form-latitude" name="latitude">
+                <input type="hidden" id="form-longitude" name="longitude">
+
+                <div class="form-buttons">
+                    <button type="button" id="cancel-report" class="cancel-btn">Cancelar</button>
+                    <button type="submit" class="submit-btn create-report-btn">Criar Relatório</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+    <!-- Street View modal: exibe panorama do Google Street View dentro de um modal -->
+    <div id="streetview-modal" class="modal hidden">
+        <div class="modal-content large-modal" style="height: 80vh;">
+            <span id="close-streetview-btn" class="close-btn">&times;</span>
+            <h2>Google Street View</h2>
+            <div id="streetview-pano" style="width:100%; height: calc(100% - 70px); background:#ccc;"></div>
+        </div>
+    </div>
+
+    <!-- UI message modal (replaces alert()): caixa modal para mensagens informativas -->
+    <div id="ui-message-modal" class="modal hidden" aria-hidden="true">
+        <div class="modal-content" style="max-width:520px;">
+            <span class="close-btn ui-message-close">&times;</span>
+            <h2 id="ui-message-title">Mensagem</h2>
+            <div id="ui-message-body" style="margin-top:12px; color: #333;"></div>
+            <div style="margin-top:18px; text-align:right;">
+                <button class="secondary-btn ui-message-ok">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container for transient messages: toasts aparecem no canto superior direito -->
+    <div id="ui-toast-container" aria-live="polite" aria-atomic="true"
+        style="position: fixed; top: 20px; right: 20px; z-index: 3500;"></div>
+    <!-- Filter sidebar: painel lateral com filtros e estatísticas que afetam a listagem de marcadores -->
+    <div id="filter-sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3>Filtros & Estatísticas</h3>
+            <button id="close-filter-btn" class="close-btn">&times;</button>
+        </div>
+        <div class="sidebar-content">
+            <div class="filter-section">
+                <i class="fas fa-filter"></i>
+                <h4 style="display: inline-block; margin-left: 5px; font-weight: bold;">Filtros</h4>
+
+                <label for="filter-category">Categoria:</label>
+                <select id="filter-category" class="form-control">
+                    <option value="all">Todas as categorias</option>
+                    <option value="iluminacao">Iluminação Pública</option>
+                    <option value="asfalto">Asfalto / Buraco na Rua</option>
+                    <option value="limpeza">Limpeza / Lixo Acumulado</option>
+                    <option value="agua-esgoto">Água / Esgoto</option>
+                    <option value="transporte">Transporte Público</option>
+                    <option value="assistencial">Assistencial</option>
+                    <option value="meteorologico">Meteorológico</option>
+                    <option value="mobilidade">Mobilidade</option>
+                    <option value="saude">Saúde</option>
+                    <option value="seguranca">Segurança</option>
+                    <option value="acessibilidade">Acessibilidade</option>
+                    <option value="eletricidade">Eletricidade</option>
+                    <option value="meio-ambiente">Meio Ambiente</option>
+                    <option value="estrutura">Estrutura</option>
+                    <option value="drenagem">Drenagem</option>
+                    <option value="obras">Obras</option>
+                    <option value="ciclismo">Ciclismo</option>
+                    <option value="ma-gestao">Má Gestão</option>
+                    <option value="outros">Outros</option>
+                </select>
+
+                <label for="filter-status">Status:</label>
+                <select id="filter-status" class="form-control">
+                    <option value="all">Todos os status</option>
+                    <option value="Pendente">Pendente</option>
+                    <option value="Em Análise">Em Análise</option>
+                    <option value="Em Andamento">Em Andamento</option>
+                    <option value="Resolvido">Resolvido</option>
+                </select>
+
+                <label for="filter-city">Cidade:</label>
+                <select id="filter-city" class="form-control" disabled>
+                    <option value="all">Todas as cidades</option>
+                </select>
+
+                <label for="filter-sort">Ordenar por:</label>
+                <select id="filter-sort" class="form-control">
+                    <option value="recente">Mais Recentes</option>
+                    <option value="antigo">Mais Antigos</option>
+                    <option value="id-desc">ID (Decrescente)</option>
+                    <option value="id-asc">ID (Crescente)</option>
+                </select>
+            </div>
+
+            <div class="filter-actions">
+                <button id="apply-filter-btn" class="submit-btn" style="flex-grow: 1;">Aplicar</button>
+                <button id="clear-filter-btn" class="cancel-btn" style="flex-grow: 1;">Limpar</button>
+            </div>
+        </div>
+    </div>
+    <!-- API Do Google Maps -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <!-- Google Maps API carregado apenas se houver API key válida -->
+    <script type="text/javascript">
+        // Verifica se há uma API key antes de carregar Google Maps
+        const googleMapsApiKey = ''; // Deixar vazio se não tiver chave
+        if (!googleMapsApiKey) {
+            console.warn('Google Maps API key não configurada. Funcionalidades do Google Maps desabilitadas.');
+            // Criar um objeto google vazio para evitar erros
+            window.google = { maps: {} };
+            window.initMap = function() { console.log('Google Maps não disponível'); };
+        } else {
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places,geometry&callback=initMap`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        }
+    </script>
+
+    <script>
+        // Funcionalidade do toggle de fixar a legenda ao clicar
+        const legendAlertIcon = document.querySelector('.legend-alert-icon');
+        const legendTooltip = document.querySelector('.legend-categories-tooltip');
+        const categoryRows = document.querySelectorAll('.legend-categories-tooltip .category-row');
+
+        // Mapeamento de categorias para tipos de relatório
+        const categoryTypeMap = {
+            'Iluminação': 'iluminacao',
+            'Asfalto': 'asfalto',
+            'Limpeza': 'limpeza',
+            'Água/Esgoto': 'agua-esgoto',
+            'Transporte': 'transporte',
+            'Assistencial': 'assistencial',
+            'Meteorológico': 'meteorologico',
+            'Mobilidade': 'mobilidade',
+            'Saúde': 'saude',
+            'Segurança': 'seguranca',
+            'Acessibilidade': 'acessibilidade',
+            'Eletricidade': 'eletricidade',
+            'Meio Ambiente': 'meio-ambiente',
+            'Estrutura': 'estrutura',
+            'Drenagem': 'drenagem',
+            'Obras': 'obras',
+            'Ciclismo': 'ciclismo',
+            'Má Gestão': 'ma-gestao',
+            'Outros': 'outros'
+        };
+
+        let isPinned = false;
+
+        // Clique no triângulo para fixar/desafixar
+        legendAlertIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isPinned = !isPinned;
+
+            if (isPinned) {
+                legendAlertIcon.classList.add('pin-open');
+                legendTooltip.style.pointerEvents = 'auto';
+            } else {
+                legendAlertIcon.classList.remove('pin-open');
+                legendTooltip.style.pointerEvents = 'none';
+                // Remover destaque dos marcadores
+                document.querySelectorAll('.leaflet-marker-icon').forEach(marker => {
+                    marker.classList.remove('dimmed', 'highlighted');
+                });
+            }
+        });
+
+        // Fechar legenda ao clicar fora
+        document.addEventListener('click', (e) => {
+            if (!legendAlertIcon.contains(e.target)) {
+                if (isPinned) return; // Se fixada, não fecha ao clicar fora
+            }
+        });
+
+        // Hover nas categorias para destacar marcadores
+        categoryRows.forEach(row => {
+            row.addEventListener('mouseenter', () => {
+                const categoryName = row.querySelector('.category-name').textContent;
+                const categoryType = categoryTypeMap[categoryName];
+
+                if (!categoryType) return;
+
+                // Dim em todos os marcadores
+                document.querySelectorAll('.leaflet-marker-icon').forEach(marker => {
+                    marker.classList.add('dimmed');
+                });
+
+                // Highlight apenas os da categoria
+                document.querySelectorAll(`.leaflet-marker-icon[data-category="${categoryType}"]`).forEach(marker => {
+                    marker.classList.remove('dimmed');
+                    marker.classList.add('highlighted');
+                });
+            });
+
+            row.addEventListener('mouseleave', () => {
+                // Remover destaque
+                document.querySelectorAll('.leaflet-marker-icon').forEach(marker => {
+                    marker.classList.remove('dimmed', 'highlighted');
+                });
+            });
+        });
+    </script>
+
+    <script>
+        // reposiciona o botão do UserWay para perto do VLibras mesmo se o widget reinjetar estilos
+        (function ensureUserWayPosition() {
+            const applyPos = () => {
+                const btn = document.querySelector('#userwayAccessibilityIcon, .userway-widget-button, .userway_widget, .userway_accessibility_icon');
+                if (!btn) return false;
+                btn.style.position = 'fixed';
+                btn.style.right = '-10px';
+                btn.style.left = 'auto';
+                btn.style.top = 'auto';
+                btn.style.bottom = 'calc(50% - 160px)';
+                btn.style.transform = 'none';
+                btn.style.zIndex = '10002';
+                return true;
+            };
+
+            // tenta algumas vezes porque o widget carrega de forma assíncrona
+            let attempts = 0;
+            const timer = setInterval(() => {
+                attempts += 1;
+                if (applyPos() || attempts > 40) {
+                    clearInterval(timer);
+                }
+            }, 150);
+        })();
+    </script>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

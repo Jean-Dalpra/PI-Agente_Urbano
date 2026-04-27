@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Detalhes do Relatório - Agente Urbano</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="shortcut icon"
+        href="./imagens/urbanoide.png"
+        type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --light-bg: #f8f9fa;
+            --dark-text: #343a40;
+            --border-color: #dee2e6;
+        }
+
+        body {
+
+            background-color: #E1F2E1;
+            margin: 0;
+            padding: 0;
+            color: var(--dark-text);
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--primary-color);
+        }
+
+
+        .page-content-details {
+            padding: 30px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .report-details-container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgb(207, 207, 207);
+            border-left: 2px 2px var(--primary-color);
+            margin-bottom: 20px;
+            margin-top: 20px;
+        }
+
+
+        .report-details-container h1 {
+            font-size: 2em;
+            color: var(--dark-text);
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+
+        .info-section {
+            margin-top: 20px;
+            padding: 15px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .info-section:last-child {
+            border-bottom: none;
+        }
+
+        .info-section h3 {
+            font-size: 1.2em;
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .info-section h3 i {
+            margin-right: 10px;
+        }
+
+        .info-item {
+            display: flex;
+            margin-bottom: 10px;
+            font-size: 1.05em;
+        }
+
+        .info-item strong {
+            width: 150px;
+            color: var(--secondary-color);
+            font-weight: 500;
+        }
+
+        .info-item span {
+            color: var(--dark-text);
+            font-weight: 600;
+            flex-grow: 1;
+        }
+
+
+        .description-box p {
+            line-height: 1.6;
+            margin-bottom: 0;
+            white-space: pre-wrap;
+        }
+
+
+        .evidence-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-top: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+
+        .tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        .tag-status-Pendente {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .tag-status-Em-Analise,
+        .tag-status-Em-Andamento {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .tag-status-Resolvido {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .tag-prioridade-Baixa {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+
+        .tag-prioridade-Media {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+
+        .tag-prioridade-Alta {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .tag-prioridade-Urgente {
+            background-color: #f5c6cb;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .back-button {
+            margin-bottom: 20px;
+            display: inline-block;
+            color: var(--secondary-color);
+            transition: color 0.2s;
+            font-weight: 600;
+        }
+
+        .back-button:hover {
+            color: var(--primary-color);
+        }
+
+        .loading-message,
+        .error-message {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: var(--secondary-color);
+        }
+
+        .report-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 15px 0;
+            margin-top: 20px;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .vote-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .vote-button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        .vote-button:disabled {
+            cursor: not-allowed;
+            background-color: var(--success-color);
+            opacity: 0.9;
+        }
+
+        .vote-button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .vote-count {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--dark-text);
+        }
+
+        .comments-section {
+            margin-top: 30px;
+            padding: 30px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-left: 2px 2px var(--primary-color);
+        }
+
+        .comments-section h3 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 5px;
+            margin-bottom: 20px;
+            color: var(--dark-text);
+        }
+
+        .comment-form textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            resize: vertical;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        .comment-form h4 {
+            margin-top: 0;
+            color: var(--secondary-color);
+            font-size: 1.1em;
+        }
+
+        .comment-form button {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .comment-form button:hover {
+            background-color: #1e7e34;
+        }
+
+        .comment-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 25px;
+        }
+
+        .comment-item {
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: #f8f8f8;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .comment-meta {
+            font-size: 0.9em;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .comment-author {
+            font-weight: bold;
+            color: var(--dark-text);
+        }
+
+        .comment-text {
+            margin-top: 5px;
+            line-height: 1.4;
+            color: var(--dark-text);
+        }
+    </style>
+</head>
+
+<body class="dashboard-page">
+    <div vw class="enabled">
+        <div vw-access-button class="active"></div>
+        <div vw-plugin-wrapper>
+            <div class="vw-plugin-top-wrapper"></div>
+        </div>
+    </div>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>
+        new window.VLibras.Widget('https://vlibras.gov.br/app');
+    </script>
+    <div class="header-nav" style="position: fixed; top: 0; width: 100%; z-index: 1000;">
+        <div class="logo">
+            <a href="index.html"><img src="imagens/urbanoide.png" alt="Urbanoide" class="logo-icon"> Agente Urbano</a>
+        </div>
+        <nav class="main-menu">
+            <a href="dashboard.php" class="" style=" font-weight: 500;"><i id="desenho"
+                    class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="mapa.html" class=""><i class="fas fa-map"></i> Mapa</a>
+            <a href="relatorios.html" class=""><i class="fas fa-list-alt"></i> Relatórios</a>
+        </nav>
+        <div class="user-actions">
+            <a href="mapa.html" id="novo-relatorio-btn" class="new-report-btn">+ Novo Problema</a>
+            <div id="profile-btn" class="profile-button">
+                <img id="user-avatar" src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
+                <span id="user-name-text" class="user-name">Entrar</span>
+            </div>
+        </div>
+    </div>
+    <main class="page-content-details">
+        <a href="relatorios.html" class="back-button">
+            <i class="fas fa-arrow-left"></i> Voltar para a lista de relatórios
+        </a>
+
+        <div id="details-view">
+            <div class="loading-message">
+                <i class="fas fa-spinner fa-spin"></i> Carregando detalhes do relatório...
+            </div>
+        </div>
+    </main>
+
+    <div id="auth-modal" class="modal hidden">
+        <div class="modal-content profile-modal">
+            <span class="close-btn auth-close-btn">&times;</span>
+            <h2 id="auth-title">Entrar</h2>
+
+            <form id="auth-form" class="profile-form">
+                <div class="profile-image-container" style="display: none; margin-bottom: 15px;">
+                    <img id="profile-image" src="https://www.gravatar.com/avatar/?d=mp" alt="Profile"
+                        style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;">
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <input type="file" id="profile-image-input" name="avatar" accept="image/*"
+                            style="display: none;">
+                        <button type="button" id="change-image-btn" style="margin-top: 0;">Escolher Arquivo</button>
+                        <button type="button" id="take-photo-btn" style="margin-top: 0;">Tirar Foto</button>
+                    </div>
+                    <video id="profile-video" autoplay playsinline
+                        style="display:none; width:100px; height:100px; border-radius:50%; object-fit:cover; margin-top:10px;"></video>
+                    <button type="button" id="capture-photo-btn" style="display:none; margin-top:5px;">Capturar</button>
+                </div>
+                <div class="form-group">
+                    <label for="auth-username">Usuário</label>
+                    <input type="text" id="auth-username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="auth-password">Senha</label>
+                    <input type="password" id="auth-password" name="password" required>
+                </div>
+                <div class="form-buttons" style="margin-top:20px;">
+                    <button type="submit" id="auth-submit" class="submit-btn">Entrar</button>
+                    <button type="button" id="switch-to-register" class="cancel-btn">Registrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        try {
+            const reportId = new URLSearchParams(window.location.search).get('id');
+            if (reportId) {
+                localStorage.removeItem(`voted-${reportId}`);
+            }
+        } catch (e) {
+            console.warn("Falha ao tentar limpar o localStorage de voto antigo.");
+        }
+
+        let currentUser = null;
+        const detailsView = document.getElementById('details-view');
+
+
+        function initAuth() {
+            const profileBtn = document.getElementById('profile-btn');
+            const userNameText = document.getElementById('user-name-text');
+            const userAvatar = document.getElementById('user-avatar');
+            const authModal = document.getElementById('auth-modal');
+            const authForm = document.getElementById('auth-form');
+            const authTitle = document.getElementById('auth-title');
+            const switchToRegisterBtn = document.getElementById('switch-to-register');
+            const authCloseBtn = document.querySelector('.auth-close-btn');
+            const googleLoginBtn = document.getElementById('google-login');
+            const profileImageInput = document.getElementById('profile-image-input');
+            const changeImageBtn = document.getElementById('change-image-btn');
+            const profileImage = document.getElementById('profile-image');
+            const takePhotoBtn = document.getElementById('take-photo-btn');
+            const profileVideo = document.getElementById('profile-video');
+            const capturePhotoBtn = document.getElementById('capture-photo-btn');
+
+            let mediaStream = null;
+
+            function updateAuthUI() {
+                if (!profileBtn || !userNameText || !userAvatar) return;
+                if (currentUser) {
+                    userNameText.textContent = currentUser;
+                    profileBtn.style.cursor = 'pointer';
+                    const savedAvatar = localStorage.getItem(`avatar_${currentUser}`);
+                    if (savedAvatar) {
+                        userAvatar.src = savedAvatar;
+                        if (profileImage) profileImage.src = savedAvatar;
+                    }
+                    document.querySelector('.profile-image-container').style.display = 'block';
+                } else {
+                    userNameText.textContent = 'Entrar';
+                    userAvatar.src = 'https://www.gravatar.com/avatar/?d=mp';
+                    const profileImageContainer = document.querySelector('.profile-image-container');
+                    if (profileImageContainer) profileImageContainer.style.display = 'none';
+                    document.querySelectorAll('.edit-btn, .del-btn').forEach(btn => {
+                        btn.style.display = 'none';
+                    });
+                }
+            }
+
+
+            function fetchCurrentUser() {
+                fetch('api.php?action=current_user')
+                    .then(r => r.json())
+                    .then(data => {
+                        currentUser = data.username || null;
+                        updateAuthUI();
+
+                        const reportId = getReportIdFromUrl();
+                        fetchReportDetails(reportId);
+                    })
+                    .catch(err => {
+                        console.error("Falha ao buscar usuário. Carregando detalhes como 'deslogado'.", err);
+                        currentUser = null;
+                        updateAuthUI();
+                        const reportId = getReportIdFromUrl();
+                        fetchReportDetails(reportId);
+                    });
+            }
+
+            let authMode = 'login';
+
+            if (takePhotoBtn && profileVideo && capturePhotoBtn) {
+                takePhotoBtn.addEventListener('click', async () => {
+                    try {
+                        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        profileVideo.srcObject = mediaStream;
+                        profileVideo.style.display = 'block';
+                        capturePhotoBtn.style.display = 'inline-block';
+                        if (profileImage) profileImage.style.display = 'none';
+                    } catch (err) {
+                        alert('Não foi possível acessar a câmera: ' + err.message);
+                    }
+                });
+
+                capturePhotoBtn.addEventListener('click', () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = profileVideo.videoWidth;
+                    canvas.height = profileVideo.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(profileVideo, 0, 0, canvas.width, canvas.height);
+                    const imageDataUrl = canvas.toDataURL('image/png');
+                    if (profileImage) {
+                        profileImage.src = imageDataUrl;
+                        profileImage.style.display = 'block';
+                    }
+                    profileVideo.style.display = 'none';
+                    capturePhotoBtn.style.display = 'none';
+                    if (mediaStream) {
+                        mediaStream.getTracks().forEach(track => track.stop());
+                        mediaStream = null;
+                    }
+                });
+            }
+
+            if (profileBtn) profileBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const authUsernameInput = document.getElementById('auth-username');
+
+                if (currentUser) {
+                    authMode = 'profile';
+                    authTitle.textContent = 'Meu Perfil';
+                    authUsernameInput.value = currentUser;
+
+                    authUsernameInput.disabled = true;
+                    if (changeImageBtn) changeImageBtn.style.display = 'none';
+                    if (takePhotoBtn) takePhotoBtn.style.display = 'none';
+
+                    if (profileVideo) profileVideo.style.display = 'none';
+                    if (capturePhotoBtn) capturePhotoBtn.style.display = 'none';
+
+                    if (mediaStream) {
+                        mediaStream.getTracks().forEach(track => track.stop());
+                        mediaStream = null;
+                    }
+
+                    if (profileImage) {
+                        profileImage.style.display = 'block';
+                        const savedAvatar = localStorage.getItem(`avatar_${currentUser}`);
+                        if (savedAvatar) {
+                            profileImage.src = savedAvatar;
+                        } else {
+                            profileImage.src = 'https://www.gravatar.com/avatar/?d=mp';
+                        }
+                    }
+
+                    document.getElementById('auth-password').closest('.form-group').style.display = 'none';
+                    document.getElementById('auth-submit').style.display = 'none';
+                    switchToRegisterBtn.textContent = 'Deslogar';
+                    document.querySelector('.profile-image-container').style.display = 'block';
+
+                } else {
+                    authMode = 'login';
+                    if (authTitle) authTitle.textContent = 'Entrar';
+                    authUsernameInput.value = '';
+                    authUsernameInput.disabled = false;
+                    if (changeImageBtn) changeImageBtn.style.display = 'none';
+                    if (takePhotoBtn) takePhotoBtn.style.display = 'none';
+
+                    document.getElementById('auth-password').closest('.form-group').style.display = 'block';
+                    document.getElementById('auth-submit').textContent = 'Entrar';
+                    document.getElementById('auth-submit').style.display = 'block';
+                    switchToRegisterBtn.textContent = 'Registrar';
+                    document.querySelector('.profile-image-container').style.display = 'none';
+                }
+                if (authModal) {
+                    authModal.classList.remove('hidden');
+                }
+            });
+
+            if (authCloseBtn) authCloseBtn.addEventListener('click', () => {
+                if (authModal) {
+                    authModal.classList.add('hidden');
+                    if (profileVideo && mediaStream) {
+                        profileVideo.srcObject = null;
+                        mediaStream.getTracks().forEach(track => track.stop());
+                        mediaStream = null;
+                    }
+                }
+            });
+
+            // Fecha o modal de auth ao clicar fora
+            if (authModal) {
+                authModal.addEventListener('click', (e) => {
+                    if (e.target === authModal) {
+                        authModal.classList.add('hidden');
+                        if (profileVideo && mediaStream) {
+                            profileVideo.srcObject = null;
+                            mediaStream.getTracks().forEach(track => track.stop());
+                            mediaStream = null;
+                        }
+                    }
+                });
+            }
+
+            if (switchToRegisterBtn) switchToRegisterBtn.addEventListener('click', () => {
+                if (authMode === 'profile') {
+                    if (confirm('Deseja realmente sair?')) {
+                        fetch('api.php?action=logout').then(r => r.json()).then(() => {
+                            currentUser = null;
+                            window.location.reload();
+                        });
+                    }
+                    return;
+                }
+
+                authMode = authMode === 'login' ? 'register' : 'login';
+                if (authTitle) authTitle.textContent = authMode === 'login' ? 'Entrar' : 'Registrar';
+
+                const imageContainer = document.querySelector('.profile-image-container');
+                const isRegister = authMode === 'register';
+
+                if (imageContainer) imageContainer.style.display = isRegister ? 'block' : 'none';
+
+                if (changeImageBtn) changeImageBtn.style.display = isRegister ? 'inline-block' : 'none';
+                if (takePhotoBtn) takePhotoBtn.style.display = isRegister ? 'inline-block' : 'none';
+                document.getElementById('auth-username').disabled = false;
+
+                document.getElementById('auth-password').closest('.form-group').style.display = 'block';
+
+                const submitBtn = document.getElementById('auth-submit');
+                if (submitBtn) submitBtn.textContent = authMode === 'login' ? 'Entrar' : 'Registrar';
+                if (submitBtn) submitBtn.style.display = 'block';
+
+                switchToRegisterBtn.textContent = authMode === 'login' ? 'Registrar' : 'Entrar';
+            });
+
+            if (changeImageBtn) changeImageBtn.addEventListener('click', () => {
+                profileImageInput.click();
+            });
+
+            if (profileImageInput) {
+                profileImageInput.addEventListener('change', function (e) {
+                    const file = this.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            const imageDataUrl = e.target.result;
+                            profileImage.src = imageDataUrl;
+                            profileImage.style.display = 'block';
+                            if (profileVideo) profileVideo.style.display = 'none';
+                            if (capturePhotoBtn) capturePhotoBtn.style.display = 'none';
+                            if (currentUser) {
+                                localStorage.setItem(`avatar_${currentUser}`, imageDataUrl);
+                                userAvatar.src = imageDataUrl;
+                            }
+                        }
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+
+            if (googleLoginBtn) googleLoginBtn.addEventListener('click', () => {
+                alert('Em breve: Login com Google!');
+            });
+
+            if (authForm) authForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = new FormData(authForm);
+                const url = authMode === 'login' ? 'api.php?action=login' : 'api.php?action=register';
+
+                if (authMode === 'register' && profileImageInput.files[0]) {
+                    formData.append('avatar', profileImageInput.files[0]);
+                }
+
+                fetch(url, { method: 'POST', body: formData })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) {
+                            currentUser = res.username;
+
+                            if (authMode === 'register' && profileImage.src !== 'https://www.gravatar.com/avatar/?d=mp') {
+                                localStorage.setItem(`avatar_${currentUser}`, profileImage.src);
+                            }
+
+                            alert(res.message);
+                            window.location.reload();
+                        } else {
+                            alert(res.message || 'Erro no login/registro');
+                        }
+                    }).catch(err => console.error(err));
+            });
+
+            fetchCurrentUser();
+        }
+
+
+        function getReportIdFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        function formatBrazilianDate(dateString) {
+            if (!dateString) return 'Data não disponível';
+            try {
+                const date = new Date(dateString.replace(' ', 'T'));
+                if (isNaN(date.getTime())) {
+                    return dateString;
+                }
+                return date.toLocaleDateString('pt-BR') + ', ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            } catch {
+                return dateString;
+            }
+        }
+
+        function renderDetails(problem) {
+
+            const statusTag = `<span class="tag tag-status-${problem.status.replace(/\s/g, '-') || 'outros'}">${problem.status}</span>`;
+            const priorityTag = `<span class="tag tag-prioridade-${problem.prioridade || 'Baixa'}">${problem.prioridade || 'Baixa'}</span>`;
+
+            const actualComments = problem.comentarios || [];
+
+            const commentsHtml = actualComments.map(comment => {
+                const isCurrentUser = currentUser && comment.author === currentUser;
+                const authorDisplay = isCurrentUser ? `${comment.author} (você)` : comment.author;
+
+                return `
+                        <li class="comment-item">
+                            <div class="comment-meta">
+                                <span class="comment-author"><i class="fas fa-user"></i> ${authorDisplay}</span>
+                                <span class="comment-date"><i class="fas fa-clock"></i> ${formatBrazilianDate(comment.date)}</span>
+                            </div>
+                            <p class="comment-text">${comment.text}</p>
+                        </li>
+                    `;
+            }).join('');
+
+            const detailsHtml = `
+                <div class="report-details-container">
+                    <h1>
+                        ${problem.titulo || 'Problema sem Título'} 
+                        ${statusTag}
+                        ${priorityTag}
+                    </h1>
+
+                    <div class="report-actions">
+                        <button id="vote-btn" class="vote-button" data-report-id="${problem.id}">
+                            <i class="fas fa-thumbs-up"></i> Apoiar Causa
+                        </button>
+                        <span class="vote-count" id="vote-count">${problem.votos || 0} Apoios</span>
+                    </div>
+                    
+                    <div class="info-section description-box">
+                        <h3><i class="fas fa-info-circle"></i> Descrição Detalhada</h3>
+                        <p>${problem.descricao || 'Nenhuma descrição detalhada fornecida.'}</p>
+                    </div>
+
+                    <div class="info-section">
+                        <h3><i class="fas fa-map-marker-alt"></i> Localização</h3>
+                        <div class="info-item">
+                            <strong>Endereço:</strong> <span>${problem.endereco || 'Não especificado'}</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Coordenadas:</strong> <span>Lat: ${problem.latitude || 'N/A'}, Lng: ${problem.longitude || 'N/A'}</span>
+                        </div>
+                    </div>
+
+                    <div class="info-section">
+                        <h3><i class="fas fa-calendar-alt"></i> Datas e Tipo</h3>
+                        <div class="info-item">
+                            <strong>Tipo/Categoria:</strong> <span>${problem.tipo || 'Outros'}</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Data de Criação:</strong> <span>${formatBrazilianDate(problem.data_criacao)}</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Última Atualização:</strong> <span>${formatBrazilianDate(problem.data_atualizacao || problem.data_criacao)}</span>
+                        </div>
+                    </div>
+
+                    ${problem.imagem_url ? `
+                        <div class="info-section">
+                            <h3><i class="fas fa-image"></i> Evidência</h3>
+                            <a href="${problem.imagem_url}" target="_blank">Ver imagem em tela cheia</a>
+                            <img src="${problem.imagem_url}" alt="Imagem do problema reportado" class="evidence-image">
+                        </div>
+                    ` : ''}
+
+                    <div class="info-section">
+                        <h3><i class="fas fa-user-circle"></i> Detalhes do Reportante</h3>
+                        <div class="info-item">
+                            <strong>ID do Reportante:</strong> <span>${problem.user_id || 'Anônimo'}</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="comments-section">
+                    <h3><i class="fas fa-comment"></i> Comentários (<span id="comment-count-display">${actualComments.length}</span>)</h3>
+                    
+                    ${currentUser ? `
+                    <form id="comment-form" class="comment-form">
+                        <h4>Comentar como: ${currentUser}</h4>
+                        <textarea id="comment-text" placeholder="Escreva seu comentário aqui..." required></textarea>
+                        <button type="submit"><i class="fas fa-paper-plane"></i> Enviar Comentário</button>
+                    </form>
+                    ` : '<p class="info-section">Faça login para deixar um comentário.</p>'}
+
+
+                    <ul class="comment-list" id="comment-list">
+                        ${commentsHtml}
+                    </ul>
+                </div>
+            `;
+            detailsView.innerHTML = detailsHtml;
+
+            setupInteractions(problem);
+        }
+
+
+        function setupInteractions(problem) {
+            const reportId = problem.id;
+            const voteButton = document.getElementById('vote-btn');
+            const voteCountElement = document.getElementById('vote-count');
+            const commentForm = document.getElementById('comment-form');
+            const commentInput = document.getElementById('comment-text');
+            const commentList = document.getElementById('comment-list');
+            const commentCountDisplay = document.getElementById('comment-count-display');
+
+            let hasVotedInSession = sessionStorage.getItem(`voted-session-${reportId}`) === 'true';
+
+            if (hasVotedInSession) {
+                voteButton.innerHTML = '<i class="fas fa-check"></i> Apoiado!';
+                voteButton.disabled = true;
+            }
+
+
+            if (voteButton) {
+                voteButton.addEventListener('click', () => {
+                    if (hasVotedInSession || voteButton.disabled) return;
+
+
+                    if (!currentUser) {
+                        alert('Você precisa estar logado para apoiar uma causa!');
+
+                        return;
+                    }
+
+                    voteButton.disabled = true;
+                    voteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Votando...';
+
+                    const voteData = new URLSearchParams();
+                    voteData.append('user_name', currentUser);
+
+                    fetch(`api.php?action=add_vote&id=${reportId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: voteData
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.text().then(text => { throw new Error(text); });
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data && data.success) {
+                                let newVotes = data.new_votes;
+                                voteCountElement.textContent = `${newVotes} Apoios`;
+                                voteButton.innerHTML = '<i class="fas fa-check"></i> Apoiado!';
+                                sessionStorage.setItem(`voted-session-${reportId}`, 'true');
+                                hasVotedInSession = true;
+                            } else {
+
+                                if (data.already_voted) {
+                                    voteButton.innerHTML = '<i class="fas fa-check"></i> Apoiado!';
+                                    sessionStorage.setItem(`voted-session-${reportId}`, 'true');
+                                    hasVotedInSession = true;
+                                    voteCountElement.textContent = `${data.new_votes} Apoios`;
+                                    alert(data.message);
+                                } else {
+                                    alert('Erro ao registrar o apoio: ' + (data.message || 'Resposta inválida do servidor.'));
+                                    voteButton.disabled = false;
+                                    voteButton.innerHTML = '<i class="fas fa-thumbs-up"></i> Apoiar Causa';
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro de voto:', error);
+                            alert('Erro de conexão ou servidor ao votar. Detalhes: ' + error.message);
+                            voteButton.disabled = false;
+                            voteButton.innerHTML = '<i class="fas fa-thumbs-up"></i> Apoiar Causa';
+                        });
+                });
+            }
+
+
+            if (commentForm && commentList) {
+                commentForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const commentText = commentInput.value.trim();
+
+                    if (commentText.length < 5) {
+                        alert('O comentário deve ter pelo menos 5 caracteres.');
+                        return;
+                    }
+
+
+                    if (!currentUser) {
+                        alert('Sua sessão expirou. Faça login novamente para comentar.');
+                        return;
+                    }
+
+                    const originalButtonHtml = commentForm.querySelector('button').innerHTML;
+                    commentForm.querySelector('button').disabled = true;
+                    commentForm.querySelector('button').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+                    const commentData = new URLSearchParams();
+                    commentData.append('id', reportId);
+                    commentData.append('report_id', reportId);
+                    commentData.append('relatorio_id', reportId);
+                    commentData.append('comment_text', commentText);
+                    commentData.append('user_name', currentUser);
+
+                    fetch(`api.php?action=add_comment&id=${reportId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: commentData
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.text().then(text => { throw new Error(text); });
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data && data.success) {
+                                const now = new Date();
+                                const newCommentHtml = `
+                                <li class="comment-item">
+                                    <div class="comment-meta">
+                                        <span class="comment-author"><i class="fas fa-user"></i> ${currentUser} (você)</span>
+                                        <span class="comment-date"><i class="fas fa-clock"></i> ${formatBrazilianDate(now.toISOString())}</span>
+                                    </div>
+                                    <p class="commenttext">${commentText}</p>
+                                </li>
+                            `;
+                                commentList.insertAdjacentHTML('afterbegin', newCommentHtml);
+                                commentInput.value = '';
+
+                                let currentCount = parseInt(commentCountDisplay.textContent);
+                                commentCountDisplay.textContent = currentCount + 1;
+
+                                alert('Comentário enviado com sucesso!');
+                            } else {
+                                alert('Erro ao enviar comentário: ' + (data.message || 'Resposta inválida do servidor.'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro de comentário:', error);
+                            alert('Erro de conexão ao enviar comentário. Detalhes: ' + error.message);
+                        })
+                        .finally(() => {
+                            commentForm.querySelector('button').disabled = false;
+                            commentForm.querySelector('button').innerHTML = originalButtonHtml;
+                        });
+                });
+            }
+        }
+
+
+        function fetchReportDetails(id) {
+            if (!id || id === '0') {
+                detailsView.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> ID do relatório inválido ou não fornecido na URL.</div>`;
+                return;
+            }
+
+
+            fetch(`api.php?action=get_report_details&id=${id}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { throw new Error(text); });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.success === false) {
+                        detailsView.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Erro ao carregar: ${data.message}</div>`;
+                    } else if (data && data.id) {
+
+                        renderDetails(data);
+                    } else {
+                        detailsView.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Relatório não encontrado ou resposta da API inválida.</div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro de rede ou formato de dados:', error);
+                    detailsView.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Erro fatal de conexão: ${error.message}</div>`;
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initAuth();
+        });
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,14 @@
+<input type="text" id="search" placeholder="Digite um endereço">
+<button onclick="buscar()">Buscar</button>
+<div id="map"></div>
+<script>
+  function buscar() {
+    const query = document.getElementById("search").value;
+    fetch(`https://api.positionstack.com/v1/forward?access_key=5f2a8701112dc136ce5c46ff89d1bd18&query=${encodeURIComponent(query)}`)
+      .then(res => res.json())
+      .then(data => {
+         const {latitude, longitude} = data.data[0];
+         // Atualizar mapa com marcador usando Leaflet ou Mapbox
+      });
+  }
+</script>
