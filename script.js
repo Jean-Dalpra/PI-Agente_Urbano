@@ -370,6 +370,39 @@ const filterCity = document.getElementById('filter-city');
 const filterSort = document.getElementById('filter-sort');
 
 
+function initSidebarMenu() {
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar-panel');
+    const overlay = document.getElementById('sidebar-overlay');
+    const closeBtn = document.getElementById('sidebar-close');
+
+    if (!menuToggle || !sidebar || !overlay) return;
+
+    const openSidebar = () => {
+        sidebar.classList.add('open');
+        overlay.classList.add('show');
+        document.body.classList.add('no-scroll');
+    };
+
+    const closeSidebar = () => {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+        document.body.classList.remove('no-scroll');
+    };
+
+    menuToggle.addEventListener('click', openSidebar);
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+    overlay.addEventListener('click', closeSidebar);
+
+    sidebar.querySelectorAll('.sidebar-link, .sidebar-action').forEach(el => {
+        el.addEventListener('click', closeSidebar);
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeSidebar();
+    });
+}
+
 
 const problemColors = {
     'iluminacao': '#FFC107',
@@ -1315,6 +1348,7 @@ function initAutocomplete() {
 
 
 window.addEventListener('DOMContentLoaded', function () {
+    initSidebarMenu();
     initMap();
 
 

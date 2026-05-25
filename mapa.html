@@ -25,8 +25,62 @@
     <link rel="shortcut icon" href="./imagens/urbanoide.png" type="image/x-icon">
 
     <style>
+        :root {
+            --map-main-bg-color: #E1F2E1;
+            --map-surface: #ffffff;
+            --map-surface-soft: #f8f9fa;
+            --map-text: #343a40;
+            --map-text-muted: #6c757d;
+            --map-primary: #007bff;
+            --map-success: #28a745;
+            --map-border: #dee2e6;
+            --map-overlay: rgba(0, 0, 0, 0.5);
+            --map-shadow: rgba(0, 0, 0, 0.15);
+        }
+
         * {
             font-family: 'Poppins', sans-serif;
+        }
+
+        body.map-page {
+            background-color: var(--map-main-bg-color);
+            color: var(--map-text);
+        }
+
+        .theme-toggle {
+            width: 100%;
+            min-height: 46px;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            background: #f8fafc;
+            color: var(--map-text);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: left;
+            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            background: #e9efff;
+            border-color: var(--map-primary);
+            transform: translateX(-2px);
+        }
+
+        .theme-toggle i {
+            width: 18px;
+            color: var(--map-primary);
+            text-align: center;
+        }
+
+        .theme-toggle .theme-state {
+            margin-left: auto;
+            color: var(--map-text-muted);
+            font-size: 0.85rem;
+            font-weight: 700;
         }
 
 
@@ -69,15 +123,15 @@
             position: absolute;
             bottom: 82px;
             right: 1.5rem;
-            background: #fff;
-            border: 1px solid #ddd;
+            background: var(--map-surface);
+            border: 1px solid var(--map-border);
             border-radius: 8px;
             padding: 6px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 12px var(--map-shadow);
             z-index: 10001;
             text-align: left;
             font-size: 15px;
-            color: #333;
+            color: var(--map-text);
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 10px;
             width: clamp(240px, 32vw, 380px);
@@ -117,7 +171,7 @@
         }
 
         .legend-categories-tooltip .category-row:hover {
-            background-color: #f0f0f0;
+            background-color: rgba(0, 123, 255, 0.08);
         }
 
         .legend-categories-tooltip .category-row:last-child {
@@ -216,10 +270,282 @@
             filter: none !important;
             mix-blend-mode: normal !important;
         }
+
+        /* Tema escuro do mapa: mesmas cores base usadas em index.html */
+        body.dark-mode {
+            --map-main-bg-color: #0b1220;
+            --map-surface: #111827;
+            --map-surface-soft: #0f172a;
+            --map-text: #e5e7eb;
+            --map-text-muted: #9ca3af;
+            --map-primary: #0ea5e9;
+            --map-success: #22c55e;
+            --map-border: #1f2937;
+            --map-overlay: rgba(0, 0, 0, 0.68);
+            --map-shadow: rgba(0, 0, 0, 0.55);
+            --primary-color: #0ea5e9;
+            --secondary-color: #9ca3af;
+            --success-color: #22c55e;
+            --dark-text: #e5e7eb;
+            --border-color: #1f2937;
+            --info-color: #0ea5e9;
+            --light-bg: #0b1220;
+        }
+
+        body.dark-mode.map-page {
+            background-color: var(--map-main-bg-color);
+            color: var(--map-text);
+        }
+
+        body.dark-mode #map {
+            background: #0b1220;
+        }
+
+        body.dark-mode #legend-container,
+        body.dark-mode #map-mode-selector,
+        body.dark-mode .legend-categories-tooltip,
+        body.dark-mode .leaflet-control-layers,
+        body.dark-mode .leaflet-bar a,
+        body.dark-mode .leaflet-control-zoom-in,
+        body.dark-mode .leaflet-control-zoom-out {
+            background: var(--map-surface) !important;
+            border-color: var(--map-border) !important;
+            color: var(--map-text) !important;
+            box-shadow: 0 8px 24px var(--map-shadow) !important;
+        }
+
+        body.dark-mode #legend-container h4,
+        body.dark-mode .modal-content h2,
+        body.dark-mode #ui-message-title,
+        body.dark-mode .sidebar-header h3 {
+            color: var(--map-text) !important;
+            border-color: var(--map-border) !important;
+        }
+
+        body.dark-mode .legend-categories-tooltip .category-row:hover {
+            background: rgba(14, 165, 233, 0.12);
+        }
+
+        body.dark-mode .map-mode-btn {
+            background: var(--map-surface);
+            color: var(--map-text);
+            border-color: var(--map-border);
+        }
+
+        body.dark-mode .map-mode-btn:first-child {
+            border-right-color: var(--map-border);
+        }
+
+        body.dark-mode .map-mode-btn:hover:not(.active-mode) {
+            background: rgba(14, 165, 233, 0.12);
+            color: var(--map-primary);
+        }
+
+        body.dark-mode .map-mode-btn.active-mode {
+            background: var(--map-primary);
+            color: #0b1220;
+        }
+
+        body.dark-mode #photon-search {
+            background: var(--map-surface);
+            border-color: var(--map-border);
+            color: var(--primary-color);
+            box-shadow: 0 8px 22px var(--map-shadow);
+        }
+
+        body.dark-mode #photon-search::placeholder {
+            color: var(--map-text-muted);
+        }
+
+        body.dark-mode #photon-results,
+        body.dark-mode .pac-container {
+            background: linear-gradient(135deg, #111827 0%, #0f172a 100%) !important;
+            border-color: var(--map-border) !important;
+            box-shadow: 0 12px 28px var(--map-shadow) !important;
+            color: var(--map-text) !important;
+        }
+
+        body.dark-mode #photon-results li,
+        body.dark-mode .pac-item {
+            color: var(--map-text) !important;
+            border-bottom-color: var(--map-border) !important;
+        }
+
+        body.dark-mode #photon-results li:hover,
+        body.dark-mode .pac-item:hover {
+            background: rgba(14, 165, 233, 0.12) !important;
+            color: var(--map-primary) !important;
+        }
+
+        body.dark-mode .pac-item-query,
+        body.dark-mode .pac-matched {
+            color: var(--map-text) !important;
+        }
+
+        body.dark-mode .modal {
+            background-color: var(--map-overlay);
+        }
+
+        body.dark-mode .modal-content,
+        body.dark-mode .profile-modal {
+            background: var(--map-surface);
+            border: 1px solid var(--map-border);
+            color: var(--map-text);
+            box-shadow: 0 18px 45px var(--map-shadow);
+        }
+
+        body.dark-mode .modal-content label,
+        body.dark-mode .profile-form label,
+        body.dark-mode #ui-message-body,
+        body.dark-mode #ui-message-body p {
+            color: #cbd5e1 !important;
+        }
+
+        body.dark-mode .modal-content input[type="text"],
+        body.dark-mode .modal-content input[type="password"],
+        body.dark-mode .modal-content input[type="url"],
+        body.dark-mode .modal-content textarea,
+        body.dark-mode .modal-content select,
+        body.dark-mode .profile-form input,
+        body.dark-mode #file-name-display {
+            background: #0f172a;
+            border-color: var(--map-border);
+            color: var(--map-text);
+        }
+
+        body.dark-mode .modal-content input::placeholder,
+        body.dark-mode .modal-content textarea::placeholder {
+            color: var(--map-text-muted);
+        }
+
+        body.dark-mode .close-btn,
+        body.dark-mode .auth-close-btn {
+            color: var(--map-text-muted);
+        }
+
+        body.dark-mode .close-btn:hover,
+        body.dark-mode .auth-close-btn:hover,
+        body.dark-mode .close-btn:focus,
+        body.dark-mode .auth-close-btn:focus {
+            color: var(--map-text);
+        }
+
+        body.dark-mode .sidebar {
+            background: var(--map-surface-soft);
+            color: var(--map-text);
+            box-shadow: -10px 0 30px var(--map-shadow);
+        }
+
+        body.dark-mode .sidebar-header {
+            background: var(--map-surface);
+            border-bottom-color: var(--map-border);
+        }
+
+        body.dark-mode .sidebar-content,
+        body.dark-mode .filter-section label {
+            color: var(--map-text);
+        }
+
+        body.dark-mode .filter-section .form-control {
+            background-color: var(--map-surface);
+            border-color: var(--map-border);
+            color: var(--map-text);
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='%239ca3af' d='M10 12l-6-6 1.41-1.41L10 9.17l4.59-4.58L16 6z'/%3e%3c/svg%3e");
+        }
+
+        body.dark-mode .secondary-btn,
+        body.dark-mode .submit-btn {
+            background-color: var(--map-primary);
+            color: #0b1220;
+        }
+
+        body.dark-mode .cancel-btn {
+            background-color: #374151;
+            color: var(--map-text);
+        }
+
+        body.dark-mode .leaflet-popup-content-wrapper,
+        body.dark-mode .leaflet-popup-tip {
+            background: var(--map-surface);
+            color: var(--map-text);
+            box-shadow: 0 10px 28px var(--map-shadow);
+        }
+
+        body.dark-mode .leaflet-popup-content,
+        body.dark-mode .info-window,
+        body.dark-mode .info-window h4,
+        body.dark-mode .info-window strong {
+            color: var(--map-text);
+            border-color: var(--map-border);
+        }
+
+        body.dark-mode .leaflet-container a {
+            color: var(--map-primary);
+        }
+
+        body.dark-mode #streetview-pano {
+            background: #0f172a !important;
+        }
+
+        body.dark-mode .theme-toggle {
+            background: #111827;
+            border-color: #1f2937;
+            color: #e5e7eb;
+        }
+
+        body.dark-mode .theme-toggle:hover {
+            background: rgba(14, 165, 233, 0.12);
+            border-color: #0ea5e9;
+        }
+
+        body.dark-mode .theme-toggle .theme-state {
+            color: #9ca3af;
+        }
+
+        body.dark-mode::-webkit-scrollbar,
+        html.dark-mode::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        body.dark-mode::-webkit-scrollbar-track,
+        html.dark-mode::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        body.dark-mode::-webkit-scrollbar-thumb,
+        html.dark-mode::-webkit-scrollbar-thumb {
+            background-color: var(--map-primary);
+            border-radius: 10px;
+            border: 2px solid #0b1220;
+        }
+
+        body.dark-mode::-webkit-scrollbar-thumb:hover,
+        html.dark-mode::-webkit-scrollbar-thumb:hover {
+            background-color: #38bdf8;
+        }
+
+        body.dark-mode * {
+            scrollbar-color: var(--map-primary) #0f172a;
+        }
     </style>
+    <script>
+        (function applyInitialTheme() {
+            const savedTheme = localStorage.getItem('agenteurbano_theme');
+            const legacyTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || legacyTheme;
+            const useDark = theme ? theme === 'dark' : prefersDark;
+
+            document.documentElement.classList.toggle('dark-mode', useDark);
+        })();
+    </script>
 </head>
 
 <body class="map-page">
+    <script>
+        document.body.classList.toggle('dark-mode', document.documentElement.classList.contains('dark-mode'));
+    </script>
 
     <div vw class="enabled">
         <div vw-access-button class="active"></div>
@@ -248,12 +574,54 @@
         </nav>
         <div class="user-actions">
             <a href="mapa.html" id="novo-relatorio-btn" class="new-report-btn">+ Novo Problema</a>
-            <div id="profile-btn" class="profile-button">
-                <img id="user-avatar" src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
-                <span id="user-name-text" class="user-name">Entrar</span>
-            </div>
+            <button id="menu-toggle" class="hamburger-btn" aria-label="Abrir menu lateral">
+                <span class="hamburger-icon" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            </button>
         </div>
     </div>
+
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    <aside id="sidebar-panel" class="sidebar-panel" aria-label="Menu lateral">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <img src="imagens/urbanoide.png" alt="Logotipo">
+                <span>Agente Urbano</span>
+            </div>
+            <button id="sidebar-close" class="sidebar-close" aria-label="Fechar menu">&times;</button>
+        </div>
+
+        <a href="usuario.html" class="profile-button">
+            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
+            <div>
+                <div class="user-name">Minha página</div>
+                <div class="profile-subtext">Acessar opções e reports</div>
+            </div>
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section-title">Navegação</div>
+        <div class="sidebar-links">
+            <a href="dashboard.php" class="sidebar-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="mapa.html" class="sidebar-link"><i class="fas fa-map"></i> Mapa</a>
+            <a href="relatorios.html" class="sidebar-link"><i class="fas fa-list-alt"></i> Relatórios</a>
+            <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i> Configurações</a>
+        </div>
+
+        <div class="sidebar-section-title">Ações rápidas</div>
+        <div class="sidebar-links">
+            <a href="mapa.html" class="sidebar-action primary"><i class="fas fa-flag"></i> Novo problema</a>
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Alternar modo escuro">
+                <i class="fas fa-moon" aria-hidden="true"></i>
+                <span>Tema</span>
+                <span id="theme-state" class="theme-state">Claro</span>
+            </button>
+        </div>
+    </aside>
 
     <!-- Contêiner de busca: campo de pesquisa e área de resultados.
             - `#photon-search`: input usado pelo Google Places Autocomplete (quando presente).
@@ -735,7 +1103,82 @@
         })();
     </script>
 
+    <script>
+        const THEME_STORAGE_KEY = 'agenteurbano_theme';
+
+        function updateThemeToggleIcon(isDark) {
+            const icon = document.querySelector('#theme-toggle i');
+            const state = document.getElementById('theme-state');
+
+            if (icon) {
+                icon.classList.remove('fa-moon', 'fa-sun');
+                icon.classList.add(isDark ? 'fa-sun' : 'fa-moon');
+            }
+
+            if (state) {
+                state.textContent = isDark ? 'Escuro' : 'Claro';
+            }
+        }
+
+        function applyStoredTheme() {
+            const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+            const legacyTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || legacyTheme;
+            const useDark = theme ? theme === 'dark' : prefersDark;
+
+            document.body.classList.toggle('dark-mode', useDark);
+            document.documentElement.classList.toggle('dark-mode', useDark);
+            updateThemeToggleIcon(useDark);
+        }
+
+        function initThemeToggle() {
+            const toggleBtn = document.getElementById('theme-toggle');
+            applyStoredTheme();
+            if (!toggleBtn) return;
+
+            toggleBtn.addEventListener('click', () => {
+                const isDark = document.body.classList.toggle('dark-mode');
+                document.documentElement.classList.toggle('dark-mode', isDark);
+                localStorage.setItem(THEME_STORAGE_KEY, isDark ? 'dark' : 'light');
+                updateThemeToggleIcon(isDark);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initThemeToggle);
+    </script>
+
     <script src="script.js"></script>
+    <script>
+        (function initSidebarFallback() {
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.getElementById('sidebar-panel');
+            const overlay = document.getElementById('sidebar-overlay');
+            const closeBtn = document.getElementById('sidebar-close');
+
+            if (!menuToggle || !sidebar || !overlay || menuToggle.dataset.sidebarFallback === 'ready') return;
+            menuToggle.dataset.sidebarFallback = 'ready';
+
+            const openSidebar = () => {
+                sidebar.classList.add('open');
+                overlay.classList.add('show');
+                document.body.classList.add('no-scroll');
+            };
+
+            const closeSidebar = () => {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('show');
+                document.body.classList.remove('no-scroll');
+            };
+
+            menuToggle.addEventListener('click', openSidebar);
+            if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+            overlay.addEventListener('click', closeSidebar);
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeSidebar();
+            });
+        })();
+    </script>
 </body>
 
 </html>

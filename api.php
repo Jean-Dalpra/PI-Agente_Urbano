@@ -193,6 +193,49 @@ function loginUserHandler() {
     echo json_encode(['success' => true, 'message' => 'Login bem-sucedido.', 'username' => $username]);
 }
 
+function changePasswordHandler() {
+    $username = getCurrentUser();
+    if (!$username) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Você precisa estar logado para alterar a senha.']);
+        return;
+    }
+
+    $currentPassword = $_POST['current_password'] ?? '';
+    $newPassword = $_POST['new_password'] ?? '';
+
+    if ($currentPassword === '' || $newPassword === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Preencha a senha atual e a nova senha.']);
+        return;
+    }
+
+    if (strlen($newPassword) < 6) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'A nova senha deve ter pelo menos 6 caracteres.']);
+        return;
+    }
+
+    if ($currentPassword === $newPassword) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'A nova senha deve ser diferente da senha atual.']);
+        return;
+    }
+
+    $users = loadUsers();
+    if (!isset($users[$username]) || !password_verify($currentPassword, $users[$username]['password'])) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Senha atual incorreta.']);
+        return;
+    }
+
+    $users[$username]['password'] = password_hash($newPassword, PASSWORD_DEFAULT);
+    $users[$username]['password_updated_at'] = date('c');
+    saveUsers($users);
+
+    echo json_encode(['success' => true, 'message' => 'Senha alterada com sucesso.']);
+}
+
 function logoutUserHandler() {
 
     session_unset();
@@ -733,6 +776,10 @@ if (basename(__FILE__) === basename($_SERVER['PHP_SELF'])) {
             break;
         case 'login':
             if ($_SERVER['REQUEST_METHOD'] === 'POST') loginUserHandler();
+            else { http_response_code(405); echo json_encode(['success' => false, 'message' => 'Use POST']); }
+            break;
+        case 'change_password':
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') changePasswordHandler();
             else { http_response_code(405); echo json_encode(['success' => false, 'message' => 'Use POST']); }
             break;
         case 'logout':

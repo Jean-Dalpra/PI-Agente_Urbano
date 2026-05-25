@@ -34,9 +34,20 @@ $in_progress_count = $data['em_andamento'] ?? 0;
     <title>Dashboard - Agente Urbano</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <link rel="shortcut icon" href="https://images.vexels.com/media/users/3/136189/isolated/preview/8aff3574eabda894d8f7484bf8e81a6e-icone-de-casa-azul.png" type="image/x-icon">
+    <link rel="shortcut icon" href="./imagens/urbanoide.png" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        (function applyInitialTheme() {
+            const savedTheme = localStorage.getItem('agenteurbano_theme');
+            const legacyTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || legacyTheme;
+            const useDark = theme ? theme === 'dark' : prefersDark;
+
+            document.documentElement.classList.toggle('dark-mode', useDark);
+        })();
+    </script>
     <div vw class="enabled">
         <div vw-access-button class="active"></div>
         <div vw-plugin-wrapper>
@@ -49,6 +60,9 @@ $in_progress_count = $data['em_andamento'] ?? 0;
     </script>
 </head>
 <body class="dashboard-page">
+    <script>
+        document.body.classList.toggle('dark-mode', document.documentElement.classList.contains('dark-mode'));
+    </script>
         <div class="header-nav">
             <div class="logo">
                 <a href="index.html">
@@ -63,15 +77,51 @@ $in_progress_count = $data['em_andamento'] ?? 0;
         </nav>
         <div class="user-actions">
             <a href="mapa.html" class="new-report-btn">+ Novo Problema</a>
-            <a href="#" id="profile-btn" class="profile-button">
-                <img id="user-avatar" src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
-                <span id="user-name-text" class="user-name">Entrar</span>
-            </a>
+            <button id="menu-toggle" class="hamburger-btn" aria-label="Abrir menu lateral">
+                <span class="hamburger-icon" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            </button>
         </div>
     </div>
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    <aside id="sidebar-panel" class="sidebar-panel" aria-label="Menu lateral">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <img src="imagens/urbanoide.png" alt="Logotipo">
+                <span>Agente Urbano</span>
+            </div>
+            <button id="sidebar-close" class="sidebar-close" aria-label="Fechar menu">&times;</button>
+        </div>
+
+        <a href="usuario.html" class="profile-button">
+            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
+            <div>
+                <div class="user-name">Minha página</div>
+                <div class="profile-subtext">Acessar opções e reports</div>
+            </div>
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section-title">Navegação</div>
+        <div class="sidebar-links">
+            <a href="dashboard.php" class="sidebar-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="mapa.html" class="sidebar-link"><i class="fas fa-map"></i> Mapa</a>
+            <a href="relatorios.html" class="sidebar-link"><i class="fas fa-list-alt"></i> Relatórios</a>
+            <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i> Configurações</a>
+        </div>
+
+        <div class="sidebar-section-title">Ações rápidas</div>
+        <div class="sidebar-links">
+            <a href="mapa.html" class="sidebar-action primary"><i class="fas fa-flag"></i> Novo problema</a>
+        </div>
+    </aside>
     <main class="dashboard-content">
         <section class="page-header">
-            <h2 style="font-size: 3vw; margin-bottom: 0.5rem;">Dashboard</h2>
+            <h2 style="font-size: 4vw; margin-bottom: 0.5rem;">Dashboard</h2>
             <p class="subtitle">Visão geral dos problemas reportados na cidade</p>
         </section>
         <section class="status-cards">
@@ -213,6 +263,33 @@ $in_progress_count = $data['em_andamento'] ?? 0;
         </div>
     </div>
     <script>
+        const THEME_STORAGE_KEY = 'agenteurbano_theme';
+
+        function isDarkThemeActive() {
+            const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+            const legacyTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || legacyTheme;
+            return theme ? theme === 'dark' : prefersDark;
+        }
+
+        function applyStoredTheme() {
+            const useDark = isDarkThemeActive();
+            document.body.classList.toggle('dark-mode', useDark);
+            document.documentElement.classList.toggle('dark-mode', useDark);
+            return useDark;
+        }
+
+        const dashboardDarkMode = applyStoredTheme();
+        const chartTextColor = dashboardDarkMode ? '#e5e7eb' : '#343a40';
+        const chartMutedColor = dashboardDarkMode ? '#9ca3af' : '#6c757d';
+        const chartGridColor = dashboardDarkMode ? 'rgba(148, 163, 184, 0.18)' : 'rgba(0, 0, 0, 0.1)';
+
+        if (window.Chart) {
+            Chart.defaults.color = chartTextColor;
+            Chart.defaults.borderColor = chartGridColor;
+        }
+
         const labelsPie = <?= $chart_labels ?>;
         const dataValuesPie = <?= $chart_data ?>;
         const backgroundColorsPie = <?= $chart_colors_json ?>;
@@ -234,7 +311,10 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                     maintainAspectRatio: false, 
                     plugins: {
                         legend: {
-                            position: 'right', 
+                            position: 'right',
+                            labels: {
+                                color: chartTextColor
+                            }
                         },
                         tooltip: {
                             callbacks: {
@@ -301,14 +381,28 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                     scales: {
                         y: {
                             beginAtZero: true,
+                            ticks: {
+                                color: chartTextColor
+                            },
+                            grid: {
+                                color: chartGridColor
+                            },
                             title: {
                                 display: true,
+                                color: chartMutedColor,
                                 text: 'Nº de Relatórios'
                             }
                         },
                         x: {
+                            ticks: {
+                                color: chartTextColor
+                            },
+                            grid: {
+                                color: chartGridColor
+                            },
                             title: {
                                 display: true,
+                                color: chartMutedColor,
                                 text: 'Data'
                             },
                             type: 'category', 
@@ -335,6 +429,39 @@ $in_progress_count = $data['em_andamento'] ?? 0;
         const capturePhotoBtn = document.getElementById('capture-photo-btn');
         let mediaStream = null;
         let authMode = 'login'; 
+
+        function initSidebarMenu() {
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.getElementById('sidebar-panel');
+            const overlay = document.getElementById('sidebar-overlay');
+            const closeBtn = document.getElementById('sidebar-close');
+
+            if (!menuToggle || !sidebar || !overlay) return;
+
+            const openSidebar = () => {
+                sidebar.classList.add('open');
+                overlay.classList.add('show');
+                document.body.classList.add('no-scroll');
+            };
+
+            const closeSidebar = () => {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('show');
+                document.body.classList.remove('no-scroll');
+            };
+
+            menuToggle.addEventListener('click', openSidebar);
+            if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+            overlay.addEventListener('click', closeSidebar);
+
+            sidebar.querySelectorAll('.sidebar-link, .sidebar-action').forEach(el => {
+                el.addEventListener('click', closeSidebar);
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeSidebar();
+            });
+        }
 
         function updateAuthUI() {
             if (!profileBtn || !userNameText || !userAvatar) return;
@@ -550,10 +677,141 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                 }).catch(err => console.error(err));
         });
 
+        initSidebarMenu();
         fetchCurrentUser();
     </script>
     
     <style>
+        body.dark-mode.dashboard-page {
+            --primary-color: #0ea5e9;
+            --secondary-color: #9ca3af;
+            --success-color: #22c55e;
+            --dark-text: #e5e7eb;
+            --border-color: #1f2937;
+            --info-color: #0ea5e9;
+            --light-bg: #0b1220;
+            background-color: #0b1220;
+            color: #e5e7eb;
+        }
+
+        body.dark-mode.dashboard-page .dashboard-content {
+            background:
+                radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.08) 1px, transparent 1px),
+                radial-gradient(circle at 90% 80%, rgba(34, 197, 94, 0.06) 1px, transparent 1px),
+                #0b1220;
+            background-size: 40px 40px;
+            min-height: calc(100vh - 12vh);
+        }
+
+        body.dark-mode.dashboard-page .page-header h2,
+        body.dark-mode.dashboard-page .grid-item h3,
+        body.dark-mode.dashboard-page .chart-summary-card h4,
+        body.dark-mode.dashboard-page .bar-item .category,
+        body.dark-mode.dashboard-page .bar-item .bar-value,
+        body.dark-mode.dashboard-page .card-main .value {
+            color: #e5e7eb !important;
+        }
+
+        body.dark-mode.dashboard-page .page-header .subtitle,
+        body.dark-mode.dashboard-page .card h3,
+        body.dark-mode.dashboard-page .card .detail,
+        body.dark-mode.dashboard-page .chart-summary-card p,
+        body.dark-mode.dashboard-page .chart-summary-card .card-note {
+            color: #9ca3af !important;
+        }
+
+        body.dark-mode.dashboard-page .card,
+        body.dark-mode.dashboard-page .grid-item,
+        body.dark-mode.dashboard-page .chart-summary-card {
+            background: #0f172a;
+            border: 1px solid #1f2937;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+        }
+
+        body.dark-mode.dashboard-page .grid-item h3 {
+            border-bottom-color: #1f2937;
+        }
+
+        body.dark-mode.dashboard-page .bar-container {
+            background-color: #111827;
+        }
+
+        body.dark-mode.dashboard-page .chart-summary-card .total-number,
+        body.dark-mode.dashboard-page .main-chart-area h3,
+        body.dark-mode.dashboard-page .grid-item h3 i.fa-chart-pie {
+            color: #0ea5e9 !important;
+        }
+
+        body.dark-mode.dashboard-page .modal {
+            background-color: rgba(0, 0, 0, 0.68);
+        }
+
+        body.dark-mode.dashboard-page .modal-content,
+        body.dark-mode.dashboard-page .profile-modal {
+            background: #0f172a;
+            border: 1px solid #1f2937;
+            color: #e5e7eb;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+        }
+
+        body.dark-mode.dashboard-page .modal-content h2,
+        body.dark-mode.dashboard-page .modal-content label {
+            color: #e5e7eb;
+            border-color: #1f2937;
+        }
+
+        body.dark-mode.dashboard-page .modal-content input[type="text"],
+        body.dark-mode.dashboard-page .modal-content input[type="password"] {
+            background: #111827;
+            border-color: #1f2937;
+            color: #e5e7eb;
+        }
+
+        body.dark-mode.dashboard-page .auth-close-btn {
+            color: #9ca3af;
+        }
+
+        body.dark-mode.dashboard-page .auth-close-btn:hover {
+            color: #e5e7eb;
+        }
+
+        html.dark-mode,
+        body.dark-mode.dashboard-page {
+            scrollbar-color: var(--primary-color) #0f172a;
+            scrollbar-width: thin;
+        }
+
+        html.dark-mode::-webkit-scrollbar,
+        body.dark-mode.dashboard-page::-webkit-scrollbar,
+        body.dark-mode.dashboard-page *::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        html.dark-mode::-webkit-scrollbar-track,
+        body.dark-mode.dashboard-page::-webkit-scrollbar-track,
+        body.dark-mode.dashboard-page *::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        html.dark-mode::-webkit-scrollbar-thumb,
+        body.dark-mode.dashboard-page::-webkit-scrollbar-thumb,
+        body.dark-mode.dashboard-page *::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 10px;
+            border: 2px solid #0b1220;
+        }
+
+        html.dark-mode::-webkit-scrollbar-thumb:hover,
+        body.dark-mode.dashboard-page::-webkit-scrollbar-thumb:hover,
+        body.dark-mode.dashboard-page *::-webkit-scrollbar-thumb:hover {
+            background-color: #38bdf8;
+        }
+
+        body.dark-mode.dashboard-page * {
+            scrollbar-color: var(--primary-color) #0f172a;
+        }
+
         .full-width-chart-layout {
             display: flex;
             flex-wrap: wrap; 

@@ -10,6 +10,17 @@
         href="./imagens/urbanoide.png"
         type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        (function applyInitialTheme() {
+            const savedTheme = localStorage.getItem('agenteurbano_theme');
+            const legacyTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || legacyTheme;
+            const useDark = theme ? theme === 'dark' : prefersDark;
+
+            document.documentElement.classList.toggle('dark-mode', useDark);
+        })();
+    </script>
     <style>
         
         .page-content {
@@ -493,6 +504,152 @@
             padding: 0;
             font-size: 1.1em;
         }
+
+        body.dark-mode.dashboard-page {
+            --primary-color: #0ea5e9;
+            --secondary-color: #9ca3af;
+            --success-color: #22c55e;
+            --dark-text: #e5e7eb;
+            --border-color: #1f2937;
+            --light-bg: #0b1220;
+            background-color: #0b1220 !important;
+            color: #e5e7eb;
+        }
+
+        body.dark-mode.dashboard-page .page-content {
+            min-height: calc(100vh - 12vh);
+            background:
+                radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.08) 1px, transparent 1px),
+                radial-gradient(circle at 90% 80%, rgba(34, 197, 94, 0.06) 1px, transparent 1px),
+                #0b1220;
+            background-size: 40px 40px;
+        }
+
+        body.dark-mode.dashboard-page .page-header h1,
+        body.dark-mode.dashboard-page .report-title,
+        body.dark-mode.dashboard-page .report-id,
+        body.dark-mode.dashboard-page .share-modal-header h3,
+        body.dark-mode.dashboard-page .filter-modal-header h3,
+        body.dark-mode.dashboard-page .filter-group label,
+        body.dark-mode.dashboard-page .modal-content h2,
+        body.dark-mode.dashboard-page .modal-content label {
+            color: #e5e7eb !important;
+        }
+
+        body.dark-mode.dashboard-page .page-header .subtitle,
+        body.dark-mode.dashboard-page #report-count-display,
+        body.dark-mode.dashboard-page .report-meta,
+        body.dark-mode.dashboard-page .report-list-container > p,
+        body.dark-mode.dashboard-page .share-modal-close,
+        body.dark-mode.dashboard-page .filter-modal-close,
+        body.dark-mode.dashboard-page .auth-close-btn {
+            color: #9ca3af !important;
+        }
+
+        body.dark-mode.dashboard-page .report-card,
+        body.dark-mode.dashboard-page .share-modal-content,
+        body.dark-mode.dashboard-page .filter-modal-content,
+        body.dark-mode.dashboard-page .modal-content,
+        body.dark-mode.dashboard-page .profile-modal {
+            background: #0f172a;
+            border-color: #1f2937;
+            color: #e5e7eb;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+        }
+
+        body.dark-mode.dashboard-page .report-card:hover {
+            box-shadow: 0 22px 48px rgba(0, 0, 0, 0.45);
+        }
+
+        body.dark-mode.dashboard-page .report-actions,
+        body.dark-mode.dashboard-page .share-modal-header,
+        body.dark-mode.dashboard-page .copy-link-section,
+        body.dark-mode.dashboard-page .filter-modal-header,
+        body.dark-mode.dashboard-page .filter-modal-actions,
+        body.dark-mode.dashboard-page .modal-content h2 {
+            border-color: #1f2937 !important;
+        }
+
+        body.dark-mode.dashboard-page #search-reports,
+        body.dark-mode.dashboard-page .copy-link-input input,
+        body.dark-mode.dashboard-page .filter-group select,
+        body.dark-mode.dashboard-page .filter-group input,
+        body.dark-mode.dashboard-page .modal-content input[type="text"],
+        body.dark-mode.dashboard-page .modal-content input[type="password"],
+        body.dark-mode.dashboard-page .modal-content input[type="url"],
+        body.dark-mode.dashboard-page .modal-content textarea,
+        body.dark-mode.dashboard-page .modal-content select {
+            background: #111827;
+            border-color: #1f2937;
+            color: #e5e7eb;
+        }
+
+        body.dark-mode.dashboard-page #search-reports::placeholder,
+        body.dark-mode.dashboard-page .copy-link-input input::placeholder,
+        body.dark-mode.dashboard-page .modal-content input::placeholder,
+        body.dark-mode.dashboard-page .modal-content textarea::placeholder {
+            color: #9ca3af;
+        }
+
+        body.dark-mode.dashboard-page .share-option,
+        body.dark-mode.dashboard-page .filter-tag {
+            background: #111827;
+            border-color: #1f2937;
+            color: #e5e7eb;
+        }
+
+        body.dark-mode.dashboard-page .share-option:hover {
+            background: rgba(14, 165, 233, 0.12);
+            border-color: #0ea5e9;
+        }
+
+        body.dark-mode.dashboard-page .cancel-filters-btn {
+            background-color: #374151;
+            color: #e5e7eb;
+        }
+
+        body.dark-mode.dashboard-page .cancel-filters-btn:hover {
+            background-color: #4b5563;
+        }
+
+        body.dark-mode.dashboard-page .share-modal,
+        body.dark-mode.dashboard-page .filter-modal,
+        body.dark-mode.dashboard-page .modal {
+            background-color: rgba(0, 0, 0, 0.68);
+        }
+
+        html.dark-mode,
+        body.dark-mode.dashboard-page {
+            scrollbar-color: var(--primary-color) #0f172a;
+            scrollbar-width: thin;
+        }
+
+        html.dark-mode::-webkit-scrollbar,
+        body.dark-mode.dashboard-page::-webkit-scrollbar,
+        body.dark-mode.dashboard-page *::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        html.dark-mode::-webkit-scrollbar-track,
+        body.dark-mode.dashboard-page::-webkit-scrollbar-track,
+        body.dark-mode.dashboard-page *::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        html.dark-mode::-webkit-scrollbar-thumb,
+        body.dark-mode.dashboard-page::-webkit-scrollbar-thumb,
+        body.dark-mode.dashboard-page *::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 10px;
+            border: 2px solid #0b1220;
+        }
+
+        html.dark-mode::-webkit-scrollbar-thumb:hover,
+        body.dark-mode.dashboard-page::-webkit-scrollbar-thumb:hover,
+        body.dark-mode.dashboard-page *::-webkit-scrollbar-thumb:hover {
+            background-color: #38bdf8;
+        }
     </style>
     <div vw class="enabled">
         <div vw-access-button class="active"></div>
@@ -507,6 +664,9 @@
 </head>
 
 <body class="dashboard-page" style="background-color: #E1F2E1;">
+    <script>
+        document.body.classList.toggle('dark-mode', document.documentElement.classList.contains('dark-mode'));
+    </script>
     <div class="header-nav">
         <div class="logo">
             <a href="index.html"><img src="imagens/urbanoide.png" alt="Urbanoide" class="logo-icon"> Agente Urbano</a>
@@ -519,12 +679,49 @@
 
         <div class="user-actions">
             <a href="mapa.html" id="novo-relatorio-btn" class="new-report-btn">+ Novo Problema</a>
-            <div id="profile-btn" class="profile-button">
-                <img id="user-avatar" src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
-                <span id="user-name-text" class="user-name">Entrar</span>
-            </div>
+            <button id="menu-toggle" class="hamburger-btn" aria-label="Abrir menu lateral">
+                <span class="hamburger-icon" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            </button>
         </div>
     </div>
+
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    <aside id="sidebar-panel" class="sidebar-panel" aria-label="Menu lateral">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <img src="imagens/urbanoide.png" alt="Logotipo">
+                <span>Agente Urbano</span>
+            </div>
+            <button id="sidebar-close" class="sidebar-close" aria-label="Fechar menu">&times;</button>
+        </div>
+
+        <a href="usuario.html" class="profile-button">
+            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
+            <div>
+                <div class="user-name">Minha página</div>
+                <div class="profile-subtext">Acessar opções e reports</div>
+            </div>
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section-title">Navegação</div>
+        <div class="sidebar-links">
+            <a href="dashboard.php" class="sidebar-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="mapa.html" class="sidebar-link"><i class="fas fa-map"></i> Mapa</a>
+            <a href="relatorios.html" class="sidebar-link"><i class="fas fa-list-alt"></i> Relatórios</a>
+            <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i> Configurações</a>
+        </div>
+
+        <div class="sidebar-section-title">Ações rápidas</div>
+        <div class="sidebar-links">
+            <a href="mapa.html" class="sidebar-action primary"><i class="fas fa-flag"></i> Novo problema</a>
+        </div>
+    </aside>
 
 
     <main class="page-content">
@@ -571,16 +768,16 @@
                     <label for="filter-category">Categoria</label>
                     <select id="filter-category">
                         <option value="">Todas as categorias</option>
-                        <option value="iluminacao">Iluminação</option>
+                        <option value="iluminação">Iluminação</option>
                         <option value="asfalto">Asfalto</option>
                         <option value="limpeza">Limpeza</option>
-                        <option value="agua-esgoto">Água/Esgoto</option>
+                        <option value="água-esgoto">Água/Esgoto</option>
                         <option value="transporte">Transporte</option>
                         <option value="assistencial">Assistencial</option>
-                        <option value="meteorologico">Meteorológico</option>
+                        <option value="meteorológico">Meteorológico</option>
                         <option value="mobilidade">Mobilidade</option>
-                        <option value="saude">Saúde</option>
-                        <option value="seguranca">Segurança</option>
+                        <option value="saúde">Saúde</option>
+                        <option value="segurança">Segurança</option>
                         <option value="acessibilidade">Acessibilidade</option>
                         <option value="eletricidade">Eletricidade</option>
                         <option value="meio-ambiente">Meio Ambiente</option>
@@ -588,7 +785,7 @@
                         <option value="drenagem">Drenagem</option>
                         <option value="obras">Obras</option>
                         <option value="ciclismo">Ciclismo</option>
-                        <option value="ma-gestao">Má Gestão</option>
+                        <option value="má-gestao">Má Gestão</option>
                         <option value="outros">Outros</option>
                     </select>
                 </div>
@@ -1053,6 +1250,51 @@
      
         let currentUser = null;
 
+        function initSidebarMenu() {
+            document.querySelectorAll('.header-nav .profile-button').forEach(el => el.remove());
+
+            let menuToggle = document.getElementById('menu-toggle');
+            const userActions = document.querySelector('.header-nav .user-actions');
+            if (!menuToggle && userActions) {
+                menuToggle = document.createElement('button');
+                menuToggle.id = 'menu-toggle';
+                menuToggle.className = 'hamburger-btn';
+                menuToggle.setAttribute('aria-label', 'Abrir menu lateral');
+                menuToggle.innerHTML = '<span class="hamburger-icon" aria-hidden="true"><span></span><span></span><span></span></span>';
+                userActions.appendChild(menuToggle);
+            }
+
+            const sidebar = document.getElementById('sidebar-panel');
+            const overlay = document.getElementById('sidebar-overlay');
+            const closeBtn = document.getElementById('sidebar-close');
+
+            if (!menuToggle || !sidebar || !overlay) return;
+
+            const openSidebar = () => {
+                sidebar.classList.add('open');
+                overlay.classList.add('show');
+                document.body.classList.add('no-scroll');
+            };
+
+            const closeSidebar = () => {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('show');
+                document.body.classList.remove('no-scroll');
+            };
+
+            menuToggle.addEventListener('click', openSidebar);
+            if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+            overlay.addEventListener('click', closeSidebar);
+
+            sidebar.querySelectorAll('.sidebar-link, .sidebar-action').forEach(el => {
+                el.addEventListener('click', closeSidebar);
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeSidebar();
+            });
+        }
+
         function initAuth() {
         
             const profileBtn = document.getElementById('profile-btn');
@@ -1438,6 +1680,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
+            initSidebarMenu();
             initAuth();
             initSearchAndFilters();
             fetchReports(); 
