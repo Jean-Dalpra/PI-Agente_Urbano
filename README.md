@@ -18,7 +18,6 @@
   <img src="https://img.shields.io/badge/MapLibre-0052CC?style=for-the-badge&logo=maplibre&logoColor=white" alt="MapLibre">
   <img src="https://img.shields.io/badge/OpenStreetMap-7EBC6F?style=for-the-badge&logo=openstreetmap&logoColor=white" alt="OSM">
   <img src="https://img.shields.io/badge/GeoJSON-EAA221?style=for-the-badge&logo=geojson&logoColor=white" alt="GeoJSON">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License">
   <img src="https://img.shields.io/badge/Responsivo-Sim-00a3ff?style=for-the-badge" alt="Responsivo">
   <img src="https://img.shields.io/badge/Open_Source-%E2%99%A5-ff007f?style=for-the-badge" alt="Open Source">
 </p>
