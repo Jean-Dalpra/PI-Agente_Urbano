@@ -382,12 +382,14 @@ function initSidebarMenu() {
         sidebar.classList.add('open');
         overlay.classList.add('show');
         document.body.classList.add('no-scroll');
+        if (photonSearchContainer) photonSearchContainer.style.display = 'none';
     };
 
     const closeSidebar = () => {
         sidebar.classList.remove('open');
         overlay.classList.remove('show');
         document.body.classList.remove('no-scroll');
+        if (photonSearchContainer) photonSearchContainer.style.display = '';
     };
 
     menuToggle.addEventListener('click', openSidebar);
@@ -691,6 +693,23 @@ function adicionarMarcadoresNoPanorama(panoLocation) {
  * @param {object} latlng - Objeto no formato { lat: number, lng: number }
  */
 function mostrarStreetView(latlng) {
+    const hasGoogleSV = typeof google !== 'undefined' && google.maps && google.maps.StreetViewPanorama;
+
+    if (!hasGoogleSV) {
+        // Fallback sem API key: abre o Street View via URL pública do Google Maps (não exige key)
+        if (!svModal || !svPanoDiv) return;
+        limparMarcadoresStreetView();
+        svPanoDiv.innerHTML = `<iframe
+            style="width:100%;height:100%;border:0;"
+            loading="lazy"
+            allowfullscreen
+            src="https://www.google.com/maps?q=&layer=c&cbll=${latlng.lat},${latlng.lng}&cbp=11,0,0,0,0&output=svembed">
+        </iframe>`;
+        svModal.classList.remove('hidden');
+        if (photonSearchContainer) photonSearchContainer.style.display = 'none';
+        return;
+    }
+
     if (typeof google === 'undefined' || !google.maps || !google.maps.StreetViewPanorama) {
         showMessage("Aguardando Street View", '<p>A API do Google Maps Street View ainda não carregou. Tente novamente em alguns segundos.</p>');
         return;
@@ -1342,7 +1361,66 @@ function initAutocomplete() {
         isAutocompleteInitialized = true;
 
     } else {
-        console.warn('Google Maps Places Autocomplete não pôde ser inicializado. Verifique se a API Key e a biblioteca "places" estão carregadas.');
+        // Fallback sem API key: usa Nominatim (OSM) via fetch
+        console.warn('Google Maps Places Autocomplete não disponível. Usando busca Nominatim/OSM como fallback.');
+        isAutocompleteInitialized = true;
+
+        if (!searchInput || !searchResults) return;
+
+        let debounceTimer = null;
+
+        searchInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            const query = searchInput.value.trim();
+            if (query.length < 3) {
+                searchResults.style.display = 'none';
+                searchResults.innerHTML = '';
+                return;
+            }
+            debounceTimer = setTimeout(() => {
+                fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`, {
+                    headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' }
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        searchResults.innerHTML = '';
+                        if (!data || data.length === 0) {
+                            searchResults.style.display = 'none';
+                            return;
+                        }
+                        data.forEach(item => {
+                            const label = item.display_name;
+                            const li = document.createElement('li');
+                            li.textContent = label;
+                            li.style.cssText = 'padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px;white-space:normal;line-height:1.4;';
+                            li.addEventListener('click', () => {
+                                const lat = parseFloat(item.lat);
+                                const lng = parseFloat(item.lon);
+                                if (typeof map !== 'undefined') {
+                                    if (item.boundingbox) {
+                                        const bb = item.boundingbox;
+                                        map.fitBounds([[parseFloat(bb[0]), parseFloat(bb[2])], [parseFloat(bb[1]), parseFloat(bb[3])]]);
+                                    } else {
+                                        map.setView([lat, lng], 15);
+                                    }
+                                }
+                                searchInput.value = item.name || label;
+                                searchResults.style.display = 'none';
+                                searchResults.innerHTML = '';
+                            });
+                            searchResults.appendChild(li);
+                        });
+                        searchResults.style.display = 'block';
+                    })
+                    .catch(() => { searchResults.style.display = 'none'; });
+            }, 400);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
     }
 }
 

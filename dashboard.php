@@ -15,6 +15,8 @@ $status_colors_map = [
     'Em Análise' => 'rgb(0, 123, 255)', 
     'Em Andamento' => 'rgb(255, 193, 7)', 
     'Resolvido' => 'rgb(40, 167, 69)', 
+    'Verificado' => 'rgb(25, 135, 84)',
+    'Invalidado' => 'rgb(108, 117, 125)',
 ];
 $chart_colors = [];
 foreach (array_keys($status_counts) as $status) {
@@ -76,7 +78,7 @@ $in_progress_count = $data['em_andamento'] ?? 0;
             <a href="relatorios.html" class=""><i class="fas fa-list-alt"></i> Relatórios</a>
         </nav>
         <div class="user-actions">
-            <a href="mapa.html" class="new-report-btn">+ Novo Problema</a>
+            <a href="mapa.html" class="new-report-btn">+ Novo Relatório</a>
             <button id="menu-toggle" class="hamburger-btn" aria-label="Abrir menu lateral">
                 <span class="hamburger-icon" aria-hidden="true">
                     <span></span>
@@ -96,11 +98,11 @@ $in_progress_count = $data['em_andamento'] ?? 0;
             <button id="sidebar-close" class="sidebar-close" aria-label="Fechar menu">&times;</button>
         </div>
 
-        <a href="usuario.html" class="profile-button">
-            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
+        <a href="usuario.html" class="profile-button" id="sidebar-profile-btn">
+            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar" id="user-avatar">
             <div>
-                <div class="user-name">Minha página</div>
-                <div class="profile-subtext">Acessar opções e reports</div>
+                <div class="user-name" id="user-name-text">Minha página</div>
+                <div class="profile-subtext" id="sidebar-profile-subtext">Acessar opções e reports</div>
             </div>
         </a>
 
@@ -156,6 +158,14 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                     <i class="fas fa-check-circle icon"></i>
                 </div>
                 <p class="detail"><?= $data['taxa_resolucao'] ?>% taxa de resolução</p>
+            </div>
+            <div class="card invalidado">
+                <h3>Invalidado</h3>
+                <div class="card-main">
+                    <span class="value"><?= $data['status_counts']['Invalidado'] ?? 0 ?></span>
+                    <i class="fas fa-ban icon"></i>
+                </div>
+                <p class="detail">Relatórios rejeitados pelo grupo</p>
             </div>
         </section>
         <section class="chart-grids">
@@ -464,10 +474,13 @@ $in_progress_count = $data['em_andamento'] ?? 0;
         }
 
         function updateAuthUI() {
-            if (!profileBtn || !userNameText || !userAvatar) return;
+            const userNameText = document.getElementById('user-name-text');
+            const userAvatar = document.getElementById('user-avatar');
+            const sidebarProfileSubtext = document.getElementById('sidebar-profile-subtext');
+            if (!userNameText || !userAvatar) return;
             if (currentUser) {
                 userNameText.textContent = currentUser;
-                profileBtn.style.cursor = 'pointer';
+                if (sidebarProfileSubtext) sidebarProfileSubtext.textContent = 'Ver meu perfil';
                 
                 const savedAvatar = localStorage.getItem(`avatar_${currentUser}`);
                 if (savedAvatar) {
@@ -478,7 +491,8 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                     if (profileImage) profileImage.src = 'https://www.gravatar.com/avatar/?d=mp';
                 }
             } else {
-                userNameText.textContent = 'Entrar';
+                userNameText.textContent = 'Minha página';
+                if (sidebarProfileSubtext) sidebarProfileSubtext.textContent = 'Acessar opções e reports';
                 userAvatar.src = 'https://www.gravatar.com/avatar/?d=mp';
             }
         } 

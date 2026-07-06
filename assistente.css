@@ -1,0 +1,880 @@
+/* ============================================================
+   ASSISTENTE IA — Agente Urbano
+   assistente.css
+   
+   Índice:
+   1.  Variáveis
+   2.  Botão flutuante (FAB)
+   3.  Badge de notificação
+   4.  Janela do chat
+   5.  Cabeçalho
+   6.  Área de mensagens
+   7.  Mensagem de boas-vindas
+   8.  Sugestões rápidas
+   9.  Balões de mensagem
+   10. Indicador de digitação
+   11. Área de entrada
+   12. Markdown — tipografia
+   13. Markdown — código
+   14. Markdown — tabelas
+   15. Animações
+   16. Estado minimizado
+   17. Responsivo
+============================================================ */
+
+/* ── 1. Variáveis ────────────────────────────────────────── */
+:root {
+    --ai-bg-deep:       #090e18;
+    --ai-bg-dark:       #0d1420;
+    --ai-bg-card:       #111827;
+    --ai-bg-input:      #1a2235;
+    --ai-bg-msg-ai:     #141d2e;
+    --ai-bg-msg-user:   #1565c0;
+    --ai-neon:          #00c8ff;
+    --ai-neon-dim:      rgba(0, 200, 255, 0.15);
+    --ai-neon-glow:     rgba(0, 200, 255, 0.35);
+    --ai-accent:        #0ea5e9;
+    --ai-text-primary:  #e8f0fe;
+    --ai-text-secondary:#8b9ab5;
+    --ai-text-muted:    #4a5568;
+    --ai-border:        rgba(255, 255, 255, 0.07);
+    --ai-border-neon:   rgba(0, 200, 255, 0.3);
+    --ai-radius-lg:     18px;
+    --ai-radius-md:     12px;
+    --ai-radius-sm:     8px;
+    --ai-shadow:        0 24px 64px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0,200,255,0.08);
+    --ai-font:          'Poppins', system-ui, -apple-system, sans-serif;
+    --ai-transition:    cubic-bezier(0.34, 1.4, 0.64, 1);
+    --ai-ease:          cubic-bezier(0.4, 0, 0.2, 1);
+    --ai-chat-w:        400px;
+    --ai-chat-h:        600px;
+}
+
+/* ── 2. Botão flutuante (FAB) ────────────────────────────── */
+#ai-fab {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 1.5px solid var(--ai-neon);
+    background: rgba(9, 14, 24, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow:
+        0 0 0 0 var(--ai-neon-glow),
+        0 8px 32px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+    transition:
+        transform 0.3s var(--ai-transition),
+        box-shadow 0.3s var(--ai-ease),
+        background 0.3s var(--ai-ease);
+    animation: fabPulse 4s ease-in-out infinite;
+    outline: none;
+    padding: 0;
+}
+
+#ai-fab:hover {
+    transform: scale(1.1) translateY(-3px);
+    box-shadow:
+        0 0 28px var(--ai-neon-glow),
+        0 12px 40px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    background: rgba(14, 165, 233, 0.15);
+    animation: none;
+}
+
+#ai-fab:active {
+    transform: scale(0.95);
+    transition: transform 0.12s ease;
+}
+
+/* Estado: janela aberta */
+#ai-fab.is-open {
+    background: rgba(14, 165, 233, 0.2);
+    box-shadow:
+        0 0 20px var(--ai-neon-glow),
+        0 8px 32px rgba(0, 0, 0, 0.5);
+    animation: none;
+}
+
+/* Ícone SVG do botão */
+#ai-fab svg {
+    width: 28px;
+    height: 28px;
+    color: var(--ai-neon);
+    filter: drop-shadow(0 0 6px var(--ai-neon-glow));
+    transition: transform 0.3s var(--ai-transition), color 0.3s ease;
+    flex-shrink: 0;
+}
+
+#ai-fab:hover svg {
+    transform: rotate(8deg) scale(1.08);
+}
+
+/* ── 3. Badge de notificação ─────────────────────────────── */
+.ai-fab-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--ai-font);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s, transform 0.3s var(--ai-transition);
+    transform: scale(1);
+}
+
+.ai-fab-badge[hidden],
+.ai-fab-badge.hidden {
+    opacity: 0;
+    transform: scale(0);
+    pointer-events: none;
+}
+
+/* ── 4. Janela do chat ───────────────────────────────────── */
+#ai-chat-window {
+    position: fixed;
+    bottom: 100px;
+    right: 28px;
+    width: var(--ai-chat-w);
+    height: var(--ai-chat-h);
+    max-height: calc(100vh - 120px);
+    border-radius: var(--ai-radius-lg);
+    background: var(--ai-bg-dark);
+    border: 1px solid var(--ai-border-neon);
+    box-shadow: var(--ai-shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 9997;
+    font-family: var(--ai-font);
+    /* Estado inicial: oculto */
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+    pointer-events: none;
+    transition:
+        opacity 0.28s var(--ai-ease),
+        transform 0.32s var(--ai-transition);
+}
+
+/* Estado aberto */
+#ai-chat-window.is-open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+/* Linha neon no topo da janela */
+#ai-chat-window::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--ai-neon), transparent);
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* ── 5. Cabeçalho ────────────────────────────────────────── */
+.ai-chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--ai-bg-deep);
+    border-bottom: 1px solid var(--ai-border);
+    flex-shrink: 0;
+    gap: 12px;
+}
+
+.ai-chat-header-info {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+}
+
+/* Avatar animado da IA no header */
+.ai-chat-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    box-shadow: 0 0 12px rgba(14, 165, 233, 0.4);
+}
+
+.ai-chat-avatar svg {
+    width: 20px;
+    height: 20px;
+    color: #fff;
+}
+
+/* Indicador online no avatar */
+.ai-chat-avatar::after {
+    content: '';
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #22c55e;
+    border: 2px solid var(--ai-bg-deep);
+    animation: statusPulse 2s ease-in-out infinite;
+}
+
+.ai-chat-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ai-text-primary);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ai-chat-subtitle {
+    font-size: 11px;
+    color: var(--ai-neon);
+    opacity: 0.85;
+    margin-top: 1px;
+    letter-spacing: 0.01em;
+}
+
+/* Botões do cabeçalho */
+.ai-chat-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.ai-hdr-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--ai-border);
+    background: transparent;
+    color: var(--ai-text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    padding: 0;
+    line-height: 1;
+    font-family: var(--ai-font);
+}
+
+.ai-hdr-btn:hover {
+    background: var(--ai-neon-dim);
+    color: var(--ai-neon);
+    border-color: var(--ai-border-neon);
+}
+
+.ai-hdr-btn.ai-hdr-close:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.ai-hdr-btn svg {
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+}
+
+/* ── 6. Área de mensagens ────────────────────────────────── */
+.ai-messages-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+}
+
+.ai-messages-area::-webkit-scrollbar {
+    width: 4px;
+}
+
+.ai-messages-area::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ai-messages-area::-webkit-scrollbar-thumb {
+    background: var(--ai-border-neon);
+    border-radius: 999px;
+}
+
+/* ── 7. Mensagem de boas-vindas ──────────────────────────── */
+.ai-welcome {
+    text-align: center;
+    padding: 20px 12px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-welcome-icon {
+    font-size: 2.4rem;
+    filter: drop-shadow(0 0 12px rgba(0, 200, 255, 0.3));
+    animation: floatIcon 3s ease-in-out infinite;
+}
+
+.ai-welcome h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ai-text-primary);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.ai-welcome p {
+    font-size: 13px;
+    color: var(--ai-text-secondary);
+    margin: 0;
+}
+
+/* ── 8. Sugestões rápidas ────────────────────────────────── */
+.ai-suggestions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 4px 0 8px;
+}
+
+.ai-suggestion-card {
+    background: var(--ai-bg-card);
+    border: 1px solid var(--ai-border);
+    border-radius: var(--ai-radius-sm);
+    color: var(--ai-text-secondary);
+    font-size: 12px;
+    font-family: var(--ai-font);
+    font-weight: 500;
+    padding: 9px 10px;
+    cursor: pointer;
+    text-align: left;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s var(--ai-transition);
+    line-height: 1.35;
+}
+
+.ai-suggestion-card:hover {
+    background: var(--ai-neon-dim);
+    border-color: var(--ai-border-neon);
+    color: var(--ai-neon);
+    transform: translateY(-2px);
+}
+
+.ai-suggestion-card:active {
+    transform: scale(0.97);
+}
+
+/* ── 9. Balões de mensagem ───────────────────────────────── */
+.ai-msg {
+    display: flex;
+    gap: 8px;
+    max-width: 100%;
+    animation: msgSlideIn 0.28s var(--ai-transition) both;
+}
+
+/* Mensagem do usuário: alinhada à direita */
+.ai-msg.ai-msg-user {
+    flex-direction: row-reverse;
+}
+
+/* Ícone pequeno da IA na mensagem */
+.ai-msg-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    margin-top: 2px;
+    background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+    box-shadow: 0 0 8px rgba(14, 165, 233, 0.3);
+    color: #fff;
+    font-size: 13px;
+}
+
+.ai-msg-icon svg {
+    width: 15px;
+    height: 15px;
+}
+
+.ai-msg-user .ai-msg-icon {
+    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+    box-shadow: 0 0 8px rgba(37, 99, 235, 0.3);
+}
+
+/* Conteúdo do balão */
+.ai-msg-body {
+    max-width: calc(100% - 42px);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.ai-msg-bubble {
+    padding: 10px 13px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--ai-text-primary);
+    word-break: break-word;
+    position: relative;
+}
+
+/* Balão da IA */
+.ai-msg-ai .ai-msg-bubble {
+    background: var(--ai-bg-msg-ai);
+    border: 1px solid var(--ai-border);
+    border-top-left-radius: 4px;
+}
+
+/* Balão do usuário */
+.ai-msg-user .ai-msg-bubble {
+    background: var(--ai-bg-msg-user);
+    border: 1px solid rgba(37, 99, 235, 0.4);
+    border-top-right-radius: 4px;
+    color: #e8f0fe;
+}
+
+/* Horário da mensagem */
+.ai-msg-time {
+    font-size: 10px;
+    color: var(--ai-text-muted);
+    padding: 0 4px;
+    letter-spacing: 0.02em;
+}
+
+.ai-msg-user .ai-msg-time {
+    text-align: right;
+}
+
+/* ── 10. Indicador de digitação ──────────────────────────── */
+.ai-typing-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 0 14px 4px;
+    flex-shrink: 0;
+}
+
+.ai-typing-bubble {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--ai-bg-msg-ai);
+    border: 1px solid var(--ai-border);
+    border-radius: 14px;
+    border-top-left-radius: 4px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--ai-text-secondary);
+}
+
+.ai-typing-dots {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ai-typing-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ai-neon);
+    opacity: 0.6;
+    animation: typingDot 1.2s ease-in-out infinite;
+}
+
+.ai-typing-dots span:nth-child(1) { animation-delay: 0s; }
+.ai-typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.ai-typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── 11. Área de entrada ─────────────────────────────────── */
+.ai-input-area {
+    padding: 12px 14px 14px;
+    border-top: 1px solid var(--ai-border);
+    background: var(--ai-bg-deep);
+    flex-shrink: 0;
+}
+
+.ai-input-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    background: var(--ai-bg-input);
+    border: 1px solid var(--ai-border);
+    border-radius: 14px;
+    padding: 8px 8px 8px 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ai-input-wrapper:focus-within {
+    border-color: var(--ai-border-neon);
+    box-shadow: 0 0 0 3px var(--ai-neon-dim);
+}
+
+#ai-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--ai-text-primary);
+    font-family: var(--ai-font);
+    font-size: 13.5px;
+    line-height: 1.5;
+    resize: none;
+    min-height: 22px;
+    max-height: 120px;
+    overflow-y: auto;
+    padding: 0;
+}
+
+#ai-input::placeholder {
+    color: var(--ai-text-muted);
+}
+
+#ai-input::-webkit-scrollbar { width: 3px; }
+#ai-input::-webkit-scrollbar-thumb { background: var(--ai-border-neon); border-radius: 999px; }
+
+/* Botão enviar */
+#ai-send-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: none;
+    background: var(--ai-accent);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s ease, transform 0.2s var(--ai-transition), opacity 0.2s ease;
+    padding: 0;
+}
+
+#ai-send-btn:hover {
+    background: var(--ai-neon);
+    transform: scale(1.07);
+}
+
+#ai-send-btn:active {
+    transform: scale(0.93);
+}
+
+#ai-send-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+#ai-send-btn svg {
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+}
+
+/* Dica de teclado */
+.ai-input-hint {
+    font-size: 10px;
+    color: var(--ai-text-muted);
+    text-align: right;
+    margin-top: 6px;
+    padding-right: 2px;
+    letter-spacing: 0.01em;
+}
+
+/* ── 12. Markdown — tipografia ───────────────────────────── */
+.ai-msg-bubble .ai-md-p {
+    margin: 0 0 8px;
+}
+
+.ai-msg-bubble .ai-md-p:last-child {
+    margin-bottom: 0;
+}
+
+.ai-msg-bubble .ai-md-h1,
+.ai-msg-bubble .ai-md-h2,
+.ai-msg-bubble .ai-md-h3 {
+    color: var(--ai-neon);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 10px 0 4px;
+}
+
+.ai-msg-bubble .ai-md-h1 { font-size: 15px; }
+.ai-msg-bubble .ai-md-h2 { font-size: 14px; }
+.ai-msg-bubble .ai-md-h3 { font-size: 13px; }
+
+.ai-msg-bubble .ai-md-ul,
+.ai-msg-bubble .ai-md-ol {
+    padding-left: 18px;
+    margin: 6px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.ai-msg-bubble .ai-md-ul li { list-style: none; padding-left: 4px; }
+.ai-msg-bubble .ai-md-ul li::before {
+    content: '·';
+    color: var(--ai-neon);
+    font-weight: 700;
+    display: inline-block;
+    width: 12px;
+    margin-left: -12px;
+}
+.ai-msg-bubble .ai-md-ol li { list-style: decimal; }
+
+.ai-msg-bubble .ai-blockquote {
+    border-left: 3px solid var(--ai-neon);
+    padding: 4px 0 4px 10px;
+    margin: 6px 0;
+    color: var(--ai-text-secondary);
+    font-style: italic;
+    font-size: 12.5px;
+}
+
+.ai-msg-bubble strong {
+    color: #c8d6f0;
+    font-weight: 700;
+}
+
+.ai-msg-bubble em {
+    color: #94aacf;
+    font-style: italic;
+}
+
+/* Código inline */
+.ai-inline-code {
+    background: rgba(0, 200, 255, 0.1);
+    color: var(--ai-neon);
+    border: 1px solid rgba(0, 200, 255, 0.2);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 12px;
+}
+
+/* ── 13. Markdown — blocos de código ─────────────────────── */
+.ai-code-block {
+    position: relative;
+    margin: 8px 0;
+    border-radius: var(--ai-radius-sm);
+    overflow: hidden;
+    background: #0a0f1a;
+    border: 1px solid rgba(0, 200, 255, 0.15);
+}
+
+.ai-code-block pre {
+    margin: 0;
+    padding: 12px 14px;
+    overflow-x: auto;
+}
+
+.ai-code-block code {
+    font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 12px;
+    color: #a8d8f0;
+    line-height: 1.6;
+}
+
+/* Rótulo da linguagem */
+.ai-code-block[data-lang]::before {
+    content: attr(data-lang);
+    display: block;
+    background: rgba(0, 200, 255, 0.08);
+    color: var(--ai-neon);
+    font-size: 10px;
+    font-weight: 600;
+    font-family: var(--ai-font);
+    padding: 4px 14px;
+    border-bottom: 1px solid rgba(0, 200, 255, 0.1);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* Botão copiar */
+.ai-code-copy {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: rgba(0, 200, 255, 0.12);
+    border: 1px solid rgba(0, 200, 255, 0.25);
+    color: var(--ai-neon);
+    font-size: 10px;
+    font-family: var(--ai-font);
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    z-index: 2;
+}
+
+.ai-code-copy:hover {
+    background: rgba(0, 200, 255, 0.25);
+}
+
+/* ── 14. Markdown — tabelas ──────────────────────────────── */
+.ai-table-wrapper {
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.ai-md-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.ai-md-table th {
+    background: rgba(0, 200, 255, 0.1);
+    color: var(--ai-neon);
+    font-weight: 600;
+    padding: 6px 10px;
+    border: 1px solid var(--ai-border);
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.ai-md-table td {
+    padding: 6px 10px;
+    border: 1px solid var(--ai-border);
+    color: var(--ai-text-primary);
+}
+
+.ai-md-table tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* ── 15. Animações ───────────────────────────────────────── */
+@keyframes fabPulse {
+    0%, 100% {
+        box-shadow:
+            0 0 0 0 var(--ai-neon-glow),
+            0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+    50% {
+        box-shadow:
+            0 0 0 10px rgba(0, 200, 255, 0),
+            0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+}
+
+@keyframes statusPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.6; transform: scale(0.85); }
+}
+
+@keyframes typingDot {
+    0%, 80%, 100% { transform: scale(0.7); opacity: 0.35; }
+    40%            { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes msgSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes floatIcon {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-6px); }
+}
+
+/* ── 16. Estado minimizado ───────────────────────────────── */
+#ai-chat-window.is-minimized {
+    height: 56px !important;
+    min-height: 56px;
+    overflow: hidden;
+    border-radius: var(--ai-radius-md);
+}
+
+#ai-chat-window.is-minimized .ai-messages-area,
+#ai-chat-window.is-minimized .ai-typing-row,
+#ai-chat-window.is-minimized .ai-input-area {
+    display: none;
+}
+
+#ai-chat-window.is-minimized .ai-chat-header {
+    border-bottom: none;
+    border-radius: var(--ai-radius-md);
+    cursor: pointer;
+}
+
+/* ── 17. Responsivo ──────────────────────────────────────── */
+@media (max-width: 480px) {
+    :root {
+        --ai-chat-w: calc(100vw - 20px);
+        --ai-chat-h: 65vh;
+    }
+
+    #ai-chat-window {
+        right: 10px;
+        left: 10px;
+        bottom: 84px;
+        width: auto;
+    }
+
+    #ai-fab {
+        bottom: 20px;
+        right: 20px;
+        width: 54px;
+        height: 54px;
+    }
+
+    .ai-suggestions {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 360px) {
+    .ai-chat-header-actions {
+        gap: 2px;
+    }
+    .ai-hdr-btn {
+        width: 26px;
+        height: 26px;
+    }
+}

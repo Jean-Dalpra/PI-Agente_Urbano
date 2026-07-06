@@ -1,4 +1,3 @@
-
 :root {
     --primary-color: #007bff;
     --secondary-color: #6c757d;
@@ -9,7 +8,19 @@
     --dark-text: #343a40;
     --border-color: #dee2e6;
     --info-color: #17a2b8;
-
+}
+    .enabled {
+            left: initial;
+            right: 0px;
+            top: 50%;
+            bottom: initial;
+            transform: translateY(calc(-90% - 40px)) !important;
+            background-color: transparent !important;
+        }
+body.dark-mode {
+    --light-bg: #0f172a;
+    --dark-text: #e5e7eb;
+    --border-color: #1f2937;
 }
 leaflet-control-attribution{
     opacity: 0.1;
@@ -74,15 +85,6 @@ html {
 .custom-fa-icon-pin:hover {
     transform: scale(1.3);
     z-index: 1000;
-}
-
-#photon-search-container {
-    position: absolute;
-    margin-top: 5px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2000;
-    width: 300px;
 }
 
 #photon-search {
@@ -367,9 +369,9 @@ body .sidebar-panel .sidebar-header {
     align-items: center !important;
     justify-content: space-between !important;
     gap: 12px !important;
-    padding: 8px 0 !important;
-    background: rgba(0, 0, 0, 0.03) !important;
-    border-radius: 12px !important;
+    padding: 8px 0 16px !important;
+    background: transparent !important;
+    border-bottom: 1px solid var(--border-color) !important;
 }
 
 body .sidebar-panel .sidebar-brand {
@@ -673,9 +675,6 @@ body .header-nav > .user-actions {
     justify-self: end;
 }
 
-/* icon color on hover is handled by .main-menu a:hover i in consolidated rules */
-
-/* Match the index header layout on pages that use the shared stylesheet */
 .map-page .header-nav,
 .dashboard-page .header-nav {
     display: flex;
@@ -939,8 +938,10 @@ body.no-scroll {
 }
 
 .map-page {
-    margin-top: 12vh;
-    height: 88vh;
+    margin-top: 0;
+    padding-top: 12vh;
+    height: 100vh;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
 }
@@ -989,9 +990,11 @@ body .header-nav .new-report-btn {
 }
 
 .map-container {
-    flex-grow: 1;
+    flex: 1 1 0;
+    min-height: 0;
     position: relative;
     z-index: 1;
+    overflow: hidden;
 }
 
 #map {
@@ -1539,27 +1542,37 @@ body .header-nav .new-report-btn {
 .bar-info {
     background-color: var(--primary-color);
 }
-
 #map-mode-selector {
     position: fixed;
-    bottom: 20px;
-    margin-left: 0.5vw;
+    bottom: clamp(10px, 2vh, 20px);
+    left: clamp(10px, 1vw, 20px);
+
     z-index: 1000;
-    background-color: white;
+
+    width: clamp(220px, 25vw, 420px);
+    max-width: calc(100vw - 20px);
+
+    background: #fff;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
     display: flex;
     overflow: hidden;
 }
 
 .map-mode-btn {
-    padding: 10px 15px;
-    font-size: 14px;
+    flex: 1;
+    padding: clamp(8px, 1vh, 12px);
+
+    font-size: clamp(12px, 0.9vw, 16px);
     font-weight: bold;
+
     border: none;
     cursor: pointer;
+
     background-color: #f8f9fa;
     color: #343a40;
+
     transition: background-color 0.2s, color 0.2s;
 }
 
@@ -1607,6 +1620,7 @@ body .header-nav .new-report-btn {
     position: absolute;
     top: 13vh;
     left: 14%;
+    margin-top: 5px;
     transform: translateX(-50%);
     z-index: 2000;
     width: 20vw;
@@ -1618,7 +1632,7 @@ body .header-nav .new-report-btn {
     border: 1px solid var(--border-color);
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    font-size: 14px;
+    font-size: 16px;
     background: #fff;
     z-index: 2001;
 }
@@ -1789,10 +1803,18 @@ body .header-nav .new-report-btn {
     border-radius: 10px;
 }
 
+body.dark-mode ::-webkit-scrollbar-track {
+    background: #111827;
+}
+
 ::-webkit-scrollbar-thumb {
     background-color: var(--primary-color);
     border-radius: 10px;
     border: 2px solid var(--light-bg);
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+    border-color: #111827;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -1802,6 +1824,14 @@ body .header-nav .new-report-btn {
 * {
     scrollbar-color: var(--primary-color) var(--light-bg);
     scrollbar-width: thin;
+}
+
+body.dark-mode * {
+    scrollbar-color: var(--primary-color) #111827;
+}
+
+html.dark-mode {
+    scrollbar-color: var(--primary-color) #111827;
 }
 
 .auth-close-btn {
@@ -2310,7 +2340,7 @@ body.dark-mode .sidebar-panel {
 }
 
 body.dark-mode .sidebar-panel .sidebar-header {
-    background: rgba(255, 255, 255, 0.04) !important;
+    border-bottom-color: #1f2937 !important;
 }
 
 body.dark-mode .sidebar-panel .sidebar-brand,
@@ -2370,3 +2400,198 @@ body.dark-mode .sidebar-panel .sidebar-action.primary i {
 
     Adicione comentários de seção acima dos blocos para facilitar a manutenção futura.
 */
+
+/* ============================================================
+   RESPONSIVIDADE DO HEADER
+   Breakpoints:
+     - <= 1024px : tablet landscape  → oculta menu, reduz padding
+     - <= 768px  : tablet portrait   → reduz logo e botão de nova ocorrência
+     - <= 480px  : mobile            → padding mínimo, oculta texto do botão
+   ============================================================ */
+
+/* --- Tablet landscape (até 1024px) --- */
+@media (max-width: 1024px) {
+    body .header-nav,
+    .header-nav {
+        padding: 0 20px !important;
+        height: 64px !important;
+        gap: 0 !important;
+        grid-template-columns: none !important;
+        display: flex !important;
+    }
+
+    /* Oculta o menu principal — navegação fica só na sidebar */
+    body .header-nav .main-menu,
+    .header-nav .main-menu {
+        display: none !important;
+    }
+
+    body .header-nav > .logo,
+    .header-nav > .logo {
+        margin-right: 0 !important;
+    }
+
+    body .header-nav > .user-actions,
+    .header-nav > .user-actions {
+        gap: 10px !important;
+    }
+
+    /* Ajusta padding-top do body (páginas genéricas) */
+    body {
+        padding-top: 64px;
+    }
+
+    /* Mapa: ocupa exatamente a viewport descontando o header */
+    body.map-page {
+        padding-top: 64px !important;
+    }
+
+    /* Campo de busca: posiciona logo abaixo do header */
+    #photon-search-container {
+        top: 64px !important;
+        margin-top: 8px !important;
+        left: 12px !important;
+        transform: none !important;
+        width: min(280px, calc(100vw - 24px)) !important;
+    }
+
+    /* Dashboard */
+    .dashboard-page {
+        padding-top: 64px !important;
+    }
+}
+
+/* --- Tablet portrait (até 768px) --- */
+@media (max-width: 768px) {
+    body .header-nav,
+    .header-nav {
+        padding: 0 16px !important;
+        height: 60px !important;
+    }
+
+    body .header-nav .logo,
+    .header-nav .logo {
+        font-size: 1.2rem !important;
+        margin-right: 0 !important;
+    }
+
+    body .header-nav .logo i,
+    .header-nav .logo i {
+        font-size: 1.1rem !important;
+        margin-right: 6px !important;
+    }
+
+    body .header-nav .logo img.logo-icon,
+    .header-nav .logo img.logo-icon {
+        height: 1.5rem !important;
+    }
+
+    body .header-nav .new-report-btn,
+    .header-nav .new-report-btn {
+        padding: 7px 12px !important;
+        font-size: 0.85rem !important;
+    }
+
+    body {
+        padding-top: 60px;
+    }
+
+    body.map-page {
+        padding-top: 60px !important;
+    }
+
+    #photon-search-container {
+        top: 60px !important;
+        margin-top: 8px !important;
+        left: 12px !important;
+        transform: none !important;
+        width: min(260px, calc(100vw - 24px)) !important;
+    }
+
+    #photon-results {
+        max-height: 50vh !important;
+        font-size: 12px !important;
+    }
+
+    .dashboard-page {
+        padding-top: 60px !important;
+    }
+}
+
+/* --- Mobile (até 480px) --- */
+@media (max-width: 480px) {
+    body .header-nav,
+    .header-nav {
+        padding: 0 12px !important;
+        height: 56px !important;
+    }
+
+    body .header-nav .logo span,
+    .header-nav .logo span {
+        /* Oculta o texto do logo se houver, mantendo só o ícone/imagem */
+        display: none !important;
+    }
+
+    body .header-nav .logo,
+    .header-nav .logo {
+        font-size: 1rem !important;
+    }
+
+    /* Esconde o texto "Nova Ocorrência" e mantém só o ícone no botão */
+    body .header-nav .new-report-btn .btn-text,
+    .header-nav .new-report-btn .btn-text {
+        display: none !important;
+    }
+
+    body .header-nav .new-report-btn,
+    .header-nav .new-report-btn {
+        padding: 8px 10px !important;
+        font-size: 0.9rem !important;
+    }
+
+    body .header-nav > .user-actions,
+    .header-nav > .user-actions {
+        gap: 8px !important;
+    }
+
+    /* Reduz tamanho do botão hamburguer levemente */
+    body .header-nav .hamburger-btn,
+    .header-nav .hamburger-btn {
+        width: 40px !important;
+        min-width: 40px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        flex: 0 0 40px !important;
+    }
+
+    body {
+        padding-top: 56px;
+    }
+
+    body.map-page {
+        padding-top: 56px !important;
+    }
+
+    #photon-search-container {
+        top: 56px !important;
+        margin-top: 8px !important;
+        left: 12px !important;
+        transform: none !important;
+        width: min(240px, calc(100vw - 24px)) !important;
+    }
+
+    #photon-results {
+        max-height: 45vh !important;
+        font-size: 12px !important;
+    }
+
+    #photon-results li {
+        padding: 10px 12px !important;
+        white-space: normal !important;
+        line-height: 1.35 !important;
+    }
+
+    .dashboard-page {
+        padding-top: 56px !important;
+    }
+}

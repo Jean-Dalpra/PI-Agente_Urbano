@@ -17,6 +17,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <!-- Assistente IA — estilos do botão flutuante e janela de chat -->
+    <link rel="stylesheet" href="assistente.css">
     <link rel="shortcut icon" href="./imagens/urbanoide.png" type="image/x-icon">
     <!-- Sobrescritas de CSS específicas da página e variáveis de layout.
             Mantidas inline para ajustes visuais rápidos usados apenas na página inicial. -->
@@ -238,9 +240,9 @@
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding: 8px 0;
-            background: rgba(0, 0, 0, 0.03);
-            border-radius: 12px;
+            padding: 8px 0 16px;
+            background: transparent;
+            border-bottom: 1px solid var(--border-color-new);
         }
 
         .sidebar-brand {
@@ -348,197 +350,308 @@
         body.no-scroll {
             overflow: hidden;
         }
+/* =======================================================
+   CONTAINER PRINCIPAL
+======================================================= */
 
-        .main-content-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            width: 100%;
-            padding: 40px 20px;
-        }
+.main-content-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    width: 100%;
+    padding: clamp(15px, 3vw, 40px);
+    box-sizing: border-box;
+}
 
-        .container {
-            width: 90vw;
-            max-width: 1200px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            border-radius: 12px;
-            overflow: hidden;
-            margin-top: 20px;
-            background-color: #ffffff;
-        }
+.container {
+    width: min(92vw, 1200px);
+    margin-top: clamp(10px, 2vw, 20px);
 
-        /* Hero / Main card: central marketing content and video background */
-        .main-card {
-            background-color: var(--card-bg-color);
-            color: var(--text-light);
-            padding: 60px 50px 50px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            border-top-left-radius: 0;
-            border-top-right-radius: 0;
-            min-height: 380px;
-            max-height: 500px;
-            height: 450px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
 
-        .map-background {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            background:
-                radial-gradient(circle at 85% 95%, var(--btn-blue) 8px, transparent 9px) no-repeat,
-                repeating-linear-gradient(45deg, #4A4D51, #4A4D51 1px, transparent 1px, transparent 10px),
-                repeating-linear-gradient(-45deg, #4A4D51, #4A4D51 1px, transparent 1px, transparent 10px);
-            background-size: 100% 100%;
-        }
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
 
-        #bg-video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 1;
-            z-index: 1;
-        }
+/* =======================================================
+   HERO CARD
+======================================================= */
 
-        #video-overlay-blue {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--blue-filter-color);
-            z-index: 2;
-        }
+.main-card {
+    position: relative;
+    overflow: hidden;
 
-        .content-overlay {
-            position: relative;
-            z-index: 3;
-        }
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 
-        /* Garantir textos brancos e opacidade total no card principal (animação dos carros) */
-        .content-overlay,
-        .content-overlay * {
-            color: #ffffff !important;
-            opacity: 1;
-        }
+    /* Altura responsiva */
+    height: clamp(380px, 42vw, 450px);
 
-        .main-title {
-            font-size: 3rem;
-            font-weight: 700;
-            margin-top: 20;
-            letter-spacing: -1px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-        }
+    padding: clamp(30px, 3vw, 40px);
 
-        .main-subtitle {
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-            line-height: 1.6;
-            font-weight: 400;
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
-        }
+    background: var(--card-bg-color);
+    color: white;
+    text-align: center;
+}
+/* =======================================================
+   FUNDO
+======================================================= */
 
-        .stats {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
+.map-background {
+    position: absolute;
+    inset: 0;
 
-        .stat-item {
-            text-align: center;
-            min-width: 140px;
-            position: relative;
-            margin-top: -3vh;
-            color: white;
-        }
+    z-index: 0;
 
-        .stat-number {
-            font-size: 4.8rem;
-            font-weight: 700;
-            color: var(--text-light);
-            margin-bottom: 6px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-        }
+    background:
+        radial-gradient(circle at 85% 95%, var(--btn-blue) 8px, transparent 9px) no-repeat,
+        repeating-linear-gradient(45deg, #4A4D51, #4A4D51 1px, transparent 1px, transparent 10px),
+        repeating-linear-gradient(-45deg, #4A4D51, #4A4D51 1px, transparent 1px, transparent 10px);
 
-        .stat-item:nth-child(2) {
-            margin-left: 0;
-        }
+    background-size: 100% 100%;
+}
 
-        .stat-label {
-            font-size: 0.9rem;
-            color: white;
-            font-weight: 500;
-            white-space: nowrap;
-        }
+#bg-video{
+    position:absolute;
+    inset:0;
 
-        .actions {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 50px;
-        }
+    width:100%;
+    height:100%;
 
-        .action-btn {
-            padding: 14px 32px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            color: white;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            min-width: 180px;
-        }
+    object-fit:cover;
 
-        .action-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-        }
+    z-index:1;
+}
 
-        .btn-denunciar {
-            background-color: var(--btn-blue);
-        }
+#video-overlay-blue{
+    position:absolute;
+    inset:0;
 
-        .btn-feed {
-            background-color: var(--btn-gray);
-        }
+    background:var(--blue-filter-color);
 
-        .btn-mapa {
-            background-color: var(--btn-green);
-        }
+    z-index:2;
+}
 
-        .action-btn i {
-            margin-right: 8px;
-        }
+.content-overlay{
+    position:relative;
+    z-index:3;
+}
 
-        .citizenship-message {
-            font-size: 1rem;
-            color: var(--text-light);
-            font-weight: 500;
-            opacity: 1;
-            margin-top: -40px;
-        }
+.content-overlay,
+.content-overlay *{
+    color:#fff !important;
+    opacity:1;
+}
+
+/* =======================================================
+   TÍTULO
+======================================================= */
+
+.main-title {
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 18px;
+    letter-spacing: -1px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,.25);
+}
+
+/* =======================================================
+   SUBTÍTULO
+======================================================= */
+
+.main-subtitle {
+    max-width: 650px;
+    margin: 0 auto 20px;
+
+    font-size: clamp(1rem, 1.3vw, 1.2rem);
+
+    line-height: 1.5;
+}
+
+/* =======================================================
+   ESTATÍSTICAS
+======================================================= */
+
+.stats {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: clamp(20px, 3vw, 45px);
+
+    margin: 15px 0 20px;
+}
+
+.stat-item {
+    text-align: center;
+    min-width: 120px;
+}
+
+.stat-number {
+    font-size: clamp(3rem, 5vw, 4.5rem);
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: clamp(.85rem, .9vw, 1rem);
+    font-weight: 500;
+}
+
+/* =======================================================
+   BOTÕES
+======================================================= */
+
+.actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    gap: 20px;
+
+    width: 100%;
+
+    margin: 20px 0;
+}
+
+.action-btn {
+    flex: 1 1 220px;
+
+    max-width: 300px;
+
+    min-width: 180px;
+
+    padding: 14px 22px;
+
+    border: none;
+    border-radius: 8px;
+
+    color: white;
+
+    font-size: clamp(.9rem, 1vw, 1rem);
+
+    font-weight: 600;
+
+    text-decoration: none;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    cursor: pointer;
+
+    transition: .3s;
+
+    box-shadow: 0 4px 8px rgba(0,0,0,.25);
+}
+
+.action-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0,0,0,.3);
+}
+
+.action-btn i {
+    margin-right: 8px;
+}
+.btn-denunciar{
+
+    background:var(--btn-blue);
+}
+
+.btn-feed{
+
+    background:var(--btn-gray);
+}
+
+.btn-mapa{
+
+    background:var(--btn-green);
+}
+
+/* =======================================================
+   TEXTO FINAL
+======================================================= */
+
+.citizenship-message {
+    margin-top: 5px;
+    font-size: clamp(.9rem, 1vw, 1.05rem);
+    text-align: center;
+    font-weight: 500;
+}
+
+/* =======================================================
+   TABLET
+======================================================= */
+
+@media (max-width: 900px) {
+
+    .main-card {
+        height: auto;
+        min-height: 400px;
+        padding: 35px 25px;
+    }
+
+    .actions {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .action-btn {
+        width: 100%;
+        max-width: 420px;
+    }
+}
+
+/* =======================================================
+   CELULAR
+======================================================= */
+
+@media (max-width: 600px) {
+    
+    .main-card {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        width: 100%;
+        padding: clamp(15px, 3vw, 40px);
+        box-sizing: border-box;
+    }
+
+    .main-content-wrapper {
+        height: auto;
+        min-height: auto;
+        margin-top: 2vh;
+        padding: 30px 18px;
+    }
+
+    .main-title {
+        font-size: 2rem;
+    }
+
+    .main-subtitle {
+        font-size: 1rem;
+    }
+
+    .stats {
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .stat-number {
+        font-size: 3rem;
+    }
+
+    .action-btn {
+        min-width: 100%;
+        max-width: none;
+        max-height: max-content;
+    }
+}
 
         ::-webkit-scrollbar {
             width: 8px;
@@ -949,11 +1062,12 @@
             justify-content: center;
             align-items: center;
             gap: 12px;
+            height: 40vh;
             background: linear-gradient(135deg, #1E90FF 0%, #0077ff 100%);
             color: white;
-            padding: 20px 64px;
+            padding: 20px 44px;
             border-radius: 50px;
-            font-size: 2.9rem;
+            font-size: 4.9vw;
             margin-bottom: 70px;
             font-weight: 700;
             text-decoration: none;
@@ -1693,7 +1807,7 @@
         }
 
         body.dark-mode .sidebar-header {
-            background: rgba(255, 255, 255, 0.04);
+            border-bottom-color: #1f2937;
         }
 
         body.dark-mode .profile-button {
@@ -1719,12 +1833,13 @@
 
 <body>
 
-    <div vw class="enabled">
+    <div vw class="enabled" style="left: initial; right: 0px; top: 50%; bottom: initial; transform: translateY(calc(-50% - 10px));">
         <div vw-access-button class="active"></div>
         <div vw-plugin-wrapper>
             <div class="vw-plugin-top-wrapper"></div>
         </div>
     </div>
+      <script class="widgetdeacessibilidade" src="https://cdn.userway.org/widget.js" data-account="lqELz1dV9X"></script>
     <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
     <script>
         new window.VLibras.Widget('https://vlibras.gov.br/app');
@@ -1752,7 +1867,7 @@
             <a href="relatorios.html" class=""><i class="fas fa-list-alt"></i> Relatórios</a>
         </nav>
         <div class="user-actions">
-            <a href="mapa.html" id="novo-relatorio-btn" class="new-report-btn">+ Novo Problema</a>
+            <a href="mapa.html" id="novo-relatorio-btn" class="new-report-btn">+ Novo Relatório</a>
             <button id="menu-toggle" class="hamburger-btn" aria-label="Abrir menu lateral">
                 <span class="hamburger-icon" aria-hidden="true">
                     <span></span>
@@ -1773,11 +1888,11 @@
             <button id="sidebar-close" class="sidebar-close" aria-label="Fechar menu">&times;</button>
         </div>
 
-        <a href="usuario.html" class="profile-button">
-            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
+        <a href="usuario.html" class="profile-button" id="sidebar-profile-btn">
+            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar" id="user-avatar">
             <div>
-                <div class="user-name">Minha página</div>
-                <div class="profile-subtext">Acessar opções e reports</div>
+                <div class="user-name" id="user-name-text">Minha página</div>
+                <div class="profile-subtext" id="sidebar-profile-subtext">Acessar opções e reports</div>
             </div>
         </a>
 
@@ -1811,7 +1926,7 @@
             <div class="main-card">
 
                 <div class="map-background">
-                    <video autoplay muted loop id="bg-video">
+                    <video preload="none" load autoplay muted loop id="bg-video">
                         <source src="./imagens/457701_Asia_Korea_3840x2160.mp4" type="video/mp4">
                         Seu navegador não suporta a tag de vídeo.
                     </video>
@@ -2183,7 +2298,7 @@
             <div class="footer-content">
 
                 <div class="footer-logo-section footer-section">
-                    <img src="imagens/urbanoide.png" alt="Urbanoide" class="logo-icon">
+                    <a style="cursor:default;" href="./secret/secret.html"><img style="cursor: help;" src="imagens/urbanoide.png" alt="Urbanoide" class="logo-icon"></a>
                     <div class="logo-text">Agente Urbano</div>
                 </div>
 
@@ -2391,10 +2506,13 @@
             let mediaStream = null;
 
             function updateAuthUI() {
-                if (!profileBtn || !userNameText || !userAvatar) return;
+                const userNameText = document.getElementById('user-name-text');
+                const userAvatar = document.getElementById('user-avatar');
+                const sidebarProfileSubtext = document.getElementById('sidebar-profile-subtext');
+                if (!userNameText || !userAvatar) return;
                 if (currentUser) {
                     userNameText.textContent = currentUser;
-                    profileBtn.style.cursor = 'pointer';
+                    if (sidebarProfileSubtext) sidebarProfileSubtext.textContent = 'Ver meu perfil';
                     const savedAvatar = localStorage.getItem(`avatar_${currentUser}`);
                     if (savedAvatar) {
                         userAvatar.src = savedAvatar;
@@ -2402,8 +2520,9 @@
                     }
                     document.querySelector('.profile-image-container').style.display = 'block';
                 } else {
-                    userNameText.textContent = 'Entrar';
+                    userNameText.textContent = 'Minha página';
                     userAvatar.src = 'https://www.gravatar.com/avatar/?d=mp';
+                    if (sidebarProfileSubtext) sidebarProfileSubtext.textContent = 'Acessar opções e reports';
                     const profileImageContainer = document.querySelector('.profile-image-container');
                     if (profileImageContainer) profileImageContainer.style.display = 'none';
                 }
@@ -2581,7 +2700,8 @@
                             if (capturePhotoBtn) capturePhotoBtn.style.display = 'none';
                             if (currentUser) {
                                 localStorage.setItem(`avatar_${currentUser}`, imageDataUrl);
-                                userAvatar.src = imageDataUrl;
+                                const userAvatar = document.getElementById('user-avatar');
+                                if (userAvatar) userAvatar.src = imageDataUrl;
                             }
                         }
                         reader.readAsDataURL(file);
@@ -2801,6 +2921,140 @@
             }
         });
     </script>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         ASSISTENTE IA — AGENTE URBANO
+         Botão flutuante + Janela de chat
+         
+         Para adicionar a outro página do projeto, copie este bloco inteiro
+         e os 4 scripts abaixo para qualquer .html do sistema.
+    ════════════════════════════════════════════════════════════════════ -->
+
+    <!-- ── Botão flutuante (FAB) ────────────────────────────────────── -->
+    <button id="ai-fab" aria-label="Abrir assistente de IA" aria-expanded="false" title="Assistente IA">
+        <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- Círculo externo -->
+            <circle cx="14" cy="14" r="11" stroke="currentColor" stroke-width="1.4" opacity="0.4"/>
+            <!-- Corpo do robô -->
+            <rect x="8" y="10" width="12" height="9" rx="3" stroke="currentColor" stroke-width="1.4"/>
+            <!-- Olhos -->
+            <circle cx="11.5" cy="14" r="1.3" fill="currentColor"/>
+            <circle cx="16.5" cy="14" r="1.3" fill="currentColor"/>
+            <!-- Antena -->
+            <line x1="14" y1="10" x2="14" y2="7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="14" cy="6" r="1.2" fill="currentColor"/>
+            <!-- Sorriso -->
+            <path d="M11 17 Q14 18.8 17 17" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        </svg>
+        <!-- Badge de mensagens não lidas -->
+        <span id="ai-fab-badge" class="ai-fab-badge hidden" aria-hidden="true">1</span>
+    </button>
+
+    <!-- ── Janela do chat ───────────────────────────────────────────── -->
+    <div id="ai-chat-window" role="dialog" aria-label="Assistente IA — Agente Urbano" aria-modal="true">
+
+        <!-- Cabeçalho -->
+        <div class="ai-chat-header">
+            <div class="ai-chat-header-info">
+                <div class="ai-chat-avatar" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="7" width="12" height="8" rx="2.5" stroke="white" stroke-width="1.3"/>
+                        <circle cx="7.8" cy="11" r="1.1" fill="white"/>
+                        <circle cx="12.2" cy="11" r="1.1" fill="white"/>
+                        <line x1="10" y1="7" x2="10" y2="5" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
+                        <circle cx="10" cy="4.2" r="0.9" fill="white"/>
+                        <path d="M7.8 13.5 Q10 14.8 12.2 13.5" stroke="white" stroke-width="1" stroke-linecap="round" fill="none"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="ai-chat-title">Assistente IA</div>
+                    <div class="ai-chat-subtitle">Agente Urbano · Online</div>
+                </div>
+            </div>
+            <div class="ai-chat-header-actions">
+                <!-- Limpar conversa -->
+                <button class="ai-hdr-btn" id="ai-btn-clear" title="Limpar conversa" aria-label="Limpar conversa">
+                    <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2 4h10M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3 4l.8 7.5h6.4L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <!-- Minimizar -->
+                <button class="ai-hdr-btn" id="ai-btn-minimize" title="Minimizar" aria-label="Minimizar">—</button>
+                <!-- Fechar -->
+                <button class="ai-hdr-btn ai-hdr-close" id="ai-btn-close" title="Fechar" aria-label="Fechar assistente">
+                    <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Área de mensagens -->
+        <div class="ai-messages-area" id="ai-messages" role="log" aria-live="polite" aria-label="Mensagens do chat">
+
+            <!-- Boas-vindas (oculto quando há histórico) -->
+            <div class="ai-welcome">
+                <div class="ai-welcome-icon" aria-hidden="true">🏙️</div>
+                <h3>Olá! Sou o Assistente IA</h3>
+                <p>Como posso ajudar você hoje?</p>
+            </div>
+
+            <!-- Sugestões rápidas -->
+            <div id="ai-suggestions" class="ai-suggestions" role="group" aria-label="Sugestões rápidas">
+                <button class="ai-suggestion-card" aria-label="Gerar relatório">📄 Gerar relatório</button>
+                <button class="ai-suggestion-card" aria-label="Ver estatísticas">📊 Estatísticas</button>
+                <button class="ai-suggestion-card" aria-label="Protocolos próximos">📍 Protocolos próximos</button>
+                <button class="ai-suggestion-card" aria-label="Problemas mais comuns">🚧 Problemas mais comuns</button>
+                <button class="ai-suggestion-card" aria-label="Como funciona o sistema">💡 Como funciona?</button>
+                <button class="ai-suggestion-card" aria-label="Órgãos responsáveis">🏛 Órgãos responsáveis</button>
+            </div>
+        </div>
+
+        <!-- Indicador "digitando..." -->
+        <div class="ai-typing-row" id="ai-typing-row" hidden aria-live="polite" aria-label="Assistente está digitando">
+            <div class="ai-msg-icon" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="10" cy="10" r="7" stroke="white" stroke-width="1.4"/>
+                    <circle cx="7.5" cy="8.5" r="1.2" fill="white"/>
+                    <circle cx="12.5" cy="8.5" r="1.2" fill="white"/>
+                    <path d="M7 12.5 Q10 14.5 13 12.5" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+                </svg>
+            </div>
+            <div class="ai-typing-bubble">
+                <span style="font-size:11px;margin-right:4px">Digitando</span>
+                <div class="ai-typing-dots" aria-hidden="true">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de entrada -->
+        <div class="ai-input-area">
+            <div class="ai-input-wrapper">
+                <textarea
+                    id="ai-input"
+                    placeholder="Digite uma mensagem..."
+                    rows="1"
+                    aria-label="Digite sua mensagem"
+                    autocomplete="off"
+                    spellcheck="true"
+                ></textarea>
+                <button id="ai-send-btn" aria-label="Enviar mensagem" title="Enviar (Enter)">
+                    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 8L2 2l2.5 6L2 14l12-6z" fill="currentColor"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="ai-input-hint" aria-hidden="true">Enter para enviar &nbsp;·&nbsp; Shift+Enter para nova linha</div>
+        </div>
+    </div>
+    <!-- ── fim do Assistente IA ─────────────────────────────────────── -->
+
+    <!-- ── Módulos do Assistente IA (ordem obrigatória) ─────────────── -->
+    <script src="api.js"></script>
+    <script src="chat.js"></script>
+    <script src="ui.js"></script>
+    <script src="assistente.js"></script>
 </body>
 
 </html>

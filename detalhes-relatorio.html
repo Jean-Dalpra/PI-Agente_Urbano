@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalhes do Relatório - Agente Urbano</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -36,10 +37,10 @@
         }
 
         body {
-
             background-color: #E1F2E1;
             margin: 0;
-            padding: 0;
+            /* padding-top para compensar o header fixo (12vh no desktop) */
+            padding-top: 12vh;
             color: var(--dark-text);
         }
 
@@ -208,6 +209,99 @@
             margin-top: 20px;
             border-top: 1px solid var(--border-color);
             border-bottom: 1px solid var(--border-color);
+        }
+
+        .trust-panel {
+            display: grid;
+            gap: 14px;
+            padding: 18px;
+            margin-top: 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: #f8fbff;
+        }
+
+        .trust-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .trust-score {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary-color);
+        }
+
+        .trust-bar {
+            height: 10px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #e5e7eb;
+        }
+
+        .trust-bar span {
+            display: block;
+            height: 100%;
+            width: 50%;
+            background: linear-gradient(90deg, #dc3545, #ffc107, #28a745);
+        }
+
+        .validation-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .validation-actions button,
+        .comment-validation button {
+            border: none;
+            border-radius: 8px;
+            padding: 9px 12px;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .validation-actions .confirm-btn,
+        .comment-validation .confirm-comment {
+            background: var(--success-color);
+        }
+
+        .validation-actions .deny-btn,
+        .comment-validation .deny-comment {
+            background: var(--danger-color);
+        }
+
+        .validation-note {
+            width: 100%;
+            box-sizing: border-box;   /* evita que padding extrapole a largura */
+            min-height: 74px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            resize: vertical;
+        }
+
+        .comment-trust {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: #e8f2ff;
+            color: var(--primary-color);
+            font-weight: 800;
+            font-size: 0.82rem;
+        }
+
+        .comment-validation {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
         }
 
         .vote-button {
@@ -461,6 +555,245 @@
         body.dark-mode.dashboard-page *::-webkit-scrollbar-thumb:hover {
             background-color: #38bdf8;
         }
+
+        /* ── DARK MODE — elementos ausentes ──────────────────────── */
+
+        /* Trust panel */
+        body.dark-mode.dashboard-page .trust-panel {
+            background: #0f172a;
+            border-color: #1f2937;
+        }
+
+        /* Barra de progresso de veracidade */
+        body.dark-mode.dashboard-page .trust-bar {
+            background: #1f2937;
+        }
+
+        /* Pill de veracidade nos comentários */
+        body.dark-mode.dashboard-page .comment-trust {
+            background: rgba(14, 165, 233, 0.15);
+            color: #0ea5e9;
+        }
+
+        /* Textarea de observação de validação (dentro do trust-panel) */
+        body.dark-mode.dashboard-page .validation-note {
+            background: #111827;
+            border-color: #1f2937;
+            color: #e5e7eb;
+        }
+
+        body.dark-mode.dashboard-page .validation-note::placeholder {
+            color: #6b7280;
+        }
+
+        /* Texto "Veracidade do relatório" e parágrafo de login no trust-panel */
+        body.dark-mode.dashboard-page .trust-panel strong,
+        body.dark-mode.dashboard-page .trust-panel > p {
+            color: #e5e7eb;
+        }
+
+        /* Botão de apoiar causa */
+        body.dark-mode.dashboard-page .vote-button {
+            background-color: #0ea5e9;
+        }
+
+        body.dark-mode.dashboard-page .vote-button:hover:not(:disabled) {
+            background-color: #0284c7;
+        }
+
+        /* Botão enviar comentário */
+        body.dark-mode.dashboard-page .comment-form button {
+            background-color: #22c55e;
+        }
+
+        /* ── RESPONSIVIDADE ───────────────────────────────────────── */
+        /*  Breakpoints:
+              ≤ 1024px  ajuste do padding-top do body (style.css já cuida,
+                        mas aqui reajustamos o padding interno da página)
+              ≤  768px  tablet portrait
+              ≤  480px  mobile                                          */
+
+        /* Anti-overflow global nos elementos do card */
+        .report-details-container,
+        .comments-section,
+        .info-item,
+        .comment-meta {
+            max-width: 100%;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* ── ≤ 1024px — style.css já seta body.dashboard-page {
+              padding-top: 64px}, então zeramos o padding-top do body
+              que colocamos acima para o desktop ─────────────────── */
+        @media (max-width: 1024px) {
+            body {
+                padding-top: 0;          /* body recebe 64px do style.css */
+            }
+
+            .page-content-details {
+                padding: 24px 20px;
+            }
+        }
+
+        /* ── ≤ 768px — tablet portrait ──────────────────────────── */
+        @media (max-width: 768px) {
+            .page-content-details {
+                padding: 20px 16px;
+            }
+
+            .report-details-container {
+                padding: 20px;
+            }
+
+            .report-details-container h1 {
+                font-size: clamp(1.3rem, 5vw, 1.8rem);
+            }
+
+            .comments-section {
+                padding: 20px;
+            }
+
+            /* Ações (botão apoiar + contagem): wrap em telas menores */
+            .report-actions {
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            /* Info items: label mais estreita */
+            .info-item strong {
+                width: 120px;
+                flex-shrink: 0;
+            }
+
+            /* Meta do comentário: permite quebra */
+            .comment-meta {
+                flex-wrap: wrap;
+                gap: 6px 12px;
+            }
+
+            /* Formulário de comentário: botão largura total */
+            .comment-form button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* ── ≤ 480px — mobile ───────────────────────────────────── */
+        @media (max-width: 480px) {
+            .page-content-details {
+                padding: 16px 12px;
+            }
+
+            .report-details-container {
+                padding: 16px 14px;
+            }
+
+            .report-details-container h1 {
+                font-size: clamp(1.1rem, 6vw, 1.4rem);
+                padding-bottom: 8px;
+            }
+
+            .comments-section {
+                padding: 16px 14px;
+                margin-top: 16px;
+            }
+
+            /* Botão apoiar: largura toda */
+            .vote-button {
+                width: 100%;
+                justify-content: center;
+                font-size: 0.95em;
+            }
+
+            /* Contagem de apoios: centralizada */
+            .vote-count {
+                text-align: center;
+                width: 100%;
+                font-size: 1em;
+            }
+
+            .report-actions {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+
+            /* Info items: rótulo em cima, valor embaixo */
+            .info-item {
+                flex-direction: column;
+                gap: 2px;
+                margin-bottom: 14px;
+            }
+
+            .info-item strong {
+                width: auto;
+                font-size: 0.82em;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+            }
+
+            .info-item span {
+                font-size: 0.95em;
+                word-break: break-all;
+                overflow-wrap: anywhere;
+            }
+
+            /* Trust panel */
+            .trust-panel {
+                padding: 14px;
+            }
+
+            .trust-score {
+                font-size: 1.4rem;
+            }
+
+            /* Botões de validação: empilhar */
+            .validation-actions {
+                flex-direction: column;
+            }
+
+            .validation-actions button {
+                width: 100%;
+                text-align: center;
+                justify-content: center;
+            }
+
+            /* Meta do comentário: uma linha por item */
+            .comment-meta {
+                flex-direction: column;
+                gap: 4px;
+                font-size: 0.82em;
+            }
+
+            /* Botões de validação do comentário */
+            .comment-validation {
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .comment-validation button {
+                width: 100%;
+                text-align: center;
+            }
+
+            /* Imagem de evidência */
+            .evidence-image {
+                max-height: 260px;
+            }
+
+            /* Seção de info: padding menor */
+            .info-section {
+                padding: 12px 0;
+            }
+
+            /* Tags menores */
+            .tag {
+                font-size: 0.72em;
+                padding: 3px 6px;
+                margin-left: 4px;
+            }
+        }
     </style>
 </head>
 
@@ -489,7 +822,7 @@
             <a href="relatorios.html" class=""><i class="fas fa-list-alt"></i> Relatórios</a>
         </nav>
         <div class="user-actions">
-            <a href="mapa.html" id="novo-relatorio-btn" class="new-report-btn">+ Novo Problema</a>
+            <a href="mapa.html" id="novo-relatorio-btn" class="new-report-btn">+ Novo Relatório</a>
             <button id="menu-toggle" class="hamburger-btn" aria-label="Abrir menu lateral">
                 <span class="hamburger-icon" aria-hidden="true">
                     <span></span>
@@ -527,11 +860,11 @@
             <button id="sidebar-close" class="sidebar-close" aria-label="Fechar menu">&times;</button>
         </div>
 
-        <a href="usuario.html" class="profile-button">
-            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
+        <a href="usuario.html" class="profile-button" id="sidebar-profile-btn">
+            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar" id="user-avatar">
             <div>
-                <div class="user-name">Minha página</div>
-                <div class="profile-subtext">Acessar opções e reports</div>
+                <div class="user-name" id="user-name-text">Minha página</div>
+                <div class="profile-subtext" id="sidebar-profile-subtext">Acessar opções e reports</div>
             </div>
         </a>
 
@@ -675,10 +1008,13 @@
             let mediaStream = null;
 
             function updateAuthUI() {
-                if (!profileBtn || !userNameText || !userAvatar) return;
+                const userNameText = document.getElementById('user-name-text');
+                const userAvatar = document.getElementById('user-avatar');
+                const sidebarProfileSubtext = document.getElementById('sidebar-profile-subtext');
+                if (!userNameText || !userAvatar) return;
                 if (currentUser) {
                     userNameText.textContent = currentUser;
-                    profileBtn.style.cursor = 'pointer';
+                    if (sidebarProfileSubtext) sidebarProfileSubtext.textContent = 'Ver meu perfil';
                     const savedAvatar = localStorage.getItem(`avatar_${currentUser}`);
                     if (savedAvatar) {
                         userAvatar.src = savedAvatar;
@@ -686,8 +1022,9 @@
                     }
                     document.querySelector('.profile-image-container').style.display = 'block';
                 } else {
-                    userNameText.textContent = 'Entrar';
+                    userNameText.textContent = 'Minha página';
                     userAvatar.src = 'https://www.gravatar.com/avatar/?d=mp';
+                    if (sidebarProfileSubtext) sidebarProfileSubtext.textContent = 'Acessar opções e reports';
                     const profileImageContainer = document.querySelector('.profile-image-container');
                     if (profileImageContainer) profileImageContainer.style.display = 'none';
                     document.querySelectorAll('.edit-btn, .del-btn').forEach(btn => {
@@ -946,20 +1283,29 @@
 
             const statusTag = `<span class="tag tag-status-${problem.status.replace(/\s/g, '-') || 'outros'}">${problem.status}</span>`;
             const priorityTag = `<span class="tag tag-prioridade-${problem.prioridade || 'Baixa'}">${problem.prioridade || 'Baixa'}</span>`;
+            const veracidade = Number(problem.veracidade ?? 50);
 
             const actualComments = problem.comentarios || [];
 
             const commentsHtml = actualComments.map(comment => {
                 const isCurrentUser = currentUser && comment.author === currentUser;
                 const authorDisplay = isCurrentUser ? `${comment.author} (você)` : comment.author;
+                const commentVeracity = Number(comment.veracidade ?? 50);
 
                 return `
                         <li class="comment-item">
                             <div class="comment-meta">
                                 <span class="comment-author"><i class="fas fa-user"></i> ${authorDisplay}</span>
                                 <span class="comment-date"><i class="fas fa-clock"></i> ${formatBrazilianDate(comment.date)}</span>
+                                <span class="comment-trust"><i class="fas fa-shield-halved"></i> ${commentVeracity}/100</span>
                             </div>
                             <p class="comment-text">${comment.text}</p>
+                            ${currentUser ? `
+                                <div class="comment-validation" data-comment-id="${comment.id}">
+                                    <button type="button" class="confirm-comment"><i class="fas fa-check"></i> Confirmar</button>
+                                    <button type="button" class="deny-comment"><i class="fas fa-xmark"></i> Negar</button>
+                                </div>
+                            ` : ''}
                         </li>
                     `;
             }).join('');
@@ -977,6 +1323,24 @@
                             <i class="fas fa-thumbs-up"></i> Apoiar Causa
                         </button>
                         <span class="vote-count" id="vote-count">${problem.votos || 0} Apoios</span>
+                    </div>
+
+                    <div class="trust-panel">
+                        <div class="trust-header">
+                            <div>
+                                <strong>Veracidade do relatório</strong>
+                                <p style="margin:4px 0 0;color:var(--secondary-color);">Status automático: <span id="auto-status">${problem.status}</span></p>
+                            </div>
+                            <span class="trust-score" id="trust-score">${veracidade}/100</span>
+                        </div>
+                        <div class="trust-bar"><span id="trust-bar-fill" style="width:${veracidade}%"></span></div>
+                        ${currentUser ? `
+                            <textarea id="validation-note" class="validation-note" placeholder="Opcional: adicione uma observação para sustentar sua validação."></textarea>
+                            <div class="validation-actions">
+                                <button type="button" class="confirm-btn" id="confirm-report"><i class="fas fa-check"></i> Confirmar problema</button>
+                                <button type="button" class="deny-btn" id="deny-report"><i class="fas fa-xmark"></i> Negar problema</button>
+                            </div>
+                        ` : '<p class="info-section">Faça login para confirmar ou negar a veracidade deste relatório.</p>'}
                     </div>
                     
                     <div class="info-section description-box">
@@ -1055,6 +1419,94 @@
             const commentInput = document.getElementById('comment-text');
             const commentList = document.getElementById('comment-list');
             const commentCountDisplay = document.getElementById('comment-count-display');
+            const confirmReportBtn = document.getElementById('confirm-report');
+            const denyReportBtn = document.getElementById('deny-report');
+            const validationNote = document.getElementById('validation-note');
+            const trustScore = document.getElementById('trust-score');
+            const trustBarFill = document.getElementById('trust-bar-fill');
+            const autoStatus = document.getElementById('auto-status');
+
+            function submitReportValidation(validationType) {
+                if (!currentUser) {
+                    alert('Você precisa estar logado para validar.');
+                    return;
+                }
+                const send = (coords = {}) => {
+                    const data = new URLSearchParams();
+                    data.append('report_id', reportId);
+                    data.append('validation_type', validationType);
+                    data.append('comment_text', validationNote ? validationNote.value.trim() : '');
+                    if (coords.latitude) data.append('latitude', coords.latitude);
+                    if (coords.longitude) data.append('longitude', coords.longitude);
+
+                    fetch('api.php?action=validate_report', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: data
+                    })
+                        .then(r => r.json())
+                        .then(result => {
+                            if (!result.success) {
+                                alert(result.message || 'Não foi possível validar.');
+                                return;
+                            }
+                            const report = result.report || {};
+                            const value = Number(report.veracidade ?? 50);
+                            if (trustScore) trustScore.textContent = `${value}/100`;
+                            if (trustBarFill) trustBarFill.style.width = `${value}%`;
+                            if (autoStatus) autoStatus.textContent = report.status || 'Em análise';
+                            alert(`${result.message} Peso ${result.weight}${result.geo_bonus ? ` + bônus geográfico ${result.geo_bonus}` : ''}.`);
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            alert('Erro de conexão ao validar.');
+                        });
+                };
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        position => send({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
+                        () => send(),
+                        { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
+                    );
+                } else {
+                    send();
+                }
+            }
+
+            if (confirmReportBtn) confirmReportBtn.addEventListener('click', () => submitReportValidation('confirm'));
+            if (denyReportBtn) denyReportBtn.addEventListener('click', () => submitReportValidation('deny'));
+
+            document.querySelectorAll('.comment-validation').forEach(group => {
+                const commentId = group.dataset.commentId;
+                const submitCommentValidation = (validationType) => {
+                    const data = new URLSearchParams();
+                    data.append('comment_id', commentId);
+                    data.append('validation_type', validationType);
+                    fetch('api.php?action=validate_comment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: data
+                    })
+                        .then(r => r.json())
+                        .then(result => {
+                            if (!result.success) {
+                                alert(result.message || 'Não foi possível validar comentário.');
+                                return;
+                            }
+                            const badge = group.closest('.comment-item').querySelector('.comment-trust');
+                            if (badge) badge.innerHTML = `<i class="fas fa-shield-halved"></i> ${result.veracidade}/100`;
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            alert('Erro de conexão ao validar comentário.');
+                        });
+                };
+                const confirm = group.querySelector('.confirm-comment');
+                const deny = group.querySelector('.deny-comment');
+                if (confirm) confirm.addEventListener('click', () => submitCommentValidation('confirm'));
+                if (deny) deny.addEventListener('click', () => submitCommentValidation('deny'));
+            });
 
             let hasVotedInSession = sessionStorage.getItem(`voted-session-${reportId}`) === 'true';
 
@@ -1174,8 +1626,9 @@
                                     <div class="comment-meta">
                                         <span class="comment-author"><i class="fas fa-user"></i> ${currentUser} (você)</span>
                                         <span class="comment-date"><i class="fas fa-clock"></i> ${formatBrazilianDate(now.toISOString())}</span>
+                                        <span class="comment-trust"><i class="fas fa-shield-halved"></i> ${data.veracidade || 50}/100</span>
                                     </div>
-                                    <p class="commenttext">${commentText}</p>
+                                    <p class="comment-text">${commentText}</p>
                                 </li>
                             `;
                                 commentList.insertAdjacentHTML('afterbegin', newCommentHtml);

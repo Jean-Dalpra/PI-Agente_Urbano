@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Central de Cupons - Agente Urbano</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="shortcut icon" href="./imagens/urbanoide.png" type="image/x-icon">
+    <script>
+        (function applyInitialTheme() {
+            const savedTheme = localStorage.getItem('agenteurbano_theme');
+            const legacyTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || legacyTheme;
+            document.documentElement.classList.toggle('dark-mode', theme ? theme === 'dark' : prefersDark);
+        })();
+    </script>
+    <style>
+        :root {
+            --primary: #007bff;
+            --primary-strong: #0056b3;
+            --orange: #ff5a1f;
+            --orange-strong: #ee3f00;
+            --yellow: #ffd447;
+            --success: #28a745;
+            --danger: #dc3545;
+            --page-bg: #f4f8fb;
+            --surface: #ffffff;
+            --surface-soft: #eef5fb;
+            --text: #1f2937;
+            --muted: #64748b;
+            --border: #dbe5ef;
+            --shadow: 0 18px 45px rgba(15, 23, 42, 0.10);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding-top: 12vh;
+            font-family: 'Poppins', sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(255, 90, 31, 0.16), transparent 320px),
+                radial-gradient(circle at top right, rgba(0, 123, 255, 0.12), transparent 380px),
+                var(--page-bg);
+            color: var(--text);
+        }
+
+        body.dark-mode {
+            --primary: #0ea5e9;
+            --primary-strong: #0284c7;
+            --orange: #fb923c;
+            --orange-strong: #f97316;
+            --yellow: #fde047;
+            --success: #22c55e;
+            --danger: #f87171;
+            --page-bg: #0b1220;
+            --surface: #0f172a;
+            --surface-soft: #111827;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+            --border: #1f2937;
+            --shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
+        }
+
+        a { text-decoration: none; }
+
+        .coupon-shell {
+            width: min(1240px, calc(100% - 32px));
+            margin: 0 auto 48px;
+            padding-top: 28px;
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            min-height: 360px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 90, 31, 0.28);
+            background:
+                linear-gradient(135deg, rgba(255, 90, 31, 0.96), rgba(238, 63, 0, 0.88)),
+                url("https://images.unsplash.com/photo-1607082350899-7e105aa886ae?auto=format&fit=crop&w=1800&q=80") center/cover;
+            color: #ffffff;
+            box-shadow: 0 24px 58px rgba(255, 90, 31, 0.24);
+            padding: 34px;
+            margin-top: -1.5vh;
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: auto -90px -120px auto;
+            width: 360px;
+            height: 360px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .hero-grid {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 360px;
+            gap: 28px;
+            align-items: center;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 10px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .hero h1 {
+            max-width: 780px;
+            margin: 0;
+            font-size: clamp(2.3rem, 5vw, 4.5rem);
+            line-height: 1.08;
+            letter-spacing: 0;
+            font-weight: 800;
+        }
+
+        .hero-copy {
+            max-width: 700px;
+            margin: 14px 0 0;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.02rem;
+            line-height: 1.65;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .hero-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-height: 48px;
+            padding: 12px 18px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.30);
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .hero-btn.primary {
+            background: #ffffff;
+            color: var(--orange-strong);
+            border-color: transparent;
+        }
+
+        .hero-btn:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.24);
+        }
+
+        .hero-btn.primary:hover { background: #fff7ed; }
+
+        .wallet-card {
+            border: 1px solid rgba(255, 255, 255, 0.26);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.14);
+            backdrop-filter: blur(16px);
+            padding: 22px;
+            box-shadow: 0 18px 44px rgba(0, 0, 0, 0.16);
+        }
+
+        .wallet-card span {
+            color: rgba(255, 255, 255, 0.86);
+            font-weight: 700;
+        }
+
+        .wallet-points {
+            display: block;
+            margin-top: 8px;
+            font-size: clamp(3rem, 8vw, 4.7rem);
+            line-height: 1;
+            font-weight: 800;
+        }
+
+        .wallet-meta {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .wallet-mini {
+            padding: 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .wallet-mini strong {
+            display: block;
+            font-size: 1.2rem;
+        }
+
+        .disclaimer {
+            margin: 14px 0 0;
+            color: rgba(255, 255, 255, 0.78);
+            font-size: 0.78rem;
+        }
+
+        .game-strip {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 16px;
+            margin-top: 18px;
+        }
+
+        .game-card,
+        .panel,
+        .coupon-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
+        }
+
+        .game-card {
+            display: grid;
+            grid-template-columns: 132px minmax(0, 1fr) auto;
+            gap: 18px;
+            align-items: center;
+            padding: 18px;
+            overflow: hidden;
+        }
+
+        .wheel {
+            width: 122px;
+            height: 122px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background:
+                conic-gradient(from 20deg, var(--orange), var(--yellow), var(--primary), var(--success), var(--orange));
+            box-shadow: inset 0 0 0 10px rgba(255, 255, 255, 0.72), 0 14px 30px rgba(255, 90, 31, 0.18);
+            color: #ffffff;
+            font-size: 2rem;
+            transition: transform 0.7s ease;
+        }
+
+        .wheel.spin { transform: rotate(360deg) scale(1.03); }
+
+        .game-card h2,
+        .panel h2 {
+            margin: 0;
+            color: var(--text);
+            font-size: 1.25rem;
+        }
+
+        .game-card p,
+        .panel-subtitle {
+            margin: 6px 0 0;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .spin-btn,
+        .copy-btn,
+        .mission-btn {
+            border: none;
+            border-radius: 8px;
+            min-height: 44px;
+            padding: 10px 15px;
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+        }
+
+        .spin-btn,
+        .copy-btn {
+            background: linear-gradient(135deg, var(--orange), var(--orange-strong));
+            color: #ffffff;
+            box-shadow: 0 12px 24px rgba(255, 90, 31, 0.18);
+        }
+
+        .mission-btn {
+            background: rgba(0, 123, 255, 0.10);
+            color: var(--primary);
+        }
+
+        .spin-btn:hover,
+        .copy-btn:hover,
+        .mission-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.03);
+        }
+
+        .spin-btn:disabled,
+        .copy-btn:disabled {
+            opacity: 0.62;
+            cursor: not-allowed;
+            transform: none;
+            filter: none;
+        }
+
+        .checkin-card {
+            padding: 18px;
+        }
+
+        .checkin-days {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .day-pill {
+            min-height: 54px;
+            display: grid;
+            place-items: center;
+            border-radius: 8px;
+            background: var(--surface-soft);
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 800;
+        }
+
+        .day-pill.done {
+            background: rgba(40, 167, 69, 0.14);
+            color: var(--success);
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: minmax(260px, 1fr) auto;
+            gap: 12px;
+            margin: 20px 0 16px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+        }
+
+        .search-box input {
+            width: 100%;
+            min-height: 46px;
+            padding: 11px 14px 11px 42px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            color: var(--text);
+            font: inherit;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: var(--orange);
+            box-shadow: 0 0 0 4px rgba(255, 90, 31, 0.10);
+        }
+
+        .filter-pills {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+        }
+
+        .filter-btn {
+            min-height: 42px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--surface);
+            color: var(--text);
+            padding: 9px 14px;
+            font: inherit;
+            font-weight: 800;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            transform: translateY(-1px);
+            border-color: var(--orange);
+            background: rgba(255, 90, 31, 0.10);
+            color: var(--orange-strong);
+        }
+
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: end;
+            margin-top: 22px;
+        }
+
+        .section-head h2 {
+            margin: 0;
+            font-size: 1.45rem;
+            color: var(--text);
+        }
+
+        .section-head p {
+            margin: 6px 0 0;
+            color: var(--muted);
+        }
+
+        .coupon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+            gap: 14px;
+            margin-top: 14px;
+        }
+
+        .coupon-card {
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            min-height: 244px;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .coupon-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 90, 31, 0.36);
+            box-shadow: var(--shadow);
+        }
+
+        .coupon-top {
+            display: grid;
+            grid-template-columns: 58px minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .brand-logo {
+            width: 58px;
+            height: 58px;
+            display: grid;
+            place-items: center;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(255, 90, 31, 0.14), rgba(0, 123, 255, 0.10));
+            color: var(--orange-strong);
+            font-size: 1.45rem;
+            font-weight: 800;
+        }
+
+        .brand-name {
+            display: block;
+            color: var(--text);
+            font-weight: 800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .coupon-kind {
+            display: block;
+            color: var(--muted);
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .hot-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: rgba(255, 90, 31, 0.10);
+            color: var(--orange-strong);
+            font-size: 0.76rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .coupon-body {
+            display: grid;
+            gap: 10px;
+            padding: 16px;
+        }
+
+        .discount {
+            color: var(--orange-strong);
+            font-size: 1.85rem;
+            line-height: 1.1;
+            font-weight: 800;
+        }
+
+        .coupon-desc {
+            min-height: 44px;
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+
+        .coupon-code-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .coupon-code {
+            min-width: 0;
+            padding: 10px 12px;
+            border: 1px dashed rgba(255, 90, 31, 0.48);
+            border-radius: 8px;
+            background: rgba(255, 90, 31, 0.08);
+            color: var(--orange-strong);
+            font-weight: 800;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .coupon-footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .cost {
+            color: var(--primary);
+        }
+
+        .locked {
+            opacity: 0.68;
+        }
+
+        .missions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 14px;
+            margin-top: 14px;
+            padding-bottom: 5vh;
+        }
+
+        .mission-card {
+            display: grid;
+            grid-template-columns: 48px minmax(0, 1fr);
+            gap: 13px;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .mission-icon {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            border-radius: 10px;
+            background: rgba(0, 123, 255, 0.10);
+            color: var(--primary);
+        }
+
+        .mission-card strong {
+            display: block;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        .mission-card span {
+            display: block;
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+
+        .empty-state {
+            padding: 24px;
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+            background: var(--surface-soft);
+            color: var(--muted);
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .toast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 3000;
+            width: min(430px, calc(100% - 36px));
+            padding: 14px 16px;
+            border-radius: 8px;
+            background: #0f172a;
+            color: #ffffff;
+            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.28);
+            opacity: 0;
+            transform: translateY(12px);
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+
+        @media (max-width: 1040px) {
+            .hero-grid,
+            .game-strip {
+                grid-template-columns: 1fr;
+            }
+
+            .game-card {
+                grid-template-columns: 110px minmax(0, 1fr);
+            }
+
+            .game-card .spin-btn {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .hero { padding: 24px; }
+            .toolbar { grid-template-columns: 1fr; }
+            .game-card { grid-template-columns: 1fr; }
+            .wheel { margin: 0 auto; }
+        }
+
+        @media (max-width: 520px) {
+            .coupon-shell { width: min(100% - 22px, 1240px); }
+            .hero-actions { flex-direction: column; }
+            .hero-btn { width: 100%; }
+            .wallet-meta { grid-template-columns: 1fr; }
+            .checkin-days { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .coupon-top { grid-template-columns: 52px minmax(0, 1fr); }
+            .hot-badge { grid-column: 1 / -1; width: fit-content; }
+            .coupon-code-row { grid-template-columns: 1fr; }
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="header-nav">
+        <div class="logo">
+            <a href="index.html"><img src="imagens/urbanoide.png" alt="Urbanoide" class="logo-icon"> Agente Urbano</a>
+        </div>
+        <nav class="main-menu">
+            <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="mapa.html"><i class="fas fa-map"></i> Mapa</a>
+            <a href="relatorios.html"><i class="fas fa-list-alt"></i> Relatórios</a>
+            <a href="gamificacao.html"><i class="fas fa-trophy"></i> Gamificação</a>
+            <a href="recompensas.html" class="active"><i class="fas fa-ticket"></i> Cupons</a>
+        </nav>
+        <div class="user-actions">
+            <a href="mapa.html" class="new-report-btn">+ Novo Relatório</a>
+        </div>
+    </div>
+
+    <main class="coupon-shell">
+        <section class="hero" aria-labelledby="page-title">
+            <div class="hero-grid">
+                <div>
+                    <p class="eyebrow"><i class="fas fa-ticket"></i> Central de Cupons</p>
+                    <h1 id="page-title">Cupons, descontos e jogos com UrbanPoints</h1>
+                    <p class="hero-copy">Uma vitrine inspirada em programas de cupons e mini-jogos de marketplace: colete bônus, filtre ofertas e use pontos para desbloquear benefícios de parceiros de exemplo.</p>
+                    <div class="hero-actions">
+                        <button id="hero-spin-btn" class="hero-btn primary" type="button"><i class="fas fa-rotate"></i> Girar Roleta</button>
+                        <a href="gamificacao.html" class="hero-btn"><i class="fas fa-trophy"></i> Voltar à Gamificação</a>
+                    </div>
+                    <p class="disclaimer">Cupons e empresas exibidos são exemplos demonstrativos para protótipo. Não representam parcerias comerciais ativas.</p>
+                </div>
+                <aside class="wallet-card" aria-label="Carteira de pontos">
+                    <span>UrbanPoints disponíveis</span>
+                    <strong id="wallet-points" class="wallet-points">0</strong>
+                    <div class="wallet-meta">
+                        <div class="wallet-mini">
+                            <span>Nível</span>
+                            <strong id="wallet-level">1</strong>
+                        </div>
+                        <div class="wallet-mini">
+                            <span>Classe</span>
+                            <strong id="wallet-tier">Bronze</strong>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section class="game-strip" aria-label="Jogos e bônus">
+            <article class="game-card">
+                <div id="coupon-wheel" class="wheel"><i class="fas fa-ticket"></i></div>
+                <div>
+                    <h2>Roleta de Cupons</h2>
+                    <p>Gire uma vez por visita para simular bônus de marketplace. O prêmio aparece como feedback visual e pode orientar sua próxima troca.</p>
+                </div>
+                <button id="spin-btn" class="spin-btn" type="button"><i class="fas fa-rotate"></i> Girar</button>
+            </article>
+
+            <article class="game-card checkin-card">
+                <div>
+                    <h2>Check-in Semanal</h2>
+                    <p class="panel-subtitle">Sequência visual de presença. Use como incentivo para voltar e ganhar UrbanPoints pela participação urbana.</p>
+                    <div class="checkin-days" aria-label="Dias da semana">
+                        <span class="day-pill done">D1</span>
+                        <span class="day-pill done">D2</span>
+                        <span class="day-pill done">D3</span>
+                        <span class="day-pill">D4</span>
+                        <span class="day-pill">D5</span>
+                        <span class="day-pill">D6</span>
+                        <span class="day-pill">D7</span>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <section class="section-head" aria-labelledby="offers-title">
+            <div>
+                <h2 id="offers-title">Ofertas em destaque</h2>
+                <p>Exemplos de descontos organizados por categoria, custo em pontos e parceiro.</p>
+            </div>
+        </section>
+
+        <div class="toolbar">
+            <label class="search-box" for="coupon-search">
+                <i class="fas fa-search"></i>
+                <input id="coupon-search" type="search" placeholder="Buscar por loja, cupom ou categoria">
+            </label>
+            <div id="filter-pills" class="filter-pills" role="list" aria-label="Filtros de categoria"></div>
+        </div>
+
+        <div id="coupon-grid" class="coupon-grid"></div>
+
+        <section class="section-head" aria-labelledby="missions-title">
+            <div>
+                <h2 id="missions-title">Missões para ganhar pontos</h2>
+                <p>Ideias de desafios para conectar engajamento urbano com a central de cupons.</p>
+            </div>
+        </section>
+
+        <section class="missions-grid" aria-label="Missões">
+            <article class="mission-card">
+                <span class="mission-icon"><i class="fas fa-location-dot"></i></span>
+                <div><strong>Report completo</strong><span>Registre um problema com foto, endereço e descrição clara.</span></div>
+            </article>
+            <article class="mission-card">
+                <span class="mission-icon"><i class="fas fa-shield-halved"></i></span>
+                <div><strong>Validação confiável</strong><span>Ajude a confirmar dados de outros usuários e aumente sua reputação.</span></div>
+            </article>
+            <article class="mission-card">
+                <span class="mission-icon"><i class="fas fa-fire-flame-curved"></i></span>
+                <div><strong>Sequência urbana</strong><span>Volte em dias seguidos para manter o ritmo e mirar recompensas melhores.</span></div>
+            </article>
+            <article class="mission-card">
+                <span class="mission-icon"><i class="fas fa-ranking-star"></i></span>
+                <div><strong>Top contribuidor</strong><span>Suba no ranking e desbloqueie cupons premium de maior valor.</span></div>
+            </article>
+        </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script>
+        document.body.classList.toggle('dark-mode', document.documentElement.classList.contains('dark-mode'));
+
+        const state = {
+            points: 0,
+            level: 1,
+            tier: 'Bronze',
+            filter: 'todos',
+            query: ''
+        };
+
+        const filters = [
+            ['todos', 'Todos'],
+            ['marketplace', 'Marketplace'],
+            ['alimentacao', 'Alimentação'],
+            ['mobilidade', 'Mobilidade'],
+            ['tecnologia', 'Tecnologia'],
+            ['moda', 'Moda'],
+            ['servicos', 'Serviços']
+        ];
+
+        const coupons = [
+            {
+                brand: 'Shopee',
+                initials: 'SP',
+                category: 'marketplace',
+                kind: 'Marketplace',
+                discount: 'R$ 20 OFF',
+                description: 'Exemplo de cupom para compras acima de R$ 99 em produtos selecionados.',
+                code: 'URBANO20',
+                cost: 180,
+                expires: 'Expira em 3 dias',
+                badge: 'Mais buscado'
+            },
+            {
+                brand: 'iFood',
+                initials: 'IF',
+                category: 'alimentacao',
+                kind: 'Alimentação',
+                discount: '15% OFF',
+                description: 'Exemplo de desconto em restaurantes parceiros para pedidos acima de R$ 45.',
+                code: 'CIDADE15',
+                cost: 140,
+                expires: 'Uso único',
+                badge: 'Novo'
+            },
+            {
+                brand: 'Uber',
+                initials: 'UB',
+                category: 'mobilidade',
+                kind: 'Mobilidade',
+                discount: 'R$ 12 OFF',
+                description: 'Exemplo de benefício para deslocamento urbano em horários de menor demanda.',
+                code: 'MOVE12',
+                cost: 120,
+                expires: 'Hoje'
+            },
+            {
+                brand: 'Amazon',
+                initials: 'AM',
+                category: 'marketplace',
+                kind: 'Marketplace',
+                discount: '10% OFF',
+                description: 'Exemplo de cupom para itens de casa, organização e tecnologia leve.',
+                code: 'AU10CASA',
+                cost: 220,
+                expires: 'Expira em 5 dias'
+            },
+            {
+                brand: 'Magalu',
+                initials: 'ML',
+                category: 'tecnologia',
+                kind: 'Tecnologia',
+                discount: 'R$ 50 OFF',
+                description: 'Exemplo de desconto em acessórios, periféricos e eletrônicos selecionados.',
+                code: 'TECH50',
+                cost: 420,
+                expires: 'Estoque limitado',
+                badge: 'Premium'
+            },
+            {
+                brand: 'Mercado Livre',
+                initials: 'ML',
+                category: 'marketplace',
+                kind: 'Marketplace',
+                discount: 'Frete grátis',
+                description: 'Exemplo de frete grátis para compras acima de R$ 79 em lojas selecionadas.',
+                code: 'FRETEAU',
+                cost: 90,
+                expires: 'Até domingo'
+            },
+            {
+                brand: 'Netshoes',
+                initials: 'NS',
+                category: 'moda',
+                kind: 'Moda e esporte',
+                discount: '18% OFF',
+                description: 'Exemplo de desconto para tênis, camisetas e acessórios esportivos.',
+                code: 'RUA18',
+                cost: 260,
+                expires: 'Expira em 2 dias'
+            },
+            {
+                brand: '99',
+                initials: '99',
+                category: 'mobilidade',
+                kind: 'Mobilidade',
+                discount: '2 corridas com 10%',
+                description: 'Exemplo de desconto progressivo para trajetos curtos dentro da cidade.',
+                code: 'IRVOLTAR10',
+                cost: 170,
+                expires: 'Uso em 7 dias'
+            },
+            {
+                brand: 'Outback',
+                initials: 'OB',
+                category: 'alimentacao',
+                kind: 'Alimentação',
+                discount: 'Sobremesa bônus',
+                description: 'Exemplo de benefício em consumo mínimo para mesa cadastrada.',
+                code: 'BONUSAU',
+                cost: 300,
+                expires: 'Sexta a domingo'
+            },
+            {
+                brand: 'Claro',
+                initials: 'CL',
+                category: 'servicos',
+                kind: 'Serviços',
+                discount: '5GB bônus',
+                description: 'Exemplo de bônus digital para planos elegíveis e campanhas promocionais.',
+                code: 'DADOS5GB',
+                cost: 240,
+                expires: 'Campanha teste'
+            }
+        ];
+
+        const el = (id) => document.getElementById(id);
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        function normalize(value) {
+            return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        }
+
+        function formatPoints(value) {
+            return Number(value || 0).toLocaleString('pt-BR');
+        }
+
+        function toast(message, type = 'info', duration = 3200) {
+            const toastEl = el('toast');
+            toastEl.textContent = message;
+            toastEl.className = `toast ${type} show`;
+            clearTimeout(toast.timer);
+            toast.timer = setTimeout(() => toastEl.classList.remove('show'), duration);
+        }
+
+        function renderWallet() {
+            el('wallet-points').textContent = formatPoints(state.points);
+            el('wallet-level').textContent = state.level;
+            el('wallet-tier').textContent = state.tier;
+        }
+
+        function renderFilters() {
+            el('filter-pills').innerHTML = filters.map(([key, label]) => `
+                <button class="filter-btn ${state.filter === key ? 'active' : ''}" type="button" data-filter="${key}">
+                    ${escapeHtml(label)}
+                </button>
+            `).join('');
+        }
+
+        function filteredCoupons() {
+            const query = normalize(state.query);
+            return coupons.filter((coupon) => {
+                const text = normalize(`${coupon.brand} ${coupon.category} ${coupon.kind} ${coupon.discount} ${coupon.description} ${coupon.code}`);
+                const matchesFilter = state.filter === 'todos' || coupon.category === state.filter;
+                const matchesQuery = !query || text.includes(query);
+                return matchesFilter && matchesQuery;
+            });
+        }
+
+        function renderCoupons() {
+            renderFilters();
+            const list = filteredCoupons();
+
+            if (!list.length) {
+                el('coupon-grid').innerHTML = '<div class="empty-state">Nenhum cupom encontrado para esse filtro.</div>';
+                return;
+            }
+
+            el('coupon-grid').innerHTML = list.map((coupon) => {
+                const locked = state.points < coupon.cost;
+                const missing = Math.max(0, coupon.cost - state.points);
+                return `
+                    <article class="coupon-card ${locked ? 'locked' : ''}">
+                        <div class="coupon-top">
+                            <span class="brand-logo">${escapeHtml(coupon.initials)}</span>
+                            <span>
+                                <strong class="brand-name">${escapeHtml(coupon.brand)}</strong>
+                                <span class="coupon-kind">${escapeHtml(coupon.kind)}</span>
+                            </span>
+                            <span class="hot-badge"><i class="fas fa-bolt"></i>${escapeHtml(coupon.badge || 'Oferta')}</span>
+                        </div>
+                        <div class="coupon-body">
+                            <strong class="discount">${escapeHtml(coupon.discount)}</strong>
+                            <p class="coupon-desc">${escapeHtml(coupon.description)}</p>
+                            <div class="coupon-code-row">
+                                <span class="coupon-code">${escapeHtml(coupon.code)}</span>
+                                <button class="copy-btn" type="button" data-code="${escapeHtml(coupon.code)}" ${locked ? 'disabled' : ''}>
+                                    ${locked ? `Faltam ${formatPoints(missing)} UP` : 'Copiar'}
+                                </button>
+                            </div>
+                            <div class="coupon-footer">
+                                <span class="cost"><i class="fas fa-coins"></i> ${formatPoints(coupon.cost)} UP</span>
+                                <span>${escapeHtml(coupon.expires)}</span>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        async function loadProfile() {
+            try {
+                const response = await fetch('api.php?action=user_dashboard');
+                if (!response.ok) {
+                    renderWallet();
+                    renderCoupons();
+                    toast('Entre na conta para usar seu saldo real de UrbanPoints.');
+                    return;
+                }
+
+                const data = await response.json();
+                const profile = data.profile || {};
+                state.points = Number(profile.urban_points || 0);
+                state.level = Number(profile.level || 1);
+                state.tier = profile.monthly_tier || 'Bronze';
+            } catch (error) {
+                console.error(error);
+                toast('Não foi possível carregar seus pontos agora.', 'error');
+            } finally {
+                renderWallet();
+                renderCoupons();
+            }
+        }
+
+        function spinWheel() {
+            const wheel = el('coupon-wheel');
+            const prizes = ['R$ 5 OFF', 'Frete grátis', '+25 UrbanPoints', 'Cupom surpresa', '10% OFF'];
+            const prize = prizes[Math.floor(Math.random() * prizes.length)];
+
+            wheel.classList.remove('spin');
+            void wheel.offsetWidth;
+            wheel.classList.add('spin');
+            window.setTimeout(() => toast(`Roleta: ${prize} liberado como exemplo visual.`, 'success'), 520);
+        }
+
+        async function copyCoupon(code) {
+            try {
+                await navigator.clipboard.writeText(code);
+                toast(`Cupom ${code} copiado.`, 'success');
+            } catch (error) {
+                console.error(error);
+                toast(`Cupom: ${code}`, 'success');
+            }
+        }
+
+        document.addEventListener('click', (event) => {
+            const filterButton = event.target.closest('[data-filter]');
+            if (filterButton) {
+                state.filter = filterButton.dataset.filter;
+                renderCoupons();
+                return;
+            }
+
+            const copyButton = event.target.closest('[data-code]');
+            if (copyButton && !copyButton.disabled) {
+                copyCoupon(copyButton.dataset.code);
+            }
+        });
+
+        el('coupon-search').addEventListener('input', (event) => {
+            state.query = event.target.value;
+            renderCoupons();
+        });
+
+        el('spin-btn').addEventListener('click', spinWheel);
+        el('hero-spin-btn').addEventListener('click', spinWheel);
+
+        document.addEventListener('DOMContentLoaded', loadProfile);
+    </script>
+</body>
+</html>

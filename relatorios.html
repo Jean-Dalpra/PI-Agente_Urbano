@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatórios - Agente Urbano</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -72,6 +73,17 @@
 
         .report-meta i {
             margin-right: 5px;
+        }
+
+        .truth-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #e8f2ff;
+            color: var(--primary-color);
+            font-weight: 800;
         }
 
         .tag {
@@ -650,6 +662,192 @@
         body.dark-mode.dashboard-page *::-webkit-scrollbar-thumb:hover {
             background-color: #38bdf8;
         }
+
+        /* ============================================================
+           RESPONSIVIDADE — relatorios.html
+           Breakpoints:
+             ≤ 1024px  oculta menu principal (já no style.css)
+             ≤  768px  tablet portrait → comprime padding, meta faz wrap
+             ≤  480px  mobile          → empilha cabeçalho do card,
+                                         botões em coluna, quebra textos longos
+           ============================================================ */
+
+        /* Garante que nada vaze horizontalmente */
+        .page-content,
+        .report-card,
+        .report-meta,
+        .report-title {
+            max-width: 100%;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* ── Tablet portrait (≤ 768px) ─────────────────────────── */
+        @media (max-width: 768px) {
+
+            .page-content {
+                padding: 20px 16px;
+            }
+
+            .page-header h1 {
+                font-size: clamp(1.4rem, 5vw, 2rem) !important;
+            }
+
+            /* Barra de busca: wrapper ocupa largura toda;
+               input + botão Filtros ficam side-by-side dentro dele */
+            .search-filter-bar {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+
+            .search-input-wrapper {
+                min-width: 0;
+                width: 100%;
+                flex: 1;
+            }
+
+            .reset-filters-btn {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            /* Meta: permite quebra em duas colunas */
+            .report-meta {
+                flex-wrap: wrap;
+                gap: 6px 14px;
+            }
+
+            /* Modal de filtros: botões empilham */
+            .filter-modal-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .filter-modal-actions button {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        /* ── Mobile (≤ 480px) ───────────────────────────────────── */
+        @media (max-width: 480px) {
+
+            .page-content {
+                padding: 16px 12px;
+            }
+
+            .page-header h1 {
+                font-size: clamp(1.15rem, 6.5vw, 1.55rem) !important;
+            }
+
+            /* Card: padding menor */
+            .report-card {
+                padding: 14px 12px;
+            }
+
+            /* Cabeçalho do card:
+               título (com tags inline) em cima, ID embaixo */
+            .report-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
+            .report-title {
+                font-size: 1em;
+                line-height: 1.45;
+            }
+
+            .report-id {
+                font-size: 0.75em;
+                color: #999;
+                /* SEM order: mantém a ordem natural do DOM
+                   (title primeiro, ID depois) */
+            }
+
+            /* Meta: uma linha por item para textos longos (coordenadas) */
+            .report-meta {
+                flex-direction: column;
+                gap: 5px;
+                margin-top: 10px;
+                font-size: 0.85em;
+            }
+
+            .report-meta > span {
+                display: flex;
+                align-items: flex-start;
+                gap: 6px;
+                line-height: 1.4;
+                word-break: break-all;   /* quebra coordenadas longas */
+                overflow-wrap: anywhere;
+            }
+
+            .truth-pill {
+                align-self: flex-start;
+            }
+
+            /* Botões de ação: empilham em coluna */
+            .report-actions {
+                flex-direction: column;
+                gap: 8px;
+                margin-top: 12px;
+            }
+
+            .view-details-btn,
+            .share-btn {
+                width: 100%;
+                justify-content: center;
+                padding: 10px 12px;
+                font-size: 0.9em;
+                box-sizing: border-box;
+            }
+
+            /* Tags menores */
+            .tag {
+                font-size: 0.72em;
+                padding: 3px 6px;
+                margin-left: 4px;
+            }
+
+            /* Modal de compartilhamento */
+            .share-modal-content {
+                padding: 16px;
+                width: 95%;
+                max-width: none;
+            }
+
+            .share-options {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+
+            .share-option {
+                padding: 10px 6px;
+            }
+
+            .share-option span {
+                font-size: 0.72em;
+            }
+
+            .copy-link-input {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .copy-link-input input,
+            .copy-link-input button {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            /* Modal de filtros */
+            .filter-modal-content {
+                padding: 16px;
+                max-height: 92vh;
+                width: 95%;
+            }
+        }
     </style>
     <div vw class="enabled">
         <div vw-access-button class="active"></div>
@@ -678,7 +876,7 @@
         </nav>
 
         <div class="user-actions">
-            <a href="mapa.html" id="novo-relatorio-btn" class="new-report-btn">+ Novo Problema</a>
+            <a href="mapa.html" id="novo-relatorio-btn" class="new-report-btn">+ Novo Relatório</a>
             <button id="menu-toggle" class="hamburger-btn" aria-label="Abrir menu lateral">
                 <span class="hamburger-icon" aria-hidden="true">
                     <span></span>
@@ -699,11 +897,11 @@
             <button id="sidebar-close" class="sidebar-close" aria-label="Fechar menu">&times;</button>
         </div>
 
-        <a href="usuario.html" class="profile-button">
-            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
+        <a href="usuario.html" class="profile-button" id="sidebar-profile-btn">
+            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar" id="user-avatar">
             <div>
-                <div class="user-name">Minha página</div>
-                <div class="profile-subtext">Acessar opções e reports</div>
+                <div class="user-name" id="user-name-text">Minha página</div>
+                <div class="profile-subtext" id="sidebar-profile-subtext">Acessar opções e reports</div>
             </div>
         </a>
 
@@ -719,7 +917,7 @@
 
         <div class="sidebar-section-title">Ações rápidas</div>
         <div class="sidebar-links">
-            <a href="mapa.html" class="sidebar-action primary"><i class="fas fa-flag"></i> Novo problema</a>
+            <a href="mapa.html" class="sidebar-action primary"><i class="fas fa-flag"></i> Novo Relatório</a>
         </div>
     </aside>
 
@@ -922,8 +1120,11 @@
         const statusColors = {
             'Pendente': '#dc3545', 
             'Em Análise': '#ffc107', 
+            'Em análise': '#ffc107',
             'Em Andamento': '#ffc107', 
-            'Resolvido': '#28a745' 
+            'Resolvido': '#28a745',
+            'Verificado': '#28a745',
+            'Invalidado': '#dc3545'
         };
 
         function formatBrazilianDate(dateString) {
@@ -984,6 +1185,10 @@
                     <span>
                         <i class="fas fa-tag"></i> 
                         ${problem.tipo || 'Outros'}
+                    </span>
+                    <span class="truth-pill">
+                        <i class="fas fa-shield-halved"></i>
+                        ${problem.veracidade ?? 50}/100
                     </span>
                 </div>
 
@@ -1316,10 +1521,13 @@
             let mediaStream = null;
 
             function updateAuthUI() {
-                if (!profileBtn || !userNameText || !userAvatar) return;
+                const userNameText = document.getElementById('user-name-text');
+                const userAvatar = document.getElementById('user-avatar');
+                const sidebarProfileSubtext = document.getElementById('sidebar-profile-subtext');
+                if (!userNameText || !userAvatar) return;
                 if (currentUser) {
                     userNameText.textContent = currentUser;
-                    profileBtn.style.cursor = 'pointer';
+                    if (sidebarProfileSubtext) sidebarProfileSubtext.textContent = 'Ver meu perfil';
                     const savedAvatar = localStorage.getItem(`avatar_${currentUser}`);
                     if (savedAvatar) {
                         userAvatar.src = savedAvatar;
@@ -1327,8 +1535,9 @@
                     }
                     document.querySelector('.profile-image-container').style.display = 'block';
                 } else {
-                    userNameText.textContent = 'Entrar';
+                    userNameText.textContent = 'Minha página';
                     userAvatar.src = 'https://www.gravatar.com/avatar/?d=mp';
+                    if (sidebarProfileSubtext) sidebarProfileSubtext.textContent = 'Acessar opções e reports';
                     const profileImageContainer = document.querySelector('.profile-image-container');
                     if (profileImageContainer) profileImageContainer.style.display = 'none';
                     document.querySelectorAll('.edit-btn, .del-btn').forEach(btn => {

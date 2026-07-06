@@ -349,7 +349,7 @@
         body.dark-mode #photon-search {
             background: var(--map-surface);
             border-color: var(--map-border);
-            color: var(--primary-color);
+            color: white;
             box-shadow: 0 8px 22px var(--map-shadow);
         }
 
@@ -528,6 +528,70 @@
         body.dark-mode * {
             scrollbar-color: var(--map-primary) #0f172a;
         }
+
+        /* ============================================================
+           MODO 3D — Container Mapbox GL JS
+           ============================================================ */
+
+        /*
+         * #map3d: posicionado absolutamente sobre #map, ocupa exatamente
+         * o mesmo espaço que o mapa Leaflet. Oculto por padrão.
+         * O z-index 2 garante que sobrepõe #map (z-index implícito).
+         */
+        #map3d {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;   /* oculto até o usuário ativar o modo 3D */
+            z-index: 2;
+        }
+
+        /* Botão Modo 3D — estado ativo (modo 3D ligado) */
+        #modo-3d-btn.ativo-3d {
+            background: var(--map-primary) !important;
+            color: #fff !important;
+            border-color: var(--map-primary) !important;
+            font-weight: 700 !important;
+        }
+
+        /* Botão Modo 3D — estado carregando */
+        #modo-3d-btn.carregando-3d {
+            opacity: 0.65;
+            cursor: wait !important;
+        }
+
+        /* Dark mode: texto escuro sobre fundo primário */
+        body.dark-mode #modo-3d-btn.ativo-3d {
+            background: var(--map-primary) !important;
+            color: #0b1220 !important;
+            border-color: var(--map-primary) !important;
+        }
+
+        /* Hover no botão ativo */
+        #modo-3d-btn.ativo-3d:hover {
+            opacity: 0.88;
+        }
+
+        /* Dark mode: hover no botão inativo */
+        body.dark-mode #modo-3d-btn:not(.ativo-3d):hover {
+            background: rgba(14, 165, 233, 0.12);
+            color: var(--map-primary);
+        }
+
+        /* Garante que o canvas do Mapbox ocupa 100% do container */
+        #map3d .mapboxgl-canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* Créditos/atribuição do Mapbox — estilo consistente com o projeto */
+        #map3d .mapboxgl-ctrl-attrib {
+            font-family: 'Poppins', sans-serif;
+            font-size: 10px;
+            opacity: 0.7;
+        }
     </style>
     <script>
         (function applyInitialTheme() {
@@ -573,7 +637,7 @@
             <a href="relatorios.html" class=""><i class="fas fa-list-alt"></i> Relatórios</a>
         </nav>
         <div class="user-actions">
-            <a href="mapa.html" id="novo-relatorio-btn" class="new-report-btn">+ Novo Problema</a>
+            <a href="mapa.html" id="novo-relatorio-btn" class="new-report-btn">+ Novo Relatório</a>
             <button id="menu-toggle" class="hamburger-btn" aria-label="Abrir menu lateral">
                 <span class="hamburger-icon" aria-hidden="true">
                     <span></span>
@@ -594,11 +658,11 @@
             <button id="sidebar-close" class="sidebar-close" aria-label="Fechar menu">&times;</button>
         </div>
 
-        <a href="usuario.html" class="profile-button">
-            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar">
+        <a href="usuario.html" class="profile-button" id="sidebar-profile-btn">
+            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar" id="user-avatar">
             <div>
-                <div class="user-name">Minha página</div>
-                <div class="profile-subtext">Acessar opções e reports</div>
+                <div class="user-name" id="user-name-text">Minha página</div>
+                <div class="profile-subtext" id="sidebar-profile-subtext">Acessar opções e reports</div>
             </div>
         </a>
 
@@ -615,11 +679,7 @@
         <div class="sidebar-section-title">Ações rápidas</div>
         <div class="sidebar-links">
             <a href="mapa.html" class="sidebar-action primary"><i class="fas fa-flag"></i> Novo problema</a>
-            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Alternar modo escuro">
-                <i class="fas fa-moon" aria-hidden="true"></i>
-                <span>Tema</span>
-                <span id="theme-state" class="theme-state">Claro</span>
-            </button>
+
         </div>
     </aside>
 
@@ -644,6 +704,13 @@
         -->
     <main class="map-container">
         <div id="map"></div>
+
+        <!-- ─── CONTAINER DO MAPA 3D (Mapbox GL JS) ─────────────────────────
+             Permanece oculto (display:none) até o usuário clicar em "Modo 3D".
+             Ocupa exatamente o mesmo espaço que #map via position:absolute.
+             O JavaScript garante que apenas um dos dois é visível por vez.
+        ─────────────────────────────────────────────────────────────────── -->
+        <div id="map3d"></div>
 
         <!-- Legend: mostra as categorias dos problemas mapeados -->
         <div id="legend-container">
@@ -746,6 +813,13 @@
             </button>
             <button id="open-filter-btn" class="map-mode-btn" title="Filtros e Estatísticas">
                 <i class="fas fa-filter"></i>
+            </button>
+            <!-- ─── BOTÃO MODO 3D ──────────────────────────────────────────────
+                 Carrega o Mapbox GL JS apenas na primeira ativação (lazy load).
+                 Alterna entre "🌍 Modo 3D" e "🗺️ Modo 2D" conforme o estado.
+            ─────────────────────────────────────────────────────────────── -->
+            <button id="modo-3d-btn" class="map-mode-btn" title="Alternar para visualização 3D com Mapbox">
+                🌍 Modo 3D
             </button>
         </div>
     </main>
@@ -978,10 +1052,13 @@
         // Verifica se há uma API key antes de carregar Google Maps
         const googleMapsApiKey = ''; // Deixar vazio se não tiver chave
         if (!googleMapsApiKey) {
-            console.warn('Google Maps API key não configurada. Funcionalidades do Google Maps desabilitadas.');
-            // Criar um objeto google vazio para evitar erros
-            window.google = { maps: {} };
-            window.initMap = function() { console.log('Google Maps não disponível'); };
+            // Sem API key: cria stub mínimo para evitar erros de referência.
+            // NÃO sobrescreve window.initMap — o script.js define e chama initMap()
+            // normalmente via DOMContentLoaded, inicializando o mapa Leaflet.
+            if (typeof window.google === 'undefined') {
+                window.google = { maps: {} };
+            }
+            console.warn('Google Maps API key não configurada. Street View e Autocomplete do Google desabilitados; o mapa Leaflet funciona normalmente.');
         } else {
             const script = document.createElement('script');
             script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places,geometry&callback=initMap`;
@@ -1178,6 +1255,980 @@
                 if (event.key === 'Escape') closeSidebar();
             });
         })();
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('api.php?action=current_user')
+                .then(r => r.json())
+                .then(data => {
+                    const currentUser = data.username || null;
+                    const userNameText = document.getElementById('user-name-text');
+                    const userAvatar = document.getElementById('user-avatar');
+                    const sidebarProfileSubtext = document.getElementById('sidebar-profile-subtext');
+                    if (!userNameText || !userAvatar) return;
+                    if (currentUser) {
+                        userNameText.textContent = currentUser;
+                        if (sidebarProfileSubtext) sidebarProfileSubtext.textContent = 'Ver meu perfil';
+                        const savedAvatar = localStorage.getItem('avatar_' + currentUser);
+                        if (savedAvatar) userAvatar.src = savedAvatar;
+                    }
+                })
+                .catch(() => {});
+        });
+    </script>
+
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MÓDULO MODO 3D — Mapbox GL JS
+         Marcadores via GeoJSON Source + Circle/Symbol Layers (nativo Mapbox)
+    ════════════════════════════════════════════════════════════════════ -->
+    <script>
+    (function iniciarModulo3D() {
+        'use strict';
+
+        // ════════════════════════════════════════════════════════════════
+        // 1. TOKEN  ↓↓↓ CONFIGURE AQUI ↓↓↓
+        // ════════════════════════════════════════════════════════════════
+        var MAPBOX_ACCESS_TOKEN = '';
+
+        var CONFIG = {
+            versaoMapboxGL: '2.15.0',
+            estilo:         'mapbox://styles/mapbox/streets-v12',
+            pitch:          60,
+            bearing:        -20,
+            duracaoFlyTo:   1200,
+            curveFlyTo:     1.4,
+        };
+
+        var SOURCE_ID   = 'au-protocols';
+        var LAYER_OUTER = 'au-protocols-outer';
+        var LAYER_DOT   = 'au-protocols-dot';
+        var LAYER_LABEL = 'au-protocols-label';
+
+        var TIPO_CORES = {
+            'iluminacao':'#FFC107','asfalto':'#3b82f6','limpeza':'#22c55e',
+            'agua-esgoto':'#ef4444','transporte':'#f97316','assistencial':'#10b981',
+            'meteorologico':'#8b5cf6','mobilidade':'#fb923c','saude':'#ec4899',
+            'seguranca':'#374151','acessibilidade':'#a855f7','eletricidade':'#eab308',
+            'meio-ambiente':'#06b6d4','estrutura':'#92400e','drenagem':'#4f46e5',
+            'obras':'#f43f5e','ciclismo':'#84cc16','ma-gestao':'#7c3aed','outros':'#6b7280',
+        };
+
+        var STATUS_CORES = {
+            'Pendente':'#f59e0b','Em Análise':'#38bdf8',
+            'Em Andamento':'#60a5fa','Resolvido':'#4ade80',
+        };
+
+        var TIPO_EMOJI = {
+            'iluminacao':'💡','asfalto':'🛣️','limpeza':'🗑️','agua-esgoto':'💧',
+            'transporte':'🚌','assistencial':'🤝','meteorologico':'⛈️','mobilidade':'🚶',
+            'saude':'🏥','seguranca':'🔒','acessibilidade':'♿','eletricidade':'⚡',
+            'meio-ambiente':'🌿','estrutura':'🏗️','drenagem':'🌊','obras':'🚧',
+            'ciclismo':'🚲','ma-gestao':'⚠️','outros':'📍',
+        };
+
+        // Unicode dos mesmos icones Font Awesome usados no mapa Leaflet (problemIcons em script.js)
+        var TIPO_UNICODE = {
+            'iluminacao':     '\uf0eb',  // fa-lightbulb
+            'asfalto':        '\uf018',  // fa-road
+            'limpeza':        '\uf2ed',  // fa-trash-alt
+            'agua-esgoto':    '\uf773',  // fa-water
+            'transporte':     '\uf207',  // fa-bus
+            'assistencial':   '\uf4be',  // fa-hand-holding-heart
+            'meteorologico':  '\uf0c2',  // fa-cloud
+            'mobilidade':     '\ue50f',  // fa-person-walking
+            'saude':          '\uf0f8',  // fa-hospital
+            'seguranca':      '\uf3ed',  // fa-shield-alt
+            'acessibilidade': '\uf193',  // fa-wheelchair
+            'eletricidade':   '\uf0e7',  // fa-bolt
+            'meio-ambiente':  '\uf06c',  // fa-leaf
+            'estrutura':      '\uf1ad',  // fa-building
+            'drenagem':       '\uf043',  // fa-tint
+            'obras':          '\uf7d9',  // fa-tools
+            'ciclismo':       '\uf206',  // fa-bicycle
+            'ma-gestao':      '\uf071',  // fa-exclamation-triangle
+            'outros':         '\uf3c5',  // fa-map-marker-alt
+        };
+
+        function _matchExpr(map, prop, fallback) {
+            var expr = ['match', ['get', prop]];
+            Object.keys(map).forEach(function(k) { expr.push(k, map[k]); });
+            expr.push(fallback);
+            return expr;
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 2. ESTADO
+        // ════════════════════════════════════════════════════════════════
+        var estado = {
+            mapbox3d: null, inicializado: false, ativo: false,
+            scriptCarregado: false, carregando: false,
+            marcadorLocalizacao: null, _popupAtivo: null,
+            _leafletSetView: null, _leafletFitBounds: null,
+        };
+
+        var btn3D = document.getElementById('modo-3d-btn');
+
+        // ════════════════════════════════════════════════════════════════
+        // 3. LAZY LOAD
+        // ════════════════════════════════════════════════════════════════
+        function carregarMapboxGL() {
+            return new Promise(function(resolve, reject) {
+                if (estado.scriptCarregado && typeof mapboxgl !== 'undefined') { resolve(); return; }
+                var link = document.createElement('link');
+                link.rel  = 'stylesheet';
+                link.href = 'https://api.mapbox.com/mapbox-gl-js/v' + CONFIG.versaoMapboxGL + '/mapbox-gl.css';
+                document.head.appendChild(link);
+                var script = document.createElement('script');
+                script.src   = 'https://api.mapbox.com/mapbox-gl-js/v' + CONFIG.versaoMapboxGL + '/mapbox-gl.js';
+                script.async = true;
+                script.onload  = function() { estado.scriptCarregado = true; resolve(); };
+                script.onerror = function()  { reject(new Error('Falha ao carregar Mapbox GL JS')); };
+                document.head.appendChild(script);
+            });
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 4. SINCRONIZAÇÃO 2D ↔ 3D
+        // ════════════════════════════════════════════════════════════════
+        function obterPosicao2D() {
+            if (typeof map !== 'undefined' && map && map.getCenter) {
+                var c = map.getCenter();
+                return { lat: c.lat, lng: c.lng, zoom: map.getZoom() };
+            }
+            return {
+                lat:  typeof DEFAULT_COORDS !== 'undefined' ? DEFAULT_COORDS[0] : -23.5505,
+                lng:  typeof DEFAULT_COORDS !== 'undefined' ? DEFAULT_COORDS[1] : -46.6333,
+                zoom: typeof INITIAL_ZOOM   !== 'undefined' ? INITIAL_ZOOM      : 12,
+            };
+        }
+
+        function sincronizarMapa2DPara3D() {
+            if (!estado.mapbox3d) return;
+            var pos = obterPosicao2D();
+            estado.mapbox3d.flyTo({
+                center: [pos.lng, pos.lat], zoom: pos.zoom,
+                pitch: CONFIG.pitch, bearing: CONFIG.bearing,
+                duration: CONFIG.duracaoFlyTo, curve: CONFIG.curveFlyTo, essential: true,
+            });
+        }
+
+        function sincronizarMapa3DPara2D() {
+            if (!estado.mapbox3d) return;
+            var fn = estado._leafletSetView;
+            if (!fn && typeof map !== 'undefined' && map && map.setView) fn = map.setView.bind(map);
+            if (!fn) return;
+            var c = estado.mapbox3d.getCenter();
+            fn([c.lat, c.lng], Math.round(estado.mapbox3d.getZoom()), { animate: false });
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 5. PRÉDIOS 3D
+        // ════════════════════════════════════════════════════════════════
+        function adicionarPredios3D(m) {
+            if (m.getLayer('au-predios-3d')) return;
+            var layers = m.getStyle().layers;
+            var label;
+            for (var i = 0; i < layers.length; i++) {
+                if (layers[i].type === 'symbol' && layers[i].layout && layers[i].layout['text-field']) {
+                    label = layers[i].id; break;
+                }
+            }
+            m.addLayer({
+                id: 'au-predios-3d', source: 'composite', 'source-layer': 'building',
+                filter: ['==', 'extrude', 'true'], type: 'fill-extrusion', minzoom: 14,
+               paint: {
+    'fill-extrusion-color': [
+        'interpolate', ['linear'], ['get', 'height'],
+        0,   '#f5f5f5',
+        20,  '#eeeeee',
+        50,  '#e6e6e6',
+        100, '#dddddd',
+        200, '#d2d2d2',
+        400, '#c7c7c7'
+    ],
+
+    'fill-extrusion-height': [
+        'interpolate', ['linear'], ['zoom'],
+        14.9, 0,
+        15.1, ['get', 'height']
+    ],
+
+    'fill-extrusion-base': [
+        'interpolate', ['linear'], ['zoom'],
+        14.9, 0,
+        15.1, ['get', 'min_height']
+    ],
+
+    // edifícios quase opacos
+    'fill-extrusion-opacity': 0.98,
+
+    // iluminação nas faces laterais
+    'fill-extrusion-vertical-gradient': true,
+
+    // leve iluminação ambiente
+    'fill-extrusion-ambient-occlusion-intensity': 0.15
+}
+            }, label);
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 6. INICIALIZAÇÃO DO MAPA
+        // ════════════════════════════════════════════════════════════════
+        function inicializarMapa3D() {
+            if (estado.inicializado) return;
+            var container = document.getElementById('map3d');
+            if (!container) { console.error('[Modo 3D] #map3d não encontrado.'); return; }
+
+            mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+            var pos = obterPosicao2D();
+
+            estado.mapbox3d = new mapboxgl.Map({
+                container: 'map3d', style: CONFIG.estilo,
+                center: [pos.lng, pos.lat], zoom: pos.zoom,
+                pitch: CONFIG.pitch, bearing: CONFIG.bearing, antialias: true,
+            });
+
+            var m = estado.mapbox3d;
+            m.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
+            m.addControl(new mapboxgl.ScaleControl({ maxWidth: 100, unit: 'metric' }), 'bottom-left');
+
+            m.on('load', function() {
+                adicionarPredios3D(m);
+                _configurarLayers(m);
+                _carregarIconesFA(m);
+                carregarMarcadoresProtocolos();
+                console.info('[Modo 3D] Mapa inicializado com layers nativas.');
+            });
+
+            m.on('click', LAYER_DOT, _onProtocoloClick);
+            m.on('mouseenter', LAYER_DOT, function() { m.getCanvas().style.cursor = 'pointer'; });
+            m.on('mouseleave', LAYER_DOT, function() { m.getCanvas().style.cursor = ''; });
+            m.on('error', function(e) { console.error('[Modo 3D]', e && e.error ? e.error.message : e); });
+
+            estado.inicializado = true;
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 7. LAYERS NATIVAS MAPBOX
+        //    GeoJSON source + 3 layers (halo, círculo, emoji)
+        //    Renderização 100% GPU — igual aos POIs comerciais do Mapbox
+        // ════════════════════════════════════════════════════════════════
+        function _configurarLayers(m) {
+            if (!m.getSource(SOURCE_ID)) {
+                m.addSource(SOURCE_ID, {
+                    type: 'geojson',
+                    data: { type: 'FeatureCollection', features: [] },
+                });
+            }
+
+            // Halo externo — cor do status, grande e difuso
+            if (!m.getLayer(LAYER_OUTER)) {
+                m.addLayer({
+                    id: LAYER_OUTER, type: 'circle', source: SOURCE_ID,
+                    paint: {
+                        'circle-radius':  ['interpolate',['linear'],['zoom'],10,8,14,18,18,28],
+                        'circle-color':   _matchExpr(STATUS_CORES, 'status', '#9ca3af'),
+                        'circle-opacity': 0.22,
+                        'circle-blur':    0.8,
+                    },
+                });
+            }
+
+            // Círculo principal — cor da categoria, com borda do status
+            if (!m.getLayer(LAYER_DOT)) {
+                m.addLayer({
+                    id: LAYER_DOT, type: 'circle', source: SOURCE_ID,
+                    paint: {
+                        'circle-radius': ['interpolate',['linear'],['zoom'],10,5,14,10,18,16],
+                        'circle-color':  _matchExpr(TIPO_CORES, 'tipo', '#6b7280'),
+                        'circle-stroke-width': ['interpolate',['linear'],['zoom'],10,1.5,14,2.5],
+                        'circle-stroke-color': _matchExpr(TIPO_CORES, 'tipo', '#6b7280'),
+                        'circle-stroke-opacity': 0.9,
+                    },
+                });
+            }
+
+            // Emoji no centro — visível a partir do zoom 13
+            if (!m.getLayer(LAYER_LABEL)) {
+                m.addLayer({
+                    id: LAYER_LABEL, type: 'symbol', source: SOURCE_ID, minzoom: 0,
+                    layout: {
+                        // icon-image aponta para sprites carregados por _carregarIconesFA()
+                        // Enquanto os icones nao carregam, a layer fica invisivel (sem erro)
+                        'icon-image':            ['concat', 'au-icon-', ['get', 'tipo']],
+                        'icon-size':             ['interpolate', ['linear'], ['zoom'], 8, 0.3, 12, 0.6, 15, 0.85, 18, 1.05],
+                        'icon-allow-overlap':    true,
+                        'icon-ignore-placement': true,
+                    },
+                    paint: { 'icon-opacity': 1 },
+                });
+            }
+
+            // CSS do popup injetado uma vez
+            if (!document.getElementById('au-popup-3d-style')) {
+                var s = document.createElement('style');
+                s.id  = 'au-popup-3d-style';
+                s.textContent =
+                    '.au-popup-3d .mapboxgl-popup-content{'
+                    + 'background:#0f172a;'
+                    + 'border:1px solid rgba(255,255,255,0.08);'
+                    + 'border-radius:12px;'
+                    + 'box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 0 1px rgba(0,200,255,.08);'
+                    + 'padding:14px 16px;}'
+                    + '.au-popup-3d .mapboxgl-popup-tip{border-top-color:#0f172a;}'
+                    + '.au-popup-3d .mapboxgl-popup-close-button{'
+                    + 'color:#64748b;font-size:18px;right:8px;top:6px;'
+                    + 'background:transparent;border:none;cursor:pointer;}'
+                    + '.au-popup-3d .mapboxgl-popup-close-button:hover{color:#e2e8f0;}';
+                document.head.appendChild(s);
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 8. CARREGAR ÍCONES FONT AWESOME → SPRITE DO MAPBOX
+        //    Renderiza cada ícone FA via canvas 2D e registra no sprite nativo
+        //    usando map.addImage() — exatamente como o mapa Leaflet exibe.
+        //    Usa document.fonts.load() para garantir que a fonte FA está ativa.
+        // ════════════════════════════════════════════════════════════════
+        function _carregarIconesFA(m) {
+            var _renderizar = function() {
+                var size = 22;
+                Object.keys(TIPO_UNICODE).forEach(function(tipo) {
+                    var id = 'au-icon-' + tipo;
+                    if (m.hasImage(id)) return;
+                    try {
+                        var canvas = document.createElement('canvas');
+                        canvas.width = canvas.height = size;
+                        var ctx = canvas.getContext('2d');
+
+                        // Fundo transparente
+                        ctx.clearRect(0, 0, size, size);
+
+                        // Ícone FA branco centralizado
+                        ctx.font = '900 ' + Math.floor(size * 0.72) + 'px "Font Awesome 6 Free"';
+                        ctx.fillStyle = 'rgba(255,255,255,1)';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(TIPO_UNICODE[tipo], size / 2, size / 2 + 1);
+
+                        // addImage aceita ImageData diretamente (Mapbox GL JS 2.x)
+                        m.addImage(id, ctx.getImageData(0, 0, size, size));
+                    } catch(e) {
+                        console.warn('[Modo 3D] Icone', tipo, 'nao carregado:', e.message);
+                    }
+                });
+                console.info('[Modo 3D] Icones FA carregados no sprite Mapbox.');
+            };
+
+            // Garante que a fonte FA esta ativa antes de renderizar no canvas
+            if (document.fonts && document.fonts.load) {
+                document.fonts.load('900 16px "Font Awesome 6 Free"')
+                    .then(_renderizar)
+                    .catch(function() {
+                        // Fallback: aguarda um ciclo e tenta mesmo assim
+                        setTimeout(_renderizar, 400);
+                    });
+            } else {
+                setTimeout(_renderizar, 500);
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 8. CARREGAR PROTOCOLOS → ATUALIZAR SOURCE GEOJSON
+        // ════════════════════════════════════════════════════════════════
+        function carregarMarcadoresProtocolos() {
+            if (!estado.mapbox3d || !estado.mapbox3d.getSource(SOURCE_ID)) return;
+
+            fetch('api.php?action=get_problems')
+                .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                .then(function(data) {
+                    if (!Array.isArray(data)) { console.warn('[Modo 3D] Resposta inesperada:', data); return; }
+
+                    var features = [];
+                    data.forEach(function(p) {
+                        var lat = parseFloat(p.latitude);
+                        var lng = parseFloat(p.longitude);
+                        if (isNaN(lat) || isNaN(lng)) return;
+                        var tipo = (p.tipo || 'outros').toLowerCase();
+                        features.push({
+                            type: 'Feature',
+                            geometry: { type: 'Point', coordinates: [lng, lat] },
+                            properties: {
+                                id: p.id, titulo: p.titulo || 'Protocolo #' + p.id,
+                                descricao: p.descricao || '', tipo: tipo,
+                                status: p.status || 'Pendente',
+                                prioridade: p.prioridade || '', endereco: p.endereco || '',
+                                imagem_url: p.imagem_url || '',
+                                emoji: TIPO_EMOJI[tipo] || '📍',
+                            },
+                        });
+                    });
+
+                    // Atualiza a source — Mapbox re-renderiza tudo automaticamente
+                    estado.mapbox3d.getSource(SOURCE_ID).setData({
+                        type: 'FeatureCollection', features: features,
+                    });
+                    console.info('[Modo 3D] ' + features.length + ' protocolos carregados na source GeoJSON.');
+                })
+                .catch(function(e) { console.warn('[Modo 3D] Erro ao carregar protocolos:', e.message); });
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 9. POPUP NATIVO AO CLICAR NUM PROTOCOLO
+        // ════════════════════════════════════════════════════════════════
+        function _onProtocoloClick(e) {
+            e.preventDefault();
+            if (!e.features || !e.features.length) return;
+
+            var props  = e.features[0].properties;
+            var coords = e.features[0].geometry.coordinates.slice();
+            var tipo   = props.tipo || 'outros';
+            var corT   = TIPO_CORES[tipo]          || '#6b7280';
+            var corS   = STATUS_CORES[props.status] || '#9ca3af';
+
+            if (estado._popupAtivo) { estado._popupAtivo.remove(); estado._popupAtivo = null; }
+
+            var imgHtml = props.imagem_url
+                ? '<img src="'+_esc(props.imagem_url)+'" style="width:100%;border-radius:8px;margin-top:8px;max-height:140px;object-fit:cover;" alt="">'
+                : '';
+
+            var html =
+                '<div style="font-family:Poppins,system-ui,sans-serif;font-size:13px;line-height:1.55;min-width:220px;max-width:280px;color:#e2e8f0;">'
+              + '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;">'
+              +   '<span style="font-size:20px;flex-shrink:0;">'+(TIPO_EMOJI[tipo]||'📍')+'</span>'
+              +   '<strong style="font-size:14px;color:#f1f5f9;line-height:1.3;">'+_esc(props.titulo)+'</strong>'
+              + '</div>'
+              + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">'
+              +   '<span style="background:'+corT+'22;color:'+corT+';border:1px solid '+corT+'55;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">'+_esc(props.tipo)+'</span>'
+              +   '<span style="background:'+corS+'22;color:'+corS+';border:1px solid '+corS+'55;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">'+_esc(props.status)+'</span>'
+              + (props.prioridade ? '<span style="background:#ffffff11;color:#94a3b8;border:1px solid #ffffff18;padding:2px 8px;border-radius:999px;font-size:11px;">'+_esc(props.prioridade)+'</span>' : '')
+              + '</div>'
+              + (props.descricao ? '<p style="margin:0 0 7px;color:#94a3b8;font-size:12px;">'+_esc(props.descricao)+'</p>' : '')
+              + (props.endereco  ? '<div style="font-size:11px;color:#64748b;margin-bottom:4px;">📍 '+_esc(props.endereco)+'</div>' : '')
+              + imgHtml
+              + '</div>';
+
+            estado._popupAtivo = new mapboxgl.Popup({
+                offset: 18, closeButton: true, closeOnClick: false,
+                focusAfterOpen: false, className: 'au-popup-3d', maxWidth: '300px',
+            }).setLngLat(coords).setHTML(html).addTo(estado.mapbox3d);
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 10. CLIQUE EM PONTO VAZIO → CRIAR RELATÓRIO
+        // ════════════════════════════════════════════════════════════════
+        function _geocodingReverso(lat, lng, cb) {
+            fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+lng+','+lat
+                +'.json?access_token='+MAPBOX_ACCESS_TOKEN+'&language=pt&limit=1')
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    cb((d.features && d.features[0] && d.features[0].place_name) || lat.toFixed(5)+', '+lng.toFixed(5));
+                })
+                .catch(function() { cb(lat.toFixed(5)+', '+lng.toFixed(5)); });
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 11. BUSCA — intercepta map.setView / fitBounds do Leaflet
+        // ════════════════════════════════════════════════════════════════
+        function _interceptarNavegacaoLeaflet() {
+            if (typeof map === 'undefined' || !map || estado._leafletSetView) return;
+            estado._leafletSetView   = map.setView.bind(map);
+            estado._leafletFitBounds = map.fitBounds.bind(map);
+
+            map.setView = function(latlng, zoom, opts) {
+                var lat = Array.isArray(latlng) ? parseFloat(latlng[0]) : parseFloat(latlng.lat);
+                var lng = Array.isArray(latlng) ? parseFloat(latlng[1]) : parseFloat(latlng.lng);
+                if (estado.ativo && estado.mapbox3d && !isNaN(lat)) {
+                    estado.mapbox3d.flyTo({ center:[lng,lat], zoom: zoom||15,
+                        pitch:CONFIG.pitch, bearing:CONFIG.bearing,
+                        duration:CONFIG.duracaoFlyTo, essential:true });
+                    return this;
+                }
+                return estado._leafletSetView(latlng, zoom, opts);
+            };
+
+            map.fitBounds = function(bounds, opts) {
+                if (estado.ativo && estado.mapbox3d) {
+                    try {
+                        var s, w, n, e;
+                        if (Array.isArray(bounds)) {
+                            s=parseFloat(bounds[0][0]); w=parseFloat(bounds[0][1]);
+                            n=parseFloat(bounds[1][0]); e=parseFloat(bounds[1][1]);
+                        } else { s=bounds.getSouth(); w=bounds.getWest(); n=bounds.getNorth(); e=bounds.getEast(); }
+                        estado.mapbox3d.flyTo({ center:[(w+e)/2,(s+n)/2], zoom:13,
+                            pitch:CONFIG.pitch, bearing:CONFIG.bearing,
+                            duration:CONFIG.duracaoFlyTo, essential:true });
+                    } catch(_) {}
+                    return this;
+                }
+                return estado._leafletFitBounds(bounds, opts);
+            };
+        }
+
+        function _restaurarNavegacaoLeaflet() {
+            if (typeof map === 'undefined' || !map) return;
+            if (estado._leafletSetView)   { map.setView   = estado._leafletSetView;   estado._leafletSetView   = null; }
+            if (estado._leafletFitBounds) { map.fitBounds = estado._leafletFitBounds; estado._leafletFitBounds = null; }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 12. STREET VIEW
+        // ════════════════════════════════════════════════════════════════
+        function _iniciarStreetView3D() {
+            var btn = document.getElementById('mode-streetview-btn');
+            if (!btn || btn._au3dListener) return;
+
+            btn._au3dListener = function(e) {
+                if (!estado.ativo || !estado.mapbox3d) return;
+
+                // Impede o listener do script.js de ativar o modo Leaflet Street View
+                // (capture:true garante que rodamos ANTES do listener de script.js)
+                e.stopImmediatePropagation();
+
+                // Feedback igual ao mapa 2D
+                if (typeof showToast === 'function') {
+                    showToast('\uD83D\uDCCD Clique em um ponto do mapa para ver o Street View.', 'info', 4500);
+                }
+
+                // Cursor de mira no canvas 3D
+                estado.mapbox3d.getCanvas().style.cursor = 'crosshair';
+
+                // Aguarda UM clique no mapa 3D
+                estado.mapbox3d.once('click', function(ev) {
+                    estado.mapbox3d.getCanvas().style.cursor = '';
+                    _abrirStreetView(ev.lngLat.lat, ev.lngLat.lng);
+                });
+            };
+
+            // capture:true = roda na fase de captura, antes do listener bubbling do script.js
+            btn.addEventListener('click', btn._au3dListener, true);
+        }
+
+        function _abrirStreetView(lat, lng) {
+            var modal   = document.getElementById('streetview-modal');
+            var panoDiv = document.getElementById('streetview-pano');
+            if (!modal || !panoDiv) {
+                window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+lat+','+lng,'_blank');
+                return;
+            }
+            modal.classList.remove('hidden'); modal.style.display = 'flex';
+            if (typeof google !== 'undefined' && google.maps && google.maps.StreetViewPanorama) {
+                panoDiv.innerHTML = '';
+                new google.maps.StreetViewPanorama(panoDiv, {
+                    position: { lat:lat, lng:lng }, pov: { heading:165, pitch:0 },
+                    zoom: 1, addressControl:true, fullscreenControl:true, motionTracking:false,
+                });
+            } else {
+                panoDiv.innerHTML =
+                    '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;'
+                    +'justify-content:center;background:#0f172a;color:#94a3b8;gap:14px;font-family:Poppins,sans-serif;">'
+                    +'<div style="font-size:2.5rem;">🗺️</div>'
+                    +'<div style="font-size:14px;">Google Maps API não configurada.</div>'
+                    +'<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+lat+','+lng
+                    +'" target="_blank" style="background:#0ea5e9;color:#fff;padding:10px 22px;'
+                    +'border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;">Abrir Street View ↗</a></div>';
+            }
+        }
+
+        function _removerStreetView3D() {
+            var btn = document.getElementById('mode-streetview-btn');
+            if (btn && btn._au3dListener) {
+                btn.removeEventListener('click', btn._au3dListener, true); // mesma flag capture:true
+                btn._au3dListener = null;
+            }
+            // Limpar cursor caso o usuario saia do modo 3D durante selecao
+            if (estado.mapbox3d) estado.mapbox3d.getCanvas().style.cursor = '';
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 13. MINHA LOCALIZAÇÃO
+        // ════════════════════════════════════════════════════════════════
+        function _iniciarLocalizacao3D() {
+            var btn = document.getElementById('recenter-btn');
+            if (!btn || btn._au3dListener) return;
+            btn._au3dListener = function() {
+                if (!estado.ativo || !estado.mapbox3d) return;
+                if (!navigator.geolocation) {
+                    if (typeof showToast === 'function') showToast('⚠️ Geolocalização não disponível.','warning',3000);
+                    return;
+                }
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                btn.disabled  = true;
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) {
+                        estado.mapbox3d.flyTo({
+                            center:[pos.coords.longitude,pos.coords.latitude], zoom:16,
+                            pitch:CONFIG.pitch, bearing:CONFIG.bearing, duration:1400, essential:true,
+                        });
+                        _atualizarMarcadorLocalizacao(pos.coords.latitude, pos.coords.longitude);
+                        btn.innerHTML = '<i class="fas fa-location-crosshairs"></i>';
+                        btn.disabled  = false;
+                    },
+                    function() {
+                        if (typeof showToast === 'function') showToast('❌ Localização indisponível.','error',3000);
+                        btn.innerHTML = '<i class="fas fa-location-crosshairs"></i>';
+                        btn.disabled  = false;
+                    },
+                    { enableHighAccuracy:true, timeout:8000 }
+                );
+            };
+            btn.addEventListener('click', btn._au3dListener);
+        }
+
+        function _atualizarMarcadorLocalizacao(lat, lng) {
+            if (estado.marcadorLocalizacao) { estado.marcadorLocalizacao.setLngLat([lng,lat]); return; }
+            if (!document.getElementById('au3d-pulse')) {
+                var s = document.createElement('style');
+                s.id  = 'au3d-pulse';
+                s.textContent = '@keyframes au3dPulse{0%,100%{box-shadow:0 0 0 4px rgba(59,130,246,.35)}50%{box-shadow:0 0 0 12px rgba(59,130,246,0)}}';
+                document.head.appendChild(s);
+            }
+            var el = document.createElement('div');
+            el.style.cssText = 'width:16px;height:16px;border-radius:50%;background:#3b82f6;border:2.5px solid #fff;animation:au3dPulse 2s ease-in-out infinite;cursor:pointer;';
+            el.title = 'Sua localização';
+            estado.marcadorLocalizacao = new mapboxgl.Marker(el)
+                .setLngLat([lng,lat])
+                .setPopup(new mapboxgl.Popup({ offset:14, focusAfterOpen:false, closeButton:false })
+                    .setHTML('<div style="font-family:Poppins,sans-serif;font-size:13px;color:#e2e8f0;padding:2px;"><strong>📍 Você está aqui</strong></div>'))
+                .addTo(estado.mapbox3d);
+        }
+
+        function _removerLocalizacao3D() {
+            var btn = document.getElementById('recenter-btn');
+            if (btn && btn._au3dListener) {
+                btn.removeEventListener('click',btn._au3dListener); btn._au3dListener=null;
+                btn.innerHTML='<i class="fas fa-location-crosshairs"></i>'; btn.disabled=false;
+            }
+        }
+
+
+        // ════════════════════════════════════════════════════════════════
+        // SELECAO DE LOCAL NO MAPA 3D
+        // Intercepta o botao "Selecionar no Mapa" do modal de relatorio.
+        // Em modo 3D, ao clicar no botao:
+        //   1. Fecha o modal temporariamente
+        //   2. Mostra cursor de mira no mapa 3D
+        //   3. Aguarda UM clique no mapa Mapbox
+        //   4. Preenche lat/lng/endereco e reabre o modal
+        // Usa capture:true para rodar antes do handler do script.js
+        // (que ativaria o modo de selecao do Leaflet oculto).
+        // ════════════════════════════════════════════════════════════════
+        function _iniciarSelecaoLocal3D() {
+            var btn = document.getElementById('select-on-map-btn');
+            if (!btn || btn._au3dSelListener) return;
+
+            btn._au3dSelListener = function(e) {
+                if (!estado.ativo || !estado.mapbox3d) return;
+
+                // Bloqueia toggleMapSelectionMode do script.js (Leaflet oculto)
+                e.stopImmediatePropagation();
+
+                var modal = document.getElementById('report-modal');
+                if (modal) modal.classList.add('hidden');
+
+                if (typeof showToast === 'function') {
+                    showToast('\uD83D\uDCCD Clique em um ponto do mapa para definir a localizacao.', 'info', 5000);
+                }
+
+                estado.mapbox3d.getCanvas().style.cursor = 'crosshair';
+
+                estado.mapbox3d.once('click', function(ev) {
+                    estado.mapbox3d.getCanvas().style.cursor = '';
+
+                    var lat = ev.lngLat.lat;
+                    var lng = ev.lngLat.lng;
+
+                    var campoLat = document.getElementById('form-latitude');
+                    var campoLng = document.getElementById('form-longitude');
+                    var campoEnd = document.getElementById('endereco');
+
+                    if (campoLat) campoLat.value = lat.toFixed(7);
+                    if (campoLng) campoLng.value = lng.toFixed(7);
+
+                    // Geocoding reverso via Mapbox
+                    _geocodingReverso(lat, lng, function(endereco) {
+                        if (campoEnd) campoEnd.value = endereco;
+                    });
+
+                    // Reabrir o modal com os campos preenchidos
+                    if (modal) {
+                        modal.classList.remove('hidden');
+                        modal.style.display = 'flex';
+                    }
+                });
+            };
+
+            btn.addEventListener('click', btn._au3dSelListener, true);
+        }
+
+        function _removerSelecaoLocal3D() {
+            var btn = document.getElementById('select-on-map-btn');
+            if (btn && btn._au3dSelListener) {
+                btn.removeEventListener('click', btn._au3dSelListener, true);
+                btn._au3dSelListener = null;
+            }
+            if (estado.mapbox3d) estado.mapbox3d.getCanvas().style.cursor = '';
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 14. ATIVAÇÃO / DESATIVAÇÃO
+        // ════════════════════════════════════════════════════════════════
+
+        // ================================================================
+        // FILTROS 3D + LEGENDA HOVER 3D
+        // ================================================================
+
+        // ── FILTROS ──────────────────────────────────────────────────────
+
+        function _aplicarFiltro3D() {
+            if (!estado.mapbox3d) return;
+            var catEl    = document.getElementById('filter-category');
+            var statusEl = document.getElementById('filter-status');
+            var cat    = catEl    ? catEl.value.trim()    : 'all';
+            var status = statusEl ? statusEl.value.trim() : 'all';
+
+            var expr = null;
+            if (cat !== 'all' && status !== 'all') {
+                expr = ['all', ['==',['get','tipo'],cat], ['==',['get','status'],status]];
+            } else if (cat !== 'all') {
+                expr = ['==', ['get','tipo'], cat];
+            } else if (status !== 'all') {
+                expr = ['==', ['get','status'], status];
+            }
+
+            [LAYER_OUTER, LAYER_DOT, LAYER_LABEL].forEach(function(id) {
+                if (estado.mapbox3d.getLayer(id)) estado.mapbox3d.setFilter(id, expr);
+            });
+        }
+
+        function _iniciarFiltros3D() {
+            var applyBtn = document.getElementById('apply-filter-btn');
+            var clearBtn = document.getElementById('clear-filter-btn');
+
+            if (applyBtn && !applyBtn._au3dFiltro) {
+                applyBtn._au3dFiltro = function() { if (estado.ativo) _aplicarFiltro3D(); };
+                applyBtn.addEventListener('click', applyBtn._au3dFiltro);
+            }
+            if (clearBtn && !clearBtn._au3dFiltro) {
+                clearBtn._au3dFiltro = function() {
+                    if (!estado.ativo) return;
+                    [LAYER_OUTER, LAYER_DOT, LAYER_LABEL].forEach(function(id) {
+                        if (estado.mapbox3d && estado.mapbox3d.getLayer(id))
+                            estado.mapbox3d.setFilter(id, null);
+                    });
+                };
+                clearBtn.addEventListener('click', clearBtn._au3dFiltro);
+            }
+        }
+
+        function _removerFiltros3D() {
+            [LAYER_OUTER, LAYER_DOT, LAYER_LABEL].forEach(function(id) {
+                if (estado.mapbox3d && estado.mapbox3d.getLayer(id))
+                    estado.mapbox3d.setFilter(id, null);
+            });
+            ['apply-filter-btn','clear-filter-btn'].forEach(function(btnId) {
+                var b = document.getElementById(btnId);
+                if (b && b._au3dFiltro) {
+                    b.removeEventListener('click', b._au3dFiltro);
+                    b._au3dFiltro = null;
+                }
+            });
+        }
+
+        // ── LEGENDA HOVER ─────────────────────────────────────────────────
+
+        var _CAT_MAP = {
+            'Iluminação':'iluminacao','Asfalto':'asfalto','Limpeza':'limpeza',
+            'Água/Esgoto':'agua-esgoto','Transporte':'transporte',
+            'Assistencial':'assistencial','Meteorológico':'meteorologico',
+            'Mobilidade':'mobilidade','Saúde':'saude','Segurança':'seguranca',
+            'Acessibilidade':'acessibilidade','Eletricidade':'eletricidade',
+            'Meio Ambiente':'meio-ambiente','Estrutura':'estrutura',
+            'Drenagem':'drenagem','Obras':'obras','Ciclismo':'ciclismo',
+            'Má Gestão':'ma-gestao','Outros':'outros'
+        };
+
+        function _destacarCategoria3D(tipo) {
+            if (!estado.mapbox3d) return;
+            var m  = ['==',['get','tipo'], tipo];
+            if (estado.mapbox3d.getLayer(LAYER_DOT)) {
+                estado.mapbox3d.setPaintProperty(LAYER_DOT,   'circle-opacity',        ['case',m,1,   0.08]);
+                estado.mapbox3d.setPaintProperty(LAYER_DOT,   'circle-stroke-opacity', ['case',m,0.9, 0.04]);
+            }
+            if (estado.mapbox3d.getLayer(LAYER_OUTER)) {
+                estado.mapbox3d.setPaintProperty(LAYER_OUTER, 'circle-opacity',        ['case',m,0.22,0.03]);
+            }
+            if (estado.mapbox3d.getLayer(LAYER_LABEL)) {
+                estado.mapbox3d.setPaintProperty(LAYER_LABEL, 'icon-opacity',          ['case',m,1,   0.0 ]);
+            }
+        }
+
+        function _restaurarDestaque3D() {
+            if (!estado.mapbox3d) return;
+            if (estado.mapbox3d.getLayer(LAYER_DOT)) {
+                estado.mapbox3d.setPaintProperty(LAYER_DOT,   'circle-opacity',        1);
+                estado.mapbox3d.setPaintProperty(LAYER_DOT,   'circle-stroke-opacity', 0.9);
+            }
+            if (estado.mapbox3d.getLayer(LAYER_OUTER)) {
+                estado.mapbox3d.setPaintProperty(LAYER_OUTER, 'circle-opacity',        0.22);
+            }
+            if (estado.mapbox3d.getLayer(LAYER_LABEL)) {
+                estado.mapbox3d.setPaintProperty(LAYER_LABEL, 'icon-opacity',          1);
+            }
+        }
+
+        function _iniciarLegendaHover3D() {
+            document.querySelectorAll('.legend-categories-tooltip .category-row').forEach(function(row) {
+                if (row._au3dEnter) return;
+                row._au3dEnter = function() {
+                    if (!estado.ativo) return;
+                    var el = row.querySelector('.category-name');
+                    if (!el) return;
+                    var tipo = _CAT_MAP[el.textContent.trim()];
+                    if (tipo) _destacarCategoria3D(tipo);
+                };
+                row._au3dLeave = function() {
+                    if (estado.ativo) _restaurarDestaque3D();
+                };
+                row.addEventListener('mouseenter', row._au3dEnter);
+                row.addEventListener('mouseleave', row._au3dLeave);
+            });
+        }
+
+        function _removerLegendaHover3D() {
+            _restaurarDestaque3D();
+            document.querySelectorAll('.legend-categories-tooltip .category-row').forEach(function(row) {
+                if (!row._au3dEnter) return;
+                row.removeEventListener('mouseenter', row._au3dEnter);
+                row.removeEventListener('mouseleave', row._au3dLeave);
+                row._au3dEnter = null; row._au3dLeave = null;
+            });
+        }
+
+        function ativarModo3D() {
+            var mapEl   = document.getElementById('map');
+            var map3dEl = document.getElementById('map3d');
+            if (mapEl)   mapEl.style.display  = 'none';
+            if (map3dEl) map3dEl.style.display = 'block';
+            if (estado.mapbox3d) estado.mapbox3d.resize();
+            sincronizarMapa2DPara3D();
+            _interceptarNavegacaoLeaflet();
+            _iniciarStreetView3D();
+            _iniciarLocalizacao3D();
+            _iniciarSelecaoLocal3D();
+            _iniciarFiltros3D();
+            _iniciarLegendaHover3D();
+            estado.ativo = true;
+            _atualizarBotao(true);
+        }
+
+        function desativarModo3D() {
+            sincronizarMapa3DPara2D();
+            var mapEl   = document.getElementById('map');
+            var map3dEl = document.getElementById('map3d');
+            if (map3dEl) map3dEl.style.display = 'none';
+            if (mapEl)   mapEl.style.display   = 'block';
+            if (estado._popupAtivo) { estado._popupAtivo.remove(); estado._popupAtivo = null; }
+            _restaurarNavegacaoLeaflet();
+            _removerStreetView3D();
+            _removerLocalizacao3D();
+            _removerSelecaoLocal3D();
+            _removerFiltros3D();
+            _removerLegendaHover3D();
+            if (typeof map !== 'undefined' && map && map.invalidateSize)
+                setTimeout(function() { map.invalidateSize({ animate:false }); }, 80);
+            estado.ativo = false;
+            _atualizarBotao(false);
+        }
+
+        function _atualizarBotao(ativo) {
+            if (!btn3D) return;
+            btn3D.classList.remove('carregando-3d'); btn3D.disabled = false;
+            if (ativo) {
+                btn3D.innerHTML = '🗺️ Modo 2D'; btn3D.classList.add('ativo-3d');
+                btn3D.title = 'Voltar ao mapa 2D';
+            } else {
+                btn3D.innerHTML = '🌍 Modo 3D'; btn3D.classList.remove('ativo-3d');
+                btn3D.title = 'Alternar para visualização 3D';
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 15. TOGGLE
+        // ════════════════════════════════════════════════════════════════
+        function alternarModo3D() {
+            if (estado.carregando) return;
+            if (!estado.ativo) {
+                if (!estado.scriptCarregado) {
+                    estado.carregando = true;
+                    if (btn3D) { btn3D.innerHTML='⏳ Carregando...'; btn3D.disabled=true; btn3D.classList.add('carregando-3d'); }
+                    carregarMapboxGL()
+                        .then(function() {
+                            estado.carregando = false;
+                            if (!estado.inicializado) inicializarMapa3D();
+                            ativarModo3D();
+                        })
+                        .catch(function(err) {
+                            estado.carregando = false; _atualizarBotao(false);
+                            console.error('[Modo 3D]', err);
+                            if (typeof showToast === 'function') showToast('❌ Erro ao carregar o modo 3D.','error',4500);
+                        });
+                } else {
+                    if (!estado.inicializado) inicializarMapa3D();
+                    ativarModo3D();
+                }
+            } else {
+                desativarModo3D();
+            }
+        }
+
+        function _esc(s) {
+            return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // 16. API PÚBLICA
+        // ════════════════════════════════════════════════════════════════
+        window.mapa3D = {
+            ativar: ativarModo3D, desativar: desativarModo3D, alternar: alternarModo3D,
+            inicializar: inicializarMapa3D, carregarMapboxGL: carregarMapboxGL,
+            sincronizar2DPara3D: sincronizarMapa2DPara3D, sincronizar3DPara2D: sincronizarMapa3DPara2D,
+            isAtivo:   function() { return estado.ativo; },
+            getEstado: function() { return { ativo:estado.ativo, inicializado:estado.inicializado, scriptCarregado:estado.scriptCarregado }; },
+            getMapboxInstance: function() { return estado.mapbox3d; },
+            getMap:            function() { return estado.mapbox3d; },
+            recarregarMarcadores: carregarMarcadoresProtocolos,
+            abrirStreetView:   _abrirStreetView,
+            geocodingReverso:  _geocodingReverso,
+            adicionarLayer: function(def,antes) { if (estado.mapbox3d) estado.mapbox3d.addLayer(def,antes); },
+            adicionarFonte: function(id,def)    { if (estado.mapbox3d&&!estado.mapbox3d.getSource(id)) estado.mapbox3d.addSource(id,def); },
+            voarePara: function(lat,lng,zoom,pitch,bearing) {
+                if (!estado.mapbox3d) return;
+                estado.mapbox3d.flyTo({ center:[lng,lat],
+                    zoom: zoom||estado.mapbox3d.getZoom(),
+                    pitch: pitch!==undefined?pitch:CONFIG.pitch,
+                    bearing: bearing!==undefined?bearing:CONFIG.bearing,
+                    duration:CONFIG.duracaoFlyTo, essential:true });
+            },
+        };
+
+        if (btn3D) {
+            btn3D.addEventListener('click', alternarModo3D);
+        } else {
+            document.addEventListener('DOMContentLoaded', function() {
+                var b = document.getElementById('modo-3d-btn');
+                if (b) b.addEventListener('click', alternarModo3D);
+            });
+        }
+
+        document.addEventListener('au:relatorioSalvo', function() {
+            if (estado.ativo) carregarMarcadoresProtocolos();
+        });
+
+    })(); // fim do IIFE iniciarModulo3D
     </script>
 </body>
 
