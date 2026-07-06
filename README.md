@@ -146,8 +146,6 @@ O **Agente Urbano** utiliza uma topologia cliente-servidor otimizada para a tran
 +------------------------------------------------------------------------+
 ```
 
-Consulte o fluxo completo de ciclos de dados no diagrama presente em [`docs/workflow.svg`](docs/workflow.svg) e a arquitetura detalhada em [`docs/architecture.svg`](docs/architecture.svg).
-
 ---
 
 ## 📁 Estrutura de Pastas
