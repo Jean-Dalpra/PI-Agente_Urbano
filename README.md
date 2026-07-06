@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="imagens/Banner.svg" alt="Agente Urbano Banner" width="100%">
+  <img src="imagens/Banner.png" alt="Agente Urbano Banner" width="100%">
 </p>
 
 <p align="center">
