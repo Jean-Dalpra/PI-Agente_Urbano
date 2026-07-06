@@ -157,39 +157,33 @@ A organização interna do código reflete a separação clara de responsabilida
 
 ```
 agente-urbano/
-├── config/                 # Ficheiros de parametrização e conexão à Base de Dados
-│   └── database.php        # Configuração das credenciais do MySQL
-├── core/                   # Controladores e engines em PHP (Lógica de Negócio)
-│   ├── FilterEngine.php    # Motor de filtragem de dados e coordenadas
-│   └── ReportHandler.php   # Processamento de novos reportes urbanos
-├── css/                    # Folhas de estilo da aplicação
-│   ├── dashboard.css       # Estilização do painel métrico
-│   ├── map.css             # Interface e overlays do mapa interactivo
-│   └── style.css           # Estilos globais e componentes genéricos
-├── docs/                   # Documentação técnica e recursos gráficos do repositório
-│   ├── architecture.svg    # Diagrama estrutural em formato vectorial
-│   ├── banner.svg          # Banner de apresentação do projeto
-│   ├── dashboard.png       # Placeholder visual da página de métricas
-│   ├── home.png            # Placeholder da página inicial do ecossistema
-│   ├── logo.svg            # Logótipo oficial em vetor minimalista
-│   ├── map.png             # Placeholder da interface cartográfica
-│   ├── settings.png        # Placeholder do ecrã de configurações
-│   ├── tools.png           # Placeholder da vista de ferramentas
-│   └── workflow.svg        # Fluxograma do ciclo de dados do sistema
-├── js/                     # Módulos e scripts de comportamento do cliente
-│   ├── app.js              # Inicializador global e controlo de estado
-│   ├── dashboard.js        # Lógica dos gráficos e contadores dinâmicos
-│   └── map-layers.js       # Configuração e renderização das camadas MapLibre
-├── data/                   # Repositório de ficheiros geográficos estáticos
-│   └── limites-vias.geojson# Polígonos e malhas das vias públicas mapeadas
-├── includes/               # Componentes parciais reutilizáveis de interface
-│   ├── footer.php          # Rodapé padronizado
-│   └── header.php          # Cabeçalho e menus de navegação
-├── index.php               # Ponto de entrada do sistema (Página Inicial)
-├── mapa.php                # Módulo central cartográfico
-├── ferramentas.php         # Utilitários de análise territorial
-├── dashboard.php           # Painel de monitorização executiva
-└── configuracoes.php       # Gestão de parâmetros operacionais
+├── imagens/                # Diretório de assets de imagens estáticas do sistema
+├── node_modules/           # Dependências e pacotes externos gerenciados via npm
+├── secret/                 # Arquivos de configurações sensíveis e chaves de proteção
+├── uploads/                # Armazenamento de mídias enviadas pelos usuários nos relatórios
+├── api.js                  # Lógica de integração e chamadas assíncronas no front-end
+├── api.php                 # Core do back-end para processamento e respostas de requisições
+├── assistente.css          # Estilização das interfaces e janelas do módulo assistente
+├── assistente.js           # Comportamento interativo e manipulação do assistente na tela
+├── assistente_api.php      # Regras de negócio e processamento de dados do assistente
+├── chat.js                 # Gerenciamento de mensagens e painel de comunicação fluida
+├── dashboard.php           # Painel de monitorização executiva e indicadores (KPIs)
+├── detalhes-relatorio.php  # Visualização aprofundada de um reporte urbano específico
+├── gamificacao.php         # Módulo de engajamento e conquistas do cidadão agente
+├── index.php               # Ponto de entrada da aplicação (Página Inicial)
+├── mapa.php                # Módulo central de geoprocessamento e cartografia vetorial
+├── position.php            # Gerenciamento de geolocalização e captura de coordenadas GPS
+├── profile.php             # Painel de controle e dados do perfil do usuário logado
+├── README.md               # Documentação principal e guia de apresentação do repositório
+├── recompensas.php         # Sistema de incentivo e distribuição de recompensas urbanas
+├── relatorios.php          # Visualização geral e agrupamento de todas as ocorrências
+├── report_owners.json      # Mapeamento e controle de responsáveis pelas resoluções
+├── script.js               # Comportamento global e interatividades gerais do DOM
+├── settings.php            # Configurações de sistema e chaves operacionais
+├── style.css               # Folha de estilo CSS global e padronização visual
+├── ui.js                   # Controle de componentes visuais, transições e animações
+├── users.json              # Configurações locais ou mock de dados de usuários
+└── usuario.php             # Área individual e gerenciamento de ações do usuário
 ```
 
 ---
@@ -250,17 +244,17 @@ O ecossistema **Agente Urbano** disponibiliza caminhos bem definidos para intera
 
 <p align="center">
   <strong>Página Inicial do Ecossistema</strong><br>
-  <img src="docs/home.png" alt="Página Inicial" width="90%" style="border-radius: 8px; border: 1px solid #1e293b;">
+  <img src="imagens/Paginainicial.png" alt="Página Inicial" width="90%" style="border-radius: 8px; border: 1px solid #1e293b;">
 </p>
 
 <p align="center">
   <strong>Módulo do Mapa Interativo Vetorial</strong><br>
-  <img src="docs/map.png" alt="Mapa Interativo" width="90%" style="border-radius: 8px; border: 1px solid #1e293b;">
+  <img src="imagens/mapa.png" alt="Mapa Interativo" width="90%" style="border-radius: 8px; border: 1px solid #1e293b;">
 </p>
 
 <p align="center">
   <strong>Ferramentas de Análise Espacial</strong><br>
-  <img src="docs/tools.png" alt="Ferramentas" width="90%" style="border-radius: 8px; border: 1px solid #1e293b;">
+  <img src="imagens/Street.png" alt="Ferramentas" width="90%" style="border-radius: 8px; border: 1px solid #1e293b;">
 </p>
 
 <p align="center">
@@ -270,7 +264,7 @@ O ecossistema **Agente Urbano** disponibiliza caminhos bem definidos para intera
 
 <p align="center">
   <strong>Configurações do Sistema</strong><br>
-  <img src="docs/settings.png" alt="Configurações" width="90%" style="border-radius: 8px; border: 1px solid #1e293b;">
+  <img src="imagens/usuario.png" alt="Configurações" width="90%" style="border-radius: 8px; border: 1px solid #1e293b;">
 </p>
 
 ---
