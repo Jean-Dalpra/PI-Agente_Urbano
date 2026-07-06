@@ -20,7 +20,7 @@
 // ══════════════════════════════════════════════════════════════
 
 // ↓↓↓ COLE SUA CHAVE AQUI (começa com hf_) ↓↓↓
-define('AU_HF_API_KEY', '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');
+define('AU_HF_API_KEY', '');
 
 // Modelo a utilizar.  Alternativas gratuitas:
 //   'mistralai/Mistral-7B-Instruct-v0.2'
@@ -29,9 +29,9 @@ define('AU_HF_API_KEY', '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');
 define('AU_HF_MODELO', 'HuggingFaceH4/zephyr-7b-beta');
 
 // Parâmetros de geração
-define('AU_HF_MAX_TOKENS',  1024);
+define('AU_HF_MAX_TOKENS', 1024);
 define('AU_HF_TEMPERATURE', 0.7);
-define('AU_HF_TIMEOUT',     60);    // segundos
+define('AU_HF_TIMEOUT', 60);    // segundos
 
 // ══════════════════════════════════════════════════════════════
 //  HEADERS DE RESPOSTA
@@ -82,13 +82,13 @@ if (AU_HF_API_KEY === 'INSERIR_CHAVE_HF_AQUI' || empty(AU_HF_API_KEY)) {
 //  CHAMADA AO HUGGINGFACE
 // ══════════════════════════════════════════════════════════════
 $endpoint = 'https://api-inference.huggingface.co/models/'
-          . AU_HF_MODELO
-          . '/v1/chat/completions';
+    . AU_HF_MODELO
+    . '/v1/chat/completions';
 
 $payload = json_encode([
-    'model'       => AU_HF_MODELO,
-    'messages'    => $dados['messages'],
-    'max_tokens'  => AU_HF_MAX_TOKENS,
+    'model' => AU_HF_MODELO,
+    'messages' => $dados['messages'],
+    'max_tokens' => AU_HF_MAX_TOKENS,
     'temperature' => AU_HF_TEMPERATURE,
 ], JSON_UNESCAPED_UNICODE);
 
@@ -99,23 +99,23 @@ if (!function_exists('curl_init')) {
 
 $ch = curl_init($endpoint);
 curl_setopt_array($ch, [
-    CURLOPT_POST           => true,
-    CURLOPT_POSTFIELDS     => $payload,
+    CURLOPT_POST => true,
+    CURLOPT_POSTFIELDS => $payload,
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HTTPHEADER     => [
+    CURLOPT_HTTPHEADER => [
         'Authorization: Bearer ' . AU_HF_API_KEY,
         'Content-Type: application/json',
         'Accept: application/json',
     ],
-    CURLOPT_TIMEOUT        => AU_HF_TIMEOUT,
+    CURLOPT_TIMEOUT => AU_HF_TIMEOUT,
     CURLOPT_CONNECTTIMEOUT => 15,
     CURLOPT_SSL_VERIFYPEER => true,
-    CURLOPT_USERAGENT      => 'AgenteUrbano/1.0',
+    CURLOPT_USERAGENT => 'AgenteUrbano/1.0',
 ]);
 
-$resposta   = curl_exec($ch);
-$httpCode   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlErro   = curl_error($ch);
+$resposta = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlErro = curl_error($ch);
 $curlErrNum = curl_errno($ch);
 curl_close($ch);
 
@@ -137,7 +137,7 @@ function _erro(int $codigo, string $mensagem): void
     echo json_encode([
         'error' => [
             'message' => $mensagem,
-            'code'    => $codigo,
+            'code' => $codigo,
         ]
     ], JSON_UNESCAPED_UNICODE);
     exit;

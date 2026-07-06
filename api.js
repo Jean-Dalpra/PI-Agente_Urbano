@@ -32,7 +32,7 @@
         /* ── Google Gemini ──────────────────────────────── */
         gemini: {
             // Crie sua chave em: https://makersuite.google.com/app/apikey
-            apiKey:   'AQ.Ab8RN6LMhOIz-kSIvNGhLwKz4PHG780sO90KOkvCTWrwPRkeXg',
+            apiKey:   '',
             modelo:   'gemini-2.0-flash-lite',
             endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={apiKey}',
         },
