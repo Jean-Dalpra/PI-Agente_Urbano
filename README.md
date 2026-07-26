@@ -285,7 +285,7 @@ O ecossistema **Agente Urbano** disponibiliza caminhos bem definidos para intera
 
 <p align="center">
     <img
-        src="imagens/exemploAU.gif"
+        src="imagens/gif.gif"
         alt="Demonstração do Agente Urbano"
         width="95%"
         style="border-radius:14px; border:1px solid #d1d5db;">
