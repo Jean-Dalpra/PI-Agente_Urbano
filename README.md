@@ -271,6 +271,38 @@ O ecossistema **Agente Urbano** disponibiliza caminhos bem definidos para intera
 </p>
 
 ---
+<!-- ========================================= -->
+<!-- Demonstração -->
+<!-- ========================================= -->
+
+<h2 align="center">
+    🎬 Demonstração
+</h2>
+
+<p align="center">
+    <em>Veja o Agente Urbano em funcionamento antes mesmo de acessar o projeto.</em>
+</p>
+
+<p align="center">
+    <img
+        src="imagens/exemploAU.gif"
+        alt="Demonstração do Agente Urbano"
+        width="95%"
+        style="border-radius:14px; border:1px solid #d1d5db;">
+</p>
+
+<p align="center">
+
+<a href="https://agenteurbano.page.gd/" target="_blank">
+    <img src="https://img.shields.io/badge/🌐%20Experimentar%20a%20Demonstração-007bff?style=for-the-badge&logo=googlemaps&logoColor=white">
+</a>
+&nbsp;&nbsp;
+</p>
+<p align="center">
+Clique nos botões acima para explorar o projeto em tempo real.
+</p>
+
+---
 
 ## 🧠 Filosofia do Projeto
 
