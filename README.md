@@ -6,6 +6,7 @@
   <img src="imagens/urbanoide.png" alt="Agente Urbano Logo" width="140" height="140">
 </p>
 
+
 <p align="center">
   <strong>Agente Urbano</strong> — Um ecossistema de cartografia digital para visualização espacial, reporte de ocorrências em tempo real e monitorização de infraestruturas municipais.
 </p>
@@ -18,11 +19,15 @@
   <img src="https://img.shields.io/badge/MapLibre-0052CC?style=for-the-badge&logo=maplibre&logoColor=white" alt="MapLibre">
   <img src="https://img.shields.io/badge/OpenStreetMap-7EBC6F?style=for-the-badge&logo=openstreetmap&logoColor=white" alt="OSM">
   <img src="https://img.shields.io/badge/GeoJSON-EAA221?style=for-the-badge&logo=geojson&logoColor=white" alt="GeoJSON">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License">
   <img src="https://img.shields.io/badge/Responsivo-Sim-00a3ff?style=for-the-badge" alt="Responsivo">
   <img src="https://img.shields.io/badge/Open_Source-%E2%99%A5-ff007f?style=for-the-badge" alt="Open Source">
 </p>
 
+## Licença
+
+Este projeto está licenciado sob a GNU General Public License v3.0 (GPL-3.0).
+
+Consulte o arquivo LICENSE para mais informações.
 ---
 
 ## 📑 Introdução
@@ -147,8 +152,6 @@ O **Agente Urbano** utiliza uma topologia cliente-servidor otimizada para a tran
 +------------------------------------------------------------------------+
 ```
 
-Consulte o fluxo completo de ciclos de dados no diagrama presente em [`docs/workflow.svg`](docs/workflow.svg) e a arquitetura detalhada em [`docs/architecture.svg`](docs/architecture.svg).
-
 ---
 
 ## 📁 Estrutura de Pastas
@@ -265,6 +268,38 @@ O ecossistema **Agente Urbano** disponibiliza caminhos bem definidos para intera
 <p align="center">
   <strong>Configurações do Sistema</strong><br>
   <img src="imagens/usuario.png" alt="Configurações" width="90%" style="border-radius: 8px; border: 1px solid #1e293b;">
+</p>
+
+---
+<!-- ========================================= -->
+<!-- Demonstração -->
+<!-- ========================================= -->
+
+<h2 align="center">
+    🎬 Demonstração
+</h2>
+
+<p align="center">
+    <em>Veja o Agente Urbano em funcionamento antes mesmo de acessar o projeto.</em>
+</p>
+
+<p align="center">
+    <img
+        src="imagens/exemploAU.gif"
+        alt="Demonstração do Agente Urbano"
+        width="95%"
+        style="border-radius:14px; border:1px solid #d1d5db;">
+</p>
+
+<p align="center">
+
+<a href="https://agenteurbano.page.gd/" target="_blank">
+    <img src="https://img.shields.io/badge/🌐%20Experimentar%20a%20Demonstração-007bff?style=for-the-badge&logo=googlemaps&logoColor=white">
+</a>
+&nbsp;&nbsp;
+</p>
+<p align="center">
+Clique nos botões acima para explorar o projeto em tempo real.
 </p>
 
 ---
