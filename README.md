@@ -6,11 +6,7 @@
   <img src="imagens/urbanoide.png" alt="Agente Urbano Logo" width="140" height="140">
 </p>
 
-## Licença
 
-Este projeto está licenciado sob a GNU General Public License v3.0 (GPL-3.0).
-
-Consulte o arquivo LICENSE para mais informações.
 <p align="center">
   <strong>Agente Urbano</strong> — Um ecossistema de cartografia digital para visualização espacial, reporte de ocorrências em tempo real e monitorização de infraestruturas municipais.
 </p>
@@ -27,6 +23,11 @@ Consulte o arquivo LICENSE para mais informações.
   <img src="https://img.shields.io/badge/Open_Source-%E2%99%A5-ff007f?style=for-the-badge" alt="Open Source">
 </p>
 
+## Licença
+
+Este projeto está licenciado sob a GNU General Public License v3.0 (GPL-3.0).
+
+Consulte o arquivo LICENSE para mais informações.
 ---
 
 ## 📑 Introdução
