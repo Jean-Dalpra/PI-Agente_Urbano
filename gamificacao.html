@@ -390,96 +390,6 @@
             border-color: var(--primary);
         }
 
-        .leaderboard-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .leaderboard-table thead {
-            background: #f8fbff;
-        }
-
-        body.dark-mode .leaderboard-table thead {
-            background: #1f2937;
-        }
-
-        .leaderboard-table th {
-            padding: 12px;
-            text-align: left;
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 2px solid var(--border);
-        }
-
-        body.dark-mode .leaderboard-table th {
-            color: #9ca3af;
-            border-bottom-color: #374151;
-        }
-
-        .leaderboard-table tbody tr {
-            border-bottom: 1px solid var(--border);
-            transition: background 0.3s;
-        }
-
-        body.dark-mode .leaderboard-table tbody tr {
-            border-bottom-color: #1f2937;
-        }
-
-        .leaderboard-table tbody tr:hover {
-            background: #f8fbff;
-        }
-
-        body.dark-mode .leaderboard-table tbody tr:hover {
-            background: #1f2937;
-        }
-
-        .leaderboard-table td {
-            padding: 14px 12px;
-        }
-
-        .rank-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), #0056b3);
-            color: white;
-            font-weight: 800;
-            font-size: 0.9rem;
-        }
-
-        .rank-badge.top-1 { background: linear-gradient(135deg, #ffc107, #ffb300); color: #333; }
-        .rank-badge.top-2 { background: linear-gradient(135deg, #c0c0c0, #a8a8a8); }
-        .rank-badge.top-3 { background: linear-gradient(135deg, #cd7f32, #b8651d); }
-
-        .username-cell {
-            font-weight: 600;
-            color: #1f2937;
-        }
-
-        body.dark-mode .username-cell {
-            color: #e5e7eb;
-        }
-
-        .tier-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-align: center;
-            min-width: 70px;
-        }
-
-        .tier-bronze { background: #f4e4c1; color: #8b5a2b; }
-        .tier-prata { background: #e8e8e8; color: #4a4a4a; }
-        .tier-ouro { background: #ffd700; color: #8b6f00; }
-
         .cost-badge {
             background: var(--primary);
             color: white;
@@ -487,11 +397,6 @@
             border-radius: 4px;
             font-size: 0.8rem;
             font-weight: 700;
-        }
-
-        .side-stack {
-            display: grid;
-            gap: 20px;
         }
 
         .coupon-hub-card {
@@ -847,6 +752,9 @@
             <a href="dashboard.php" class="sidebar-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
             <a href="mapa.html" class="sidebar-link"><i class="fas fa-map"></i> Mapa</a>
             <a href="relatorios.html" class="sidebar-link"><i class="fas fa-list-alt"></i> Relatórios</a>
+            <a href="gamificacao.html" class="sidebar-link"><i class="fas fa-gamepad"></i> Gamificação</a>
+            <a href="recompensas.html" class="sidebar-link"><i class="fas fa-ticket"></i> Recompensas</a>
+            <a href="ranking.html" class="sidebar-link"><i class="fas fa-trophy"></i> Ranking</a>
             <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i> Configurações</a>
         </div>
 
@@ -864,6 +772,7 @@
                     <p>Suba de nível, ganhe UrbanPoints, participe do ranking e desbloqueie cupons em uma área exclusiva</p>
                     <div class="hero-actions">
                         <a href="recompensas.html" class="reward-cta"><i class="fas fa-ticket"></i> Central de Cupons</a>
+                        <a href="ranking.html" class="secondary-cta"><i class="fas fa-trophy"></i> Ranking Mensal</a>
                         <a href="mapa.html" class="secondary-cta"><i class="fas fa-location-dot"></i> Ganhar UrbanPoints</a>
                     </div>
                 </div>
@@ -931,60 +840,27 @@
             <a href="recompensas.html" class="big-coupon-button"><i class="fas fa-gift"></i> Abrir Central</a>
         </section>
 
+        <section class="coupon-hub-card" aria-labelledby="ranking-hub-title">
+            <div class="coupon-hub-content">
+                <span class="coupon-hub-kicker"><i class="fas fa-trophy"></i> Ranking mensal estilo liga</span>
+                <h2 id="ranking-hub-title">Veja sua posição no Ranking</h2>
+                <p>Pódio dos 3 primeiros, liga do mês (Bronze/Prata/Ouro) e comparação por pontuação, relatórios e validações — tudo numa página dedicada.</p>
+            </div>
+            <a href="ranking.html" class="big-coupon-button"><i class="fas fa-ranking-star"></i> Abrir Ranking</a>
+        </section>
+
         <div class="content-grid">
-            <section class="panel">
+            <section class="panel" style="grid-column: 1 / -1;">
                 <div class="panel-header">
-                    <i class="fas fa-ranking-star"></i>
-                    <h2>Leaderboard Global</h2>
+                    <i class="fas fa-bolt"></i>
+                    <h2>Desafios Ativos</h2>
                 </div>
                 <div class="panel-body">
-                    <div class="toolbar">
-                        <select id="period-filter">
-                            <option value="global">📊 Global</option>
-                            <option value="monthly">📅 Mensal</option>
-                        </select>
-                        <select id="tier-filter">
-                            <option value="all">Todas as classes</option>
-                            <option value="bronze">🥉 Bronze</option>
-                            <option value="prata">🥈 Prata</option>
-                            <option value="ouro">🥇 Ouro</option>
-                        </select>
-                        <button id="refresh-leaderboard" type="button" title="Atualizar leaderboard">
-                            <i class="fas fa-sync-alt"></i> Atualizar
-                        </button>
-                    </div>
-                    <div id="leaderboard-container">
-                        <table class="leaderboard-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Usuário</th>
-                                    <th>Ranking</th>
-                                    <th>Precisão</th>
-                                    <th>Classe</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leaderboard-body">
-                                <tr><td colspan="5" class="empty-state"><div class="spinner"></div> Carregando...</td></tr>
-                            </tbody>
-                        </table>
+                    <div id="challenges-container" class="challenge-grid">
+                        <div class="empty-state"><div class="spinner"></div><p>Carregando desafios...</p></div>
                     </div>
                 </div>
             </section>
-
-            <div class="side-stack">
-                <section class="panel">
-                    <div class="panel-header">
-                        <i class="fas fa-bolt"></i>
-                        <h2>Desafios Ativos</h2>
-                    </div>
-                    <div class="panel-body">
-                        <div id="challenges-container" class="challenge-grid">
-                            <div class="empty-state"><div class="spinner"></div><p>Carregando desafios...</p></div>
-                        </div>
-                    </div>
-                </section>
-            </div>
         </div>
     </div>
 
@@ -1148,48 +1024,10 @@
             return tiers[tier] || '🏅';
         }
 
-        async function loadLeaderboard() {
-            try {
-                const period = el('period-filter').value;
-                const tier = el('tier-filter').value;
-                const response = await fetch(`api.php?action=leaderboard&period=${period}&tier=${tier}`);
-                const data = await response.json();
-                const leaders = data.leaders || [];
-
-                if (leaders.length === 0) {
-                    el('leaderboard-body').innerHTML = `<tr><td colspan="5" class="empty-state"><i class="fas fa-users"></i><p>Nenhum usuário encontrado</p></td></tr>`;
-                    return;
-                }
-
-                el('leaderboard-body').innerHTML = leaders.map((user, i) => {
-                    const badgeClass = i === 0 ? 'top-1' : i === 1 ? 'top-2' : i === 2 ? 'top-3' : '';
-                    const tierClass = `tier-${user.monthly_tier.toLowerCase()}`;
-                    return `
-                        <tr>
-                            <td><span class="rank-badge ${badgeClass}">${i < 3 ? ['🥇', '🥈', '🥉'][i] : user.position}</span></td>
-                            <td class="username-cell">${escapeHtml(user.username)}</td>
-                            <td><strong>${Math.round(Number(user.reliability_rank || 0))}</strong>/100</td>
-                            <td><strong>${user.accuracy || 0}%</strong></td>
-                            <td><span class="tier-badge ${tierClass}">${user.monthly_tier}</span></td>
-                        </tr>
-                    `;
-                }).join('');
-            } catch (error) {
-                console.error('Erro ao carregar leaderboard:', error);
-                toast('Erro ao carregar leaderboard', 'error');
-            }
-        }
-
-        el('refresh-leaderboard').addEventListener('click', loadLeaderboard);
-        el('period-filter').addEventListener('change', loadLeaderboard);
-        el('tier-filter').addEventListener('change', loadLeaderboard);
-
         document.addEventListener('DOMContentLoaded', () => {
             loadUserProfile();
-            loadLeaderboard();
 
             setInterval(() => { loadUserProfile(); }, 30000);
-            setInterval(() => { loadLeaderboard(); }, 45000);
         });
     </script>
 

@@ -1,0 +1,706 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking Mensal - Agente Urbano</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="shortcut icon" href="./imagens/urbanoide.png" type="image/x-icon">
+    <style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --dark: #0f172a;
+            --light: #f8f9fa;
+            --border: #dbe5ef;
+            --ouro: #f4b400;
+            --prata: #9aa5b1;
+            --bronze: #c67a3d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f4f8fb 0%, #e8f1f8 100%);
+            color: #1f2937;
+            padding-top: 12vh;
+            min-height: 100vh;
+        }
+
+        body.dark-mode {
+            background: linear-gradient(135deg, #0f172a 0%, #1a1f35 100%);
+            color: #e5e7eb;
+        }
+
+        .rank-container {
+            margin: 0 auto;
+            padding: 0 16px 60px;
+        }
+
+        /* ── Cabeçalho da liga ─────────────────────────────────── */
+        .league-header {
+            background: linear-gradient(135deg, var(--primary) 0%, #0056b3 100%);
+            color: white;
+            padding: 36px 28px;
+            border-radius: 16px;
+            margin-top: 6vh;
+            margin-bottom: 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 123, 255, 0.2);
+        }
+
+        .league-header::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+        }
+
+        .league-badge-icon {
+            font-size: 2.6rem;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .league-header h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .league-header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .league-countdown {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* ── Abas de categoria ─────────────────────────────────── */
+        .rank-tabs {
+            display: flex;
+            gap: 8px;
+            background: #fff;
+            border-radius: 12px;
+            padding: 6px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+        }
+
+        body.dark-mode .rank-tabs {
+            background: #111827;
+        }
+
+        .rank-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 8px;
+            border-radius: 8px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #6b7280;
+            transition: background 0.2s ease, color 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .rank-tab i {
+            font-size: 1rem;
+        }
+
+        .rank-tab.active {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        /* ── Pódio ─────────────────────────────────────────────── */
+        .podium {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 10px;
+            padding: 10vh;
+            margin-bottom: 32px;
+            min-height: 210px;
+        }
+
+        .podium-slot {
+            flex: 1;
+            max-width: 160px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .podium-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.3rem;
+            color: #fff;
+            border: 3px solid #fff;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+            position: relative;
+        }
+
+        .podium-crown {
+            position: absolute;
+            top: -26px;
+            font-size: 1.4rem;
+        }
+
+        .podium-name {
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-align: center;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .podium-score {
+            font-size: 0.78rem;
+            color: #6b7280;
+            font-weight: 600;
+        }
+
+        body.dark-mode .podium-score {
+            color: #9ca3af;
+        }
+
+        .podium-bar {
+            width: 100%;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 8px;
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: #fff;
+        }
+
+        .podium-slot.p1 { order: 2; }
+        .podium-slot.p2 { order: 1; }
+        .podium-slot.p3 { order: 3; }
+
+        .podium-slot.p1 .podium-bar { height: 120px; background: linear-gradient(180deg, #ffd35c, var(--ouro)); }
+        .podium-slot.p2 .podium-bar { height: 85px;  background: linear-gradient(180deg, #c9d2db, var(--prata)); }
+        .podium-slot.p3 .podium-bar { height: 65px;  background: linear-gradient(180deg, #dd9c6b, var(--bronze)); }
+
+        .podium-slot.p1 .podium-avatar { width: 68px; height: 68px; font-size: 1.5rem; }
+
+        /* ── Lista de posições ─────────────────────────────────── */
+        .rank-list {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        body.dark-mode .rank-list {
+            background: #111827;
+        }
+
+        .rank-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s ease;
+        }
+
+        body.dark-mode .rank-row {
+            border-bottom-color: #1f2937;
+        }
+
+        .rank-row:last-child {
+            border-bottom: none;
+        }
+
+        .rank-row.is-me {
+            background: rgba(0, 123, 255, 0.08);
+            border-left: 4px solid var(--primary);
+        }
+
+        .rank-position {
+            width: 28px;
+            text-align: center;
+            font-weight: 700;
+            color: #9ca3af;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .rank-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #fff;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+
+        .rank-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .rank-username {
+            font-weight: 600;
+            font-size: 0.95rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .rank-you-tag {
+            font-size: 0.7rem;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .rank-league-tag {
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+
+        .rank-metric {
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: var(--primary);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .rank-metric small {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #9ca3af;
+        }
+
+        /* ── Card de "você" quando fora do top ─────────────────── */
+        .my-position-card {
+            margin-top: 20px;
+            padding: 18px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--primary), #0056b3);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .my-position-card i {
+            font-size: 1.6rem;
+        }
+
+        /* ── Estados vazio / carregando ────────────────────────── */
+        .rank-empty, .rank-loading {
+            text-align: center;
+            padding: 50px 20px;
+            color: #9ca3af;
+        }
+
+        .rank-empty i, .rank-loading i {
+            font-size: 2.4rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .rank-loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .rank-row {
+            animation: fadeSlideIn 0.35s ease both;
+        }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+            .podium-slot.p1 .podium-avatar { width: 56px; height: 56px; font-size: 1.2rem; }
+            .podium-avatar { width: 46px; height: 46px; font-size: 1rem; }
+            .rank-tab span.tab-label-full { display: none; }
+        }
+
+        /* ── Toast de notificação ───────────────────────────────── */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--dark);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+            z-index: 9999;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            pointer-events: none;
+            max-width: 400px;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+    </style>
+    <script>
+        (function applyInitialTheme() {
+            const savedTheme = localStorage.getItem('agenteurbano_theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const useDark = savedTheme ? savedTheme === 'dark' : prefersDark;
+            document.documentElement.classList.toggle('dark-mode', useDark);
+        })();
+    </script>
+</head>
+<body>
+    <div class="header-nav">
+        <div class="logo">
+            <a href="index.html"><img src="imagens/urbanoide.png" alt="Urbanoide" class="logo-icon"> Agente Urbano</a>
+        </div>
+        <nav class="main-menu">
+            <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="mapa.html"><i class="fas fa-map"></i> Mapa</a>
+            <a href="relatorios.html"><i class="fas fa-list-alt"></i> Relatórios</a>
+        </nav>
+        <div class="user-actions">
+            <a href="mapa.html" class="new-report-btn">+ Novo Relatório</a>
+            <button id="menu-toggle" class="hamburger-btn" aria-label="Abrir menu lateral">
+                <span class="hamburger-icon" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            </button>
+        </div>
+    </div>
+
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    <aside id="sidebar-panel" class="sidebar-panel" aria-label="Menu lateral">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <img src="imagens/urbanoide.png" alt="Logotipo">
+                <span>Agente Urbano</span>
+            </div>
+            <button id="sidebar-close" class="sidebar-close" aria-label="Fechar menu">&times;</button>
+        </div>
+
+        <a href="usuario.html" class="profile-button" id="sidebar-profile-btn">
+            <img src="https://www.gravatar.com/avatar/?d=mp" alt="Avatar" class="avatar" id="user-avatar">
+            <div>
+                <div class="user-name" id="user-name-text">Minha página</div>
+                <div class="profile-subtext" id="sidebar-profile-subtext">Acessar opções e reports</div>
+            </div>
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section-title">Navegação</div>
+        <div class="sidebar-links">
+            <a href="dashboard.php" class="sidebar-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="mapa.html" class="sidebar-link"><i class="fas fa-map"></i> Mapa</a>
+            <a href="relatorios.html" class="sidebar-link"><i class="fas fa-list-alt"></i> Relatórios</a>
+            <a href="gamificacao.html" class="sidebar-link"><i class="fas fa-gamepad"></i> Gamificação</a>
+            <a href="recompensas.html" class="sidebar-link"><i class="fas fa-ticket"></i> Recompensas</a>
+            <a href="ranking.html" class="sidebar-link"><i class="fas fa-trophy"></i> Ranking</a>
+            <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i> Configurações</a>
+        </div>
+
+        <div class="sidebar-section-title">Ações rápidas</div>
+        <div class="sidebar-links">
+            <a href="mapa.html" class="sidebar-action primary"><i class="fas fa-flag"></i> Novo problema</a>
+        </div>
+    </aside>
+
+    <div class="rank-container">
+        <div class="league-header">
+            <span class="league-badge-icon" id="league-emoji">🥉</span>
+            <h1 id="league-name">Liga Bronze</h1>
+            <p id="league-subtitle">Ranking de <span id="mes-atual">-</span> — quem mais contribuiu com a cidade este mês</p>
+            <div class="league-countdown">
+                <i class="fas fa-hourglass-half"></i>
+                <span id="dias-restantes">-- dias</span> restantes nesta liga
+            </div>
+        </div>
+
+        <div class="rank-tabs">
+            <button class="rank-tab active" data-metric="pontos_mes">
+                <i class="fas fa-star"></i>
+                <span class="tab-label-full">Pontuação</span>
+            </button>
+            <button class="rank-tab" data-metric="relatorios_mes">
+                <i class="fas fa-flag"></i>
+                <span class="tab-label-full">Relatórios</span>
+            </button>
+            <button class="rank-tab" data-metric="validacoes_mes">
+                <i class="fas fa-shield-halved"></i>
+                <span class="tab-label-full">Validações</span>
+            </button>
+        </div>
+
+        <div id="rank-podium" class="podium"></div>
+        <div id="rank-list" class="rank-list">
+            <div class="rank-loading"><i class="fas fa-circle-notch"></i>Carregando ranking...</div>
+        </div>
+        <div id="my-position-wrap"></div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        document.body.classList.toggle('dark-mode', document.documentElement.classList.contains('dark-mode'));
+
+        const el = id => document.getElementById(id);
+        const METRIC_LABELS = {
+            pontos_mes: { curto: 'pts', rotulo: 'UrbanPoints' },
+            relatorios_mes: { curto: 'rel.', rotulo: 'Relatórios' },
+            validacoes_mes: { curto: 'val.', rotulo: 'Validações' }
+        };
+        const LEAGUE_EMOJI = { Bronze: '🥉', Prata: '🥈', Ouro: '🥇' };
+        const AVATAR_COLORS = ['#007bff', '#28a745', '#fd7e14', '#dc3545', '#6f42c1', '#20c997', '#e83e8c', '#0dcaf0'];
+
+        let rankingData = [];
+        let currentMetric = 'pontos_mes';
+        let usernameAtual = null;
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        function toast(message, type = 'info', duration = 3500) {
+            const toastEl = el('toast');
+            toastEl.textContent = message;
+            toastEl.className = `toast ${type} show`;
+            clearTimeout(toast.timer);
+            toast.timer = setTimeout(() => { toastEl.classList.remove('show'); }, duration);
+        }
+
+        function corPorUsername(username) {
+            let hash = 0;
+            for (let i = 0; i < username.length; i++) hash = username.charCodeAt(i) + ((hash << 5) - hash);
+            return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+        }
+
+        function iniciais(username) {
+            return (username || '?').trim().charAt(0).toUpperCase();
+        }
+
+        async function carregarRanking() {
+            try {
+                const resp = await fetch('api.php?action=monthly_ranking');
+                const data = await resp.json();
+                if (!data.success) throw new Error('Falha ao carregar');
+
+                rankingData = data.ranking || [];
+                usernameAtual = rankingData.find(r => r.sou_eu)?.username || usernameAtual;
+
+                el('mes-atual').textContent = data.mes_referencia || '';
+                el('dias-restantes').textContent = data.dias_restantes === 1 ? '1 dia' : `${data.dias_restantes} dias`;
+
+                const minhaLiga = rankingData.find(r => r.sou_eu)?.liga || 'Bronze';
+                el('league-emoji').textContent = LEAGUE_EMOJI[minhaLiga] || '🥉';
+                el('league-name').textContent = `Liga ${minhaLiga}`;
+
+                renderizar();
+            } catch (err) {
+                console.error(err);
+                el('rank-list').innerHTML = `<div class="rank-empty"><i class="fas fa-triangle-exclamation"></i>Não foi possível carregar o ranking agora.</div>`;
+                toast('Erro ao carregar o ranking', 'error');
+            }
+        }
+
+        function renderizar() {
+            const ordenado = [...rankingData].sort((a, b) => b[currentMetric] - a[currentMetric]);
+
+            if (ordenado.length === 0) {
+                el('rank-podium').innerHTML = '';
+                el('rank-list').innerHTML = `
+                    <div class="rank-empty">
+                        <i class="fas fa-city"></i>
+                        Ninguém pontuou este mês ainda.<br>Seja o primeiro — reporte um problema no mapa!
+                    </div>`;
+                el('my-position-wrap').innerHTML = '';
+                return;
+            }
+
+            renderizarPodio(ordenado.slice(0, 3));
+            renderizarLista(ordenado.slice(3));
+            renderizarMinhaPosicao(ordenado);
+        }
+
+        function renderizarPodio(top3) {
+            const slots = ['p2', 'p1', 'p3']; // ordem visual: 2º, 1º, 3º
+            const crowns = { p1: '👑' };
+            el('rank-podium').innerHTML = top3.map((user, i) => {
+                const slotClass = i === 0 ? 'p1' : i === 1 ? 'p2' : 'p3';
+                const cor = corPorUsername(user.username);
+                const valor = user[currentMetric];
+                return `
+                    <div class="podium-slot ${slotClass}">
+                        ${slotClass === 'p1' ? `<div style="position:relative;"><span class="podium-crown">👑</span>` : ''}
+                        <div class="podium-avatar" style="background:${cor};">${escapeHtml(iniciais(user.username))}</div>
+                        ${slotClass === 'p1' ? `</div>` : ''}
+                        <div class="podium-name">${escapeHtml(user.username)}</div>
+                        <div class="podium-score">${valor} ${METRIC_LABELS[currentMetric].curto}</div>
+                        <div class="podium-bar">${i + 1 === 1 ? '1º' : (slotClass === 'p2' ? '2º' : '3º')}</div>
+                    </div>`;
+            }).join('');
+        }
+
+        function renderizarLista(resto) {
+            if (resto.length === 0) {
+                el('rank-list').innerHTML = '';
+                return;
+            }
+            el('rank-list').innerHTML = resto.map((user, i) => {
+                const cor = corPorUsername(user.username);
+                const valor = user[currentMetric];
+                return `
+                    <div class="rank-row ${user.sou_eu ? 'is-me' : ''}" style="animation-delay:${Math.min(i * 0.03, 0.6)}s">
+                        <div class="rank-position">${i + 4}</div>
+                        <div class="rank-avatar" style="background:${cor};">${escapeHtml(iniciais(user.username))}</div>
+                        <div class="rank-info">
+                            <div class="rank-username">${escapeHtml(user.username)} ${user.sou_eu ? '<span class="rank-you-tag">(você)</span>' : ''}</div>
+                            <div class="rank-league-tag">${LEAGUE_EMOJI[user.liga] || ''} Liga ${escapeHtml(user.liga)}</div>
+                        </div>
+                        <div class="rank-metric">${valor}<small>${METRIC_LABELS[currentMetric].curto}</small></div>
+                    </div>`;
+            }).join('');
+        }
+
+        function renderizarMinhaPosicao(ordenado) {
+            const idx = ordenado.findIndex(r => r.sou_eu);
+            if (idx === -1) {
+                el('my-position-wrap').innerHTML = `
+                    <div class="my-position-card">
+                        <i class="fas fa-circle-info"></i>
+                        <div>Você ainda não pontuou este mês. Reporte um problema ou valide um relatório no <a href="mapa.html" style="color:#fff;text-decoration:underline;">mapa</a> para entrar no ranking!</div>
+                    </div>`;
+                return;
+            }
+            if (idx < 100) {
+                el('my-position-wrap').innerHTML = '';
+                return;
+            }
+        }
+
+        el('rank-podium').addEventListener('click', () => {}); // placeholder, evita erro se vazio
+
+        document.querySelectorAll('.rank-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.rank-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentMetric = tab.dataset.metric;
+                renderizar();
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarRanking();
+            setInterval(carregarRanking, 60000);
+        });
+    </script>
+
+    <script>
+        // Sidebar toggle
+        (function () {
+            document.addEventListener('DOMContentLoaded', function () {
+                const menuToggle = document.getElementById('menu-toggle');
+                const sidebar = document.getElementById('sidebar-panel');
+                const overlay = document.getElementById('sidebar-overlay');
+                const closeBtn = document.getElementById('sidebar-close');
+                if (!menuToggle || !sidebar || !overlay) return;
+
+                const openSidebar = () => {
+                    sidebar.classList.add('open');
+                    overlay.classList.add('show');
+                    document.body.classList.add('no-scroll');
+                };
+                const closeSidebar = () => {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('show');
+                    document.body.classList.remove('no-scroll');
+                };
+
+                menuToggle.addEventListener('click', openSidebar);
+                if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+                overlay.addEventListener('click', closeSidebar);
+                document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
+
+                fetch('api.php?action=current_user')
+                    .then(r => r.json())
+                    .then(data => {
+                        const currentUser = data.username || null;
+                        const userNameText = document.getElementById('user-name-text');
+                        const userAvatar = document.getElementById('user-avatar');
+                        const sidebarProfileSubtext = document.getElementById('sidebar-profile-subtext');
+                        if (!userNameText || !userAvatar || !currentUser) return;
+                        userNameText.textContent = currentUser;
+                        if (sidebarProfileSubtext) sidebarProfileSubtext.textContent = 'Ver meu perfil';
+                        const savedAvatar = localStorage.getItem('avatar_' + currentUser);
+                        if (savedAvatar) userAvatar.src = savedAvatar;
+                    })
+                    .catch(() => {});
+            });
+        })();
+    </script>
+</body>
+</html>

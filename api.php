@@ -5,20 +5,21 @@
  * Endpoint único (front controller) para operações AJAX da aplicação Agente Urbano.
  *
  * Responsabilidades principais:
- * - Fornecer handlers para CRUD de relatórios, autenticação simples (JSON file),
+ * - Fornecer handlers para CRUD de relatórios, autenticação (usuários e senhas
+ *   armazenados na tabela `users` do MySQL, com password_hash/password_verify),
  *   comentários e votos.
+ * - Controlar a propriedade de relatórios (quem pode editar/excluir) via a
+ *   tabela `report_owners` do MySQL.
  * - Lidar com upload seguro de imagens (diretório `uploads/`) em criação/edição.
  * - Retornar JSON consistente para o front-end.
  *
  * Segurança e observações de manutenção:
- * - Em produção, substitua o armazenamento de usuários baseado em JSON por um
- *   sistema de usuários em BD com senhas e sessões seguras.
  * - Verifique permissões do diretório `uploads/` e limite tamanho/tipo de arquivos no PHP.
  */
 
 ob_start(); // bufferiza toda a saída para evitar que warnings rompam JSON
 error_reporting(E_ERROR | E_PARSE);
-set_error_handler(function($errno, $errstr, $errfile, $errline) {
+set_error_handler(function ($errno, $errstr, $errfile, $errline) {
     // Erros são suprimidos da saída HTTP intencionalmente para preservar JSON.
     // Eles ainda devem aparecer nos logs do servidor para depuração.
     return true;
@@ -26,16 +27,17 @@ set_error_handler(function($errno, $errstr, $errfile, $errline) {
 session_start();
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
-define('DB_PASS', ''); 
+define('DB_PASS', '');
 define('DB_NAME', 'problemas_publicos');
 define('UPLOAD_DIR', __DIR__ . '/uploads/');
 
-function connectDB() {
+function connectDB()
+{
     try {
         $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4", DB_USER, DB_PASS);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec("set names utf8mb4");
-        
+
         return $pdo;
     } catch (PDOException $e) {
         http_response_code(500);
@@ -44,19 +46,22 @@ function connectDB() {
     }
 }
 
-function columnExists($pdo, $table, $column) {
+function columnExists($pdo, $table, $column)
+{
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?");
     $stmt->execute([$table, $column]);
-    return (int)$stmt->fetchColumn() > 0;
+    return (int) $stmt->fetchColumn() > 0;
 }
 
-function tableExists($pdo, $table) {
+function tableExists($pdo, $table)
+{
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?");
     $stmt->execute([$table]);
-    return (int)$stmt->fetchColumn() > 0;
+    return (int) $stmt->fetchColumn() > 0;
 }
 
-function ensureGamificationSchema($pdo) {
+function ensureGamificationSchema($pdo)
+{
     if (!columnExists($pdo, 'relatorios', 'veracidade')) {
         $pdo->exec("ALTER TABLE relatorios ADD COLUMN veracidade INT NOT NULL DEFAULT 50");
     }
@@ -188,6 +193,14 @@ function ensureGamificationSchema($pdo) {
         INDEX idx_users_email (email)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS report_owners (
+        report_id INT NOT NULL PRIMARY KEY,
+        username VARCHAR(120) NOT NULL,
+        claimed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_report_owners_user (username),
+        CONSTRAINT fk_report_owners_report FOREIGN KEY (report_id) REFERENCES relatorios (id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS reward_redemptions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         reward_id INT NOT NULL,
@@ -227,15 +240,17 @@ function ensureGamificationSchema($pdo) {
     $pdo->exec("UPDATE rewards SET category = 'servicos', partner = 'Mobilidade Parceira', image_url = COALESCE(image_url, 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=900&q=80'), estimated_value = IF(estimated_value = 0, 18, estimated_value) WHERE title = 'Beneficio mobilidade'");
     $pdo->exec("UPDATE rewards SET category = 'servicos', partner = 'Agente Urbano', image_url = COALESCE(image_url, 'https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?auto=format&fit=crop&w=900&q=80') WHERE title = 'Selo Cidadao Ouro'");
 
-    migrateUsersJsonToDb($pdo);
 }
 
-function clampInt($value, $min = 0, $max = 100) {
-    return max($min, min($max, (int)round($value)));
+function clampInt($value, $min = 0, $max = 100)
+{
+    return max($min, min($max, (int) round($value)));
 }
 
-function ensureGameProfile($pdo, $username) {
-    if (!$username) return null;
+function ensureGameProfile($pdo, $username)
+{
+    if (!$username)
+        return null;
     $stmt = $pdo->prepare("INSERT IGNORE INTO user_gamification (username) VALUES (?)");
     $stmt->execute([$username]);
     $stmt = $pdo->prepare("SELECT * FROM user_gamification WHERE username = ?");
@@ -243,57 +258,43 @@ function ensureGameProfile($pdo, $username) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-function fetchDbUser($pdo, $username) {
-    if (!$username) return null;
+function fetchDbUser($pdo, $username)
+{
+    if (!$username)
+        return null;
     $stmt = $pdo->prepare("SELECT username, password_hash, email, auth_source FROM users WHERE username = ?");
     $stmt->execute([$username]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-function migrateUsersJsonToDb($pdo) {
-    $file = __DIR__ . '/users.json';
-    if (!file_exists($file)) {
-        return;
-    }
-    $data = @json_decode(@file_get_contents($file), true);
-    if (!is_array($data)) {
-        return;
-    }
-    $stmt = $pdo->prepare("INSERT IGNORE INTO users (username, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?)");
-    foreach ($data as $username => $user) {
-        if (!is_string($username) || empty($username)) {
-            continue;
-        }
-        $passwordHash = is_string($user['password'] ?? '') ? $user['password'] : '';
-        $createdAt = is_string($user['created_at'] ?? '') ? $user['created_at'] : date('Y-m-d H:i:s');
-        $updatedAt = is_string($user['password_updated_at'] ?? '') ? $user['password_updated_at'] : $createdAt;
-        if ($passwordHash === '') {
-            continue;
-        }
-        $stmt->execute([$username, $passwordHash, $createdAt, $updatedAt]);
-    }
-}
 
-function getValidationWeight($rank) {
-    if ($rank < 30) return 2;
-    if ($rank < 70) return 5;
+function getValidationWeight($rank)
+{
+    if ($rank < 30)
+        return 2;
+    if ($rank < 70)
+        return 5;
     return 10;
 }
 
-function haversineMeters($lat1, $lon1, $lat2, $lon2) {
-    if ($lat1 === null || $lon1 === null || $lat2 === null || $lon2 === null) return null;
+function haversineMeters($lat1, $lon1, $lat2, $lon2)
+{
+    if ($lat1 === null || $lon1 === null || $lat2 === null || $lon2 === null)
+        return null;
     $earth = 6371000;
-    $dLat = deg2rad((float)$lat2 - (float)$lat1);
-    $dLon = deg2rad((float)$lon2 - (float)$lon1);
-    $a = sin($dLat / 2) ** 2 + cos(deg2rad((float)$lat1)) * cos(deg2rad((float)$lat2)) * sin($dLon / 2) ** 2;
+    $dLat = deg2rad((float) $lat2 - (float) $lat1);
+    $dLon = deg2rad((float) $lon2 - (float) $lon1);
+    $a = sin($dLat / 2) ** 2 + cos(deg2rad((float) $lat1)) * cos(deg2rad((float) $lat2)) * sin($dLon / 2) ** 2;
     return $earth * 2 * atan2(sqrt($a), sqrt(1 - $a));
 }
 
-function addXpAndPoints($pdo, $username, $xp, $points, $reason, $referenceType = null, $referenceId = null) {
-    if (!$username) return;
+function addXpAndPoints($pdo, $username, $xp, $points, $reason, $referenceType = null, $referenceId = null)
+{
+    if (!$username)
+        return;
     ensureGameProfile($pdo, $username);
-    $xp = (int)$xp;
-    $points = (int)$points;
+    $xp = (int) $xp;
+    $points = (int) $points;
     $stmt = $pdo->prepare("UPDATE user_gamification
         SET xp = GREATEST(0, xp + ?),
             urban_points = GREATEST(0, urban_points + ?),
@@ -310,38 +311,43 @@ function addXpAndPoints($pdo, $username, $xp, $points, $reason, $referenceType =
     recalcUserRank($pdo, $username);
 }
 
-function recalcUserRank($pdo, $username) {
+function recalcUserRank($pdo, $username)
+{
     ensureGameProfile($pdo, $username);
     $stmt = $pdo->prepare("SELECT * FROM user_gamification WHERE username = ?");
     $stmt->execute([$username]);
     $g = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$g) return 50;
-    $total = max(1, (int)$g['validations_total']);
-    $accuracy = ((int)$g['validations_correct']) / $total;
-    $participation = min(20, log(max(1, (int)$g['participation_count']) + 1) * 5);
-    $history = min(15, (int)$g['reports_verified'] * 2 + (int)$g['validations_correct']);
-    $penalty = min(35, (int)$g['suspicious_score'] * 3 + (int)$g['validations_incorrect'] * 1.5 + (int)$g['reports_invalidated'] * 5);
+    if (!$g)
+        return 50;
+    $total = max(1, (int) $g['validations_total']);
+    $accuracy = ((int) $g['validations_correct']) / $total;
+    $participation = min(20, log(max(1, (int) $g['participation_count']) + 1) * 5);
+    $history = min(15, (int) $g['reports_verified'] * 2 + (int) $g['validations_correct']);
+    $penalty = min(35, (int) $g['suspicious_score'] * 3 + (int) $g['validations_incorrect'] * 1.5 + (int) $g['reports_invalidated'] * 5);
     $rank = clampInt(35 + ($accuracy * 45) + $participation + $history - $penalty);
     $stmt = $pdo->prepare("UPDATE user_gamification SET reliability_rank = ? WHERE username = ?");
     $stmt->execute([$rank, $username]);
     return $rank;
 }
 
-function logFraudEvent($pdo, $username, $type, $severity, $details = '') {
+function logFraudEvent($pdo, $username, $type, $severity, $details = '')
+{
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     $hash = hash('sha256', $ip);
     $stmt = $pdo->prepare("INSERT INTO antifraud_events (username, event_type, severity, details, ip_hash) VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([$username, $type, (int)$severity, $details, $hash]);
+    $stmt->execute([$username, $type, (int) $severity, $details, $hash]);
     if ($username) {
         ensureGameProfile($pdo, $username);
         $stmt = $pdo->prepare("UPDATE user_gamification SET suspicious_score = suspicious_score + ? WHERE username = ?");
-        $stmt->execute([(int)$severity, $username]);
+        $stmt->execute([(int) $severity, $username]);
         recalcUserRank($pdo, $username);
     }
 }
 
-function runAntifraudChecks($pdo, $username, $kind) {
-    if (!$username) return;
+function runAntifraudChecks($pdo, $username, $kind)
+{
+    if (!$username)
+        return;
     $table = 'report_validations';
     $field = 'username';
     $dateField = 'created_at';
@@ -364,27 +370,29 @@ function runAntifraudChecks($pdo, $username, $kind) {
 
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM $table WHERE $field = ? AND $dateField >= DATE_SUB(NOW(), INTERVAL 1 HOUR)");
     $stmt->execute([$username]);
-    $count = (int)$stmt->fetchColumn();
+    $count = (int) $stmt->fetchColumn();
     if ($count > $limit) {
         logFraudEvent($pdo, $username, $eventType, 4, "Volume em 1h: $count");
     }
     $ip = hash('sha256', $_SERVER['REMOTE_ADDR'] ?? 'unknown');
     $stmt = $pdo->prepare("SELECT COUNT(DISTINCT username) FROM antifraud_events WHERE ip_hash = ? AND username IS NOT NULL AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
     $stmt->execute([$ip]);
-    if ((int)$stmt->fetchColumn() >= 3) {
+    if ((int) $stmt->fetchColumn() >= 3) {
         logFraudEvent($pdo, $username, 'duplicate_account_pattern', 3, 'Mesmo IP associado a muitas contas/eventos recentes.');
     }
 }
 
-function recalcReportVeracity($pdo, $reportId) {
+function recalcReportVeracity($pdo, $reportId)
+{
     $stmt = $pdo->prepare("SELECT id, user_id, veracidade, status, invalidated_penalties_applied FROM relatorios WHERE id = ?");
     $stmt->execute([$reportId]);
     $report = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$report) return null;
+    if (!$report)
+        return null;
 
     $stmt = $pdo->prepare("SELECT COALESCE(SUM(effective_delta),0) FROM report_validations WHERE report_id = ?");
     $stmt->execute([$reportId]);
-    $veracity = clampInt(50 + (int)$stmt->fetchColumn());
+    $veracity = clampInt(50 + (int) $stmt->fetchColumn());
     $status = $veracity >= 80 ? 'Verificado' : ($veracity <= 20 ? 'Invalidado' : 'Em análise');
 
     $stmt = $pdo->prepare("UPDATE relatorios SET veracidade = ?, status = ?, data_atualizacao = NOW() WHERE id = ?");
@@ -403,7 +411,7 @@ function recalcReportVeracity($pdo, $reportId) {
         $stmt->execute([$reportId]);
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             ensureGameProfile($pdo, $row['username']);
-            if ((int)$row['was_correct'] === 1) {
+            if ((int) $row['was_correct'] === 1) {
                 $pdo->prepare("UPDATE user_gamification SET validations_correct = validations_correct + 1 WHERE username = ?")->execute([$row['username']]);
                 addXpAndPoints($pdo, $row['username'], 20, 8, 'Validação correta', 'report', $reportId);
             } else {
@@ -414,7 +422,7 @@ function recalcReportVeracity($pdo, $reportId) {
         }
     }
 
-    if ($status === 'Invalidado' && (int)$report['invalidated_penalties_applied'] === 0) {
+    if ($status === 'Invalidado' && (int) $report['invalidated_penalties_applied'] === 0) {
         $author = $report['user_id'] ?? null;
         if ($author && $author !== 'anonimo') {
             ensureGameProfile($pdo, $author);
@@ -434,10 +442,11 @@ function recalcReportVeracity($pdo, $reportId) {
     return ['veracidade' => $veracity, 'status' => $status];
 }
 
-function recalcCommentVeracity($pdo, $commentId) {
+function recalcCommentVeracity($pdo, $commentId)
+{
     $stmt = $pdo->prepare("SELECT COALESCE(SUM(effective_delta),0) FROM comment_validations WHERE comment_id = ?");
     $stmt->execute([$commentId]);
-    $veracity = clampInt(50 + (int)$stmt->fetchColumn());
+    $veracity = clampInt(50 + (int) $stmt->fetchColumn());
     $stmt = $pdo->prepare("UPDATE comentarios SET veracidade = ? WHERE id = ?");
     $stmt->execute([$veracity, $commentId]);
     return $veracity;
@@ -454,10 +463,11 @@ function recalcCommentVeracity($pdo, $commentId) {
  * Saída:
  * - JSON com 'success' e mensagem, ou 'already_voted' quando apropriado.
  */
-function addVoteHandler($pdo) {
+function addVoteHandler($pdo)
+{
     $reportId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
-    $userName = getCurrentUser() ?? ($_POST['user_name'] ?? ('anonimo_' . session_id())); 
-    
+    $userName = getCurrentUser() ?? ($_POST['user_name'] ?? ('anonimo_' . session_id()));
+
     if (!$reportId) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'ID de relatório é obrigatório.']);
@@ -471,7 +481,7 @@ function addVoteHandler($pdo) {
             $stmt = $pdo->prepare("SELECT COUNT(*) FROM votos WHERE report_id = ?");
             $stmt->execute([$reportId]);
             $newVotes = $stmt->fetchColumn();
-            echo json_encode(['success' => false, 'message' => 'Você já apoiou este relatório.', 'new_votes' => (int)$newVotes, 'already_voted' => true]);
+            echo json_encode(['success' => false, 'message' => 'Você já apoiou este relatório.', 'new_votes' => (int) $newVotes, 'already_voted' => true]);
             return;
         }
 
@@ -481,7 +491,7 @@ function addVoteHandler($pdo) {
         $stmt->execute([$reportId]);
         $newVotes = $stmt->fetchColumn();
 
-        echo json_encode(['success' => true, 'message' => 'Voto registrado com sucesso.', 'new_votes' => (int)$newVotes]);
+        echo json_encode(['success' => true, 'message' => 'Voto registrado com sucesso.', 'new_votes' => (int) $newVotes]);
 
     } catch (PDOException $e) {
         http_response_code(500);
@@ -489,15 +499,16 @@ function addVoteHandler($pdo) {
     }
 }
 
-function addCommentHandler($pdo) {
-    $reportId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) 
+function addCommentHandler($pdo)
+{
+    $reportId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT)
         ?? filter_input(INPUT_POST, 'report_id', FILTER_VALIDATE_INT)
         ?? filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT)
         ?? filter_input(INPUT_POST, 'relatorio_id', FILTER_VALIDATE_INT);
-    
+
     $commentText = trim($_POST['comment_text'] ?? '');
     $userName = getCurrentUser() ?? $_POST['user_name'] ?? null;
-    
+
     if (!$userName) {
         http_response_code(401);
         echo json_encode(['success' => false, 'message' => 'Você precisa estar logado para comentar.']);
@@ -524,7 +535,8 @@ function addCommentHandler($pdo) {
     }
 }
 
-function validateReportHandler($pdo) {
+function validateReportHandler($pdo)
+{
     $username = getCurrentUser();
     if (!$username) {
         http_response_code(401);
@@ -545,7 +557,7 @@ function validateReportHandler($pdo) {
     try {
         runAntifraudChecks($pdo, $username, 'validation');
         $profile = ensureGameProfile($pdo, $username);
-        $weight = getValidationWeight((float)$profile['reliability_rank']);
+        $weight = getValidationWeight((float) $profile['reliability_rank']);
         $stmt = $pdo->prepare("SELECT latitude, longitude, user_id FROM relatorios WHERE id = ?");
         $stmt->execute([$reportId]);
         $report = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -566,7 +578,7 @@ function validateReportHandler($pdo) {
 
         $stmtExists = $pdo->prepare("SELECT COUNT(*) FROM report_validations WHERE report_id = ? AND username = ?");
         $stmtExists->execute([$reportId, $username]);
-        $isNewValidation = ((int)$stmtExists->fetchColumn()) === 0;
+        $isNewValidation = ((int) $stmtExists->fetchColumn()) === 0;
 
         $stmt = $pdo->prepare("INSERT INTO report_validations
             (report_id, username, validation_type, comment_text, user_latitude, user_longitude, distance_meters, base_weight, geo_bonus, effective_delta)
@@ -596,7 +608,8 @@ function validateReportHandler($pdo) {
     }
 }
 
-function validateCommentHandler($pdo) {
+function validateCommentHandler($pdo)
+{
     $username = getCurrentUser();
     if (!$username) {
         http_response_code(401);
@@ -614,11 +627,11 @@ function validateCommentHandler($pdo) {
     try {
         runAntifraudChecks($pdo, $username, 'comment');
         $profile = ensureGameProfile($pdo, $username);
-        $weight = getValidationWeight((float)$profile['reliability_rank']);
+        $weight = getValidationWeight((float) $profile['reliability_rank']);
         $delta = ($type === 'confirm' ? 1 : -1) * $weight;
         $stmtExists = $pdo->prepare("SELECT COUNT(*) FROM comment_validations WHERE comment_id = ? AND username = ?");
         $stmtExists->execute([$commentId, $username]);
-        $isNewValidation = ((int)$stmtExists->fetchColumn()) === 0;
+        $isNewValidation = ((int) $stmtExists->fetchColumn()) === 0;
 
         $stmt = $pdo->prepare("INSERT INTO comment_validations (comment_id, username, validation_type, base_weight, effective_delta)
             VALUES (?, ?, ?, ?, ?)
@@ -645,7 +658,8 @@ function validateCommentHandler($pdo) {
  * - A tabela de usuários é criada automaticamente em `ensureGamificationSchema`.
  */
 
-function registerUserHandler($pdo) {
+function registerUserHandler($pdo)
+{
     $input = $_POST;
     $username = trim($input['username'] ?? '');
     $password = $input['password'] ?? '';
@@ -681,7 +695,8 @@ function registerUserHandler($pdo) {
     echo json_encode(['success' => true, 'message' => 'Registrado com sucesso.', 'username' => $username]);
 }
 
-function loginUserHandler($pdo) {
+function loginUserHandler($pdo)
+{
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     $user = fetchDbUser($pdo, $username);
@@ -697,7 +712,8 @@ function loginUserHandler($pdo) {
     echo json_encode(['success' => true, 'message' => 'Login bem-sucedido.', 'username' => $username]);
 }
 
-function changePasswordHandler($pdo) {
+function changePasswordHandler($pdo)
+{
     $username = getCurrentUser();
     if (!$username) {
         http_response_code(401);
@@ -738,40 +754,40 @@ function changePasswordHandler($pdo) {
     echo json_encode(['success' => true, 'message' => 'Senha alterada com sucesso.']);
 }
 
-function logoutUserHandler() {
+function logoutUserHandler()
+{
 
     session_unset();
-    
+
     session_destroy();
 
-    session_write_close(); 
+    session_write_close();
 
-    setcookie(session_name(), '', time() - 3600, '/'); 
-    
+    setcookie(session_name(), '', time() - 3600, '/');
+
     echo json_encode(['success' => true, 'message' => 'Logout realizado.']);
 }
 
-function getCurrentUser() {
+function getCurrentUser()
+{
     return $_SESSION['username'] ?? null;
 }
 
-function getOwnersFile() {
-    return __DIR__ . '/report_owners.json';
+/**
+ * loadOwner
+ * Busca o proprietário (username + data de reivindicação) de um relatório
+ * na tabela `report_owners`. Substitui o antigo `report_owners.json`.
+ */
+function loadOwner($pdo, $report_id)
+{
+    $stmt = $pdo->prepare("SELECT username, claimed_at FROM report_owners WHERE report_id = ?");
+    $stmt->execute([$report_id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
 }
 
-function loadOwners() {
-    $file = getOwnersFile();
-    if (!file_exists($file)) return [];
-    $json = file_get_contents($file);
-    $data = json_decode($json, true);
-    return is_array($data) ? $data : [];
-}
-
-function saveOwners($owners) {
-    file_put_contents(getOwnersFile(), json_encode($owners, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE));
-}
-
-function claimReportHandler() {
+function claimReportHandler($pdo)
+{
     $username = getCurrentUser();
     if (!$username) {
         http_response_code(401);
@@ -784,39 +800,39 @@ function claimReportHandler() {
         echo json_encode(['success' => false, 'message' => 'report_id é obrigatório.']);
         return;
     }
-    $owners = loadOwners();
-    if (isset($owners[$report_id])) {
+    if (loadOwner($pdo, $report_id)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Relatório já possui proprietário.']);
         return;
     }
-    $owners[$report_id] = ['username' => $username, 'claimed_at' => date('c')];
-    saveOwners($owners);
+    $stmt = $pdo->prepare("INSERT INTO report_owners (report_id, username, claimed_at) VALUES (?, ?, NOW())");
+    $stmt->execute([$report_id, $username]);
     echo json_encode(['success' => true, 'message' => 'Relatório reivindicado.', 'report_id' => $report_id]);
 }
 
-function userOwnsReport($report_id) {
-    $owners = loadOwners();
+function userOwnsReport($pdo, $report_id)
+{
+    $owner = loadOwner($pdo, $report_id);
     $username = getCurrentUser();
-    return $username && isset($owners[$report_id]) && $owners[$report_id]['username'] === $username;
+    return $username && $owner && $owner['username'] === $username;
 }
 
-function getMyReportsHandler() {
+function getMyReportsHandler($pdo)
+{
     $username = getCurrentUser();
     if (!$username) {
         http_response_code(401);
         echo json_encode(['success' => false, 'message' => 'Autenticação necessária.']);
         return;
     }
-    $owners = loadOwners();
-    $my = [];
-    foreach ($owners as $rid => $info) {
-        if ($info['username'] === $username) $my[] = $rid;
-    }
+    $stmt = $pdo->prepare("SELECT report_id FROM report_owners WHERE username = ?");
+    $stmt->execute([$username]);
+    $my = array_map('strval', $stmt->fetchAll(PDO::FETCH_COLUMN));
     echo json_encode(['success' => true, 'report_ids' => $my]);
 }
 
-function editReportHandler($pdo) {
+function editReportHandler($pdo)
+{
     /**
      * editReportHandler
      * Atualiza campos editáveis de um relatório existente e opcionalmente substitui a imagem.
@@ -844,7 +860,7 @@ function editReportHandler($pdo) {
         echo json_encode(['success' => false, 'message' => 'ID do relatório é obrigatório.']);
         return;
     }
-    if (!userOwnsReport($id)) {
+    if (!userOwnsReport($pdo, $id)) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Você não tem permissão para editar este relatório.']);
         return;
@@ -857,11 +873,26 @@ function editReportHandler($pdo) {
     $endereco = $_POST['endereco'] ?? null;
     $params = [];
     $sets = [];
-    if ($titulo !== null) { $sets[] = 'titulo = ?'; $params[] = $titulo; }
-    if ($descricao !== null) { $sets[] = 'descricao = ?'; $params[] = $descricao; }
-    if ($status !== null) { $sets[] = 'status = ?'; $params[] = $status; }
-    if ($prioridade !== null) { $sets[] = 'prioridade = ?'; $params[] = $prioridade; }
-    if ($endereco !== null) { $sets[] = 'endereco = ?'; $params[] = $endereco; }
+    if ($titulo !== null) {
+        $sets[] = 'titulo = ?';
+        $params[] = $titulo;
+    }
+    if ($descricao !== null) {
+        $sets[] = 'descricao = ?';
+        $params[] = $descricao;
+    }
+    if ($status !== null) {
+        $sets[] = 'status = ?';
+        $params[] = $status;
+    }
+    if ($prioridade !== null) {
+        $sets[] = 'prioridade = ?';
+        $params[] = $prioridade;
+    }
+    if ($endereco !== null) {
+        $sets[] = 'endereco = ?';
+        $params[] = $endereco;
+    }
     // Handle image upload for edit (optional)
     $imagem_path = null;
     if (isset($_FILES['imagem_upload']) && is_array($_FILES['imagem_upload']) && isset($_FILES['imagem_upload']['error'])) {
@@ -938,7 +969,8 @@ function editReportHandler($pdo) {
     }
 }
 
-function deleteReportHandler($pdo) {
+function deleteReportHandler($pdo)
+{
     $username = getCurrentUser();
     if (!$username) {
         http_response_code(401);
@@ -951,7 +983,7 @@ function deleteReportHandler($pdo) {
         echo json_encode(['success' => false, 'message' => 'ID do relatório é obrigatório.']);
         return;
     }
-    if (!userOwnsReport($id)) {
+    if (!userOwnsReport($pdo, $id)) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Você não tem permissão para deletar este relatório.']);
         return;
@@ -959,11 +991,7 @@ function deleteReportHandler($pdo) {
     try {
         $stmt = $pdo->prepare('DELETE FROM relatorios WHERE id = ?');
         $stmt->execute([$id]);
-        $owners = loadOwners();
-        if (isset($owners[$id])) {
-            unset($owners[$id]);
-            saveOwners($owners);
-        }
+        $pdo->prepare('DELETE FROM report_owners WHERE report_id = ?')->execute([$id]);
         echo json_encode(['success' => true, 'message' => 'Relatório excluído.']);
     } catch (PDOException $e) {
         http_response_code(500);
@@ -971,12 +999,13 @@ function deleteReportHandler($pdo) {
     }
 }
 
-function getProblems($pdo) {
+function getProblems($pdo)
+{
     try {
 
         $stmt = $pdo->query("SELECT id, titulo, latitude, longitude, tipo, descricao, status, veracidade, imagem_url, prioridade, endereco, data_criacao FROM relatorios ORDER BY data_criacao DESC");
         $problems = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         echo json_encode($problems);
     } catch (PDOException $e) {
         http_response_code(500);
@@ -984,7 +1013,8 @@ function getProblems($pdo) {
     }
 }
 
-function getReportDetails($pdo) {
+function getReportDetails($pdo)
+{
     $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
     if ($id === false || $id <= 0) {
@@ -998,7 +1028,7 @@ function getReportDetails($pdo) {
                              user_id 
                         FROM relatorios 
                         WHERE id = ?";
-        
+
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$id]);
         $report = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1008,37 +1038,38 @@ function getReportDetails($pdo) {
             echo json_encode(['success' => false, 'message' => 'Relatório não encontrado.']);
             return;
         }
-        
+
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM votos WHERE report_id = ?");
         $stmt->execute([$id]);
         $votos = $stmt->fetchColumn();
-        $report['votos'] = (int)$votos;
+        $report['votos'] = (int) $votos;
         $stmt = $pdo->prepare("SELECT id, user_name AS author, comment_text AS text, veracidade, created_at AS date FROM comentarios WHERE report_id = ? ORDER BY created_at DESC");
         $stmt->execute([$id]);
         $comentarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $report['comentarios'] = $comentarios;
-        
+
         echo json_encode($report);
-        
+
     } catch (PDOException $e) {
         http_response_code(500);
         die(json_encode(['success' => false, 'message' => 'Erro ao buscar detalhes do relatório: ' . $e->getMessage()]));
     }
 }
 
-function reportProblem($pdo) {
+function reportProblem($pdo)
+{
     $lat = filter_input(INPUT_POST, 'latitude', FILTER_VALIDATE_FLOAT);
     $lng = filter_input(INPUT_POST, 'longitude', FILTER_VALIDATE_FLOAT);
-    $tipo = filter_input(INPUT_POST, 'categoria', FILTER_SANITIZE_STRING); 
+    $tipo = filter_input(INPUT_POST, 'categoria', FILTER_SANITIZE_STRING);
     $descricao = filter_input(INPUT_POST, 'descricao', FILTER_SANITIZE_STRING);
     $titulo = filter_input(INPUT_POST, 'titulo', FILTER_SANITIZE_STRING);
     $prioridade = filter_input(INPUT_POST, 'prioridade', FILTER_SANITIZE_STRING);
     $endereco = filter_input(INPUT_POST, 'endereco', FILTER_SANITIZE_STRING);
-    
+
     $status = 'Em análise';
 
     $user_id = getCurrentUser() ?? 'anonimo';
-    
+
     // Debug simples
     error_log("Report: categoria=[" . ($tipo ?? 'NULL') . "] titulo=[" . substr($titulo, 0, 20) . "]");
 
@@ -1049,7 +1080,7 @@ function reportProblem($pdo) {
     }
 
     $imagem_path = null;
-    
+
     if (isset($_FILES['imagem_upload']) && $_FILES['imagem_upload']['error'] === UPLOAD_ERR_OK) {
         $file = $_FILES['imagem_upload'];
         $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
@@ -1077,34 +1108,34 @@ function reportProblem($pdo) {
             echo json_encode(['success' => false, 'message' => 'Erro interno ao salvar a imagem no servidor. Verifique as permissões da pasta uploads.']);
             return;
         }
-        
+
         $imagem_path = 'uploads/' . $unique_filename;
     }
-    
+
     try {
 
         $sql = "INSERT INTO relatorios (titulo, latitude, longitude, tipo, descricao, status, veracidade, data_criacao, imagem_url, prioridade, endereco, user_id)
                 VALUES (?, ?, ?, ?, ?, ?, 50, NOW(), ?, ?, ?, ?)";
-        
+
         $stmt = $pdo->prepare($sql);
-        
+
         $stmt->execute([
             $titulo,
             $lat,
             $lng,
             $tipo,
             $descricao,
-            $status, 
+            $status,
             $imagem_path,
-            $prioridade, 
+            $prioridade,
             $endereco,
-            $user_id 
+            $user_id
         ]);
         $lastId = $pdo->lastInsertId();
         if ($user_id && $user_id !== 'anonimo') {
             ensureGameProfile($pdo, $user_id);
             $pdo->prepare("UPDATE user_gamification SET reports_created = reports_created + 1 WHERE username = ?")->execute([$user_id]);
-            addXpAndPoints($pdo, $user_id, 25, 10, 'Relatório criado', 'report', (int)$lastId);
+            addXpAndPoints($pdo, $user_id, 25, 10, 'Relatório criado', 'report', (int) $lastId);
             runAntifraudChecks($pdo, $user_id, 'report');
         }
         echo json_encode(['success' => true, 'message' => 'Relatório registrado com sucesso!', 'report_id' => $lastId]);
@@ -1114,7 +1145,8 @@ function reportProblem($pdo) {
     }
 }
 
-function getStatsHandler($pdo) {
+function getStatsHandler($pdo)
+{
     try {
         $stmt_reports = $pdo->query("SELECT COUNT(*) FROM relatorios");
         $total_reports = $stmt_reports->fetchColumn();
@@ -1125,8 +1157,8 @@ function getStatsHandler($pdo) {
         http_response_code(200);
         echo json_encode([
             'success' => true,
-            'total_reports' => (int)$total_reports,
-            'total_users' => (int)$total_users
+            'total_reports' => (int) $total_reports,
+            'total_users' => (int) $total_users
         ]);
 
     } catch (PDOException $e) {
@@ -1140,7 +1172,8 @@ function getStatsHandler($pdo) {
 
 
 
-function getDashboardData($pdo) {
+function getDashboardData($pdo)
+{
     try {
         $statusCounts = [
             'Pendente' => 0,
@@ -1150,59 +1183,80 @@ function getDashboardData($pdo) {
             'Verificado' => 0,
             'Invalidado' => 0,
         ];
-        
-     
+
+
         $stmt = $pdo->query("SELECT status, COUNT(*) as count FROM relatorios GROUP BY status");
         $dbCounts = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-        
+
 
         foreach ($dbCounts as $status => $count) {
             if (array_key_exists($status, $statusCounts)) {
-                $statusCounts[$status] = (int)$count;
+                $statusCounts[$status] = (int) $count;
             }
         }
 
         $total = array_sum($statusCounts);
         $resolvidos = $statusCounts['Resolvido'] ?? 0;
         $taxa_resolucao = ($total > 0) ? round(($resolvidos / $total) * 100) : 0;
-        
-     
+
+
         $stmt = $pdo->query("SELECT COALESCE(NULLIF(tipo, ''), 'outros') as tipo, COUNT(*) as count FROM relatorios GROUP BY COALESCE(NULLIF(tipo, ''), 'outros') ORDER BY count DESC");
         $tipos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-     
-        $stmt = $pdo->query("SELECT COUNT(*) FROM relatorios WHERE data_criacao >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
-        $novos_7_dias = (int)$stmt->fetchColumn();
 
+
+        $stmt = $pdo->query("SELECT COUNT(*) FROM relatorios WHERE data_criacao >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+        $novos_7_dias = (int) $stmt->fetchColumn();
+
+        $priorityCounts = [
+            'baixa' => 0,
+            'media' => 0,
+            'alta' => 0,
+            'urgente' => 0,
+        ];
+        $stmt = $pdo->query("SELECT LOWER(COALESCE(NULLIF(prioridade, ''), 'baixa')) as prioridade, COUNT(*) as count FROM relatorios GROUP BY LOWER(COALESCE(NULLIF(prioridade, ''), 'baixa'))");
+        foreach ($stmt->fetchAll(PDO::FETCH_KEY_PAIR) as $prioridade => $count) {
+            if (array_key_exists($prioridade, $priorityCounts)) {
+                $priorityCounts[$prioridade] = (int) $count;
+            }
+        }
 
         return [
-            'total' => $total, 
+            'total' => $total,
             'pendentes' => $statusCounts['Pendente'],
-            'resolvidos' => $resolvidos, 
+            'resolvidos' => $resolvidos,
             'em_analise' => $statusCounts['Em Análise'],
             'em_andamento' => $statusCounts['Em Andamento'],
-            'taxa_resolucao' => $taxa_resolucao, 
-            'novos_7_dias' => $novos_7_dias, 
+            'taxa_resolucao' => $taxa_resolucao,
+            'novos_7_dias' => $novos_7_dias,
             'tipos' => $tipos,
-            'status_counts' => $statusCounts
+            'status_counts' => $statusCounts,
+            'priority_counts' => $priorityCounts
         ];
     } catch (PDOException $e) {
-    
+
         return [
-            'total' => 0, 'pendentes' => 0, 'resolvidos' => 0, 'em_analise' => 0,
-            'em_andamento' => 0, 'taxa_resolucao' => 0, 'novos_7_dias' => 0, 'tipos' => [],
-            'status_counts' => ['Pendente' => 0, 'Em Análise' => 0, 'Em Andamento' => 0, 'Resolvido' => 0]
+            'total' => 0,
+            'pendentes' => 0,
+            'resolvidos' => 0,
+            'em_analise' => 0,
+            'em_andamento' => 0,
+            'taxa_resolucao' => 0,
+            'novos_7_dias' => 0,
+            'tipos' => [],
+            'status_counts' => ['Pendente' => 0, 'Em Análise' => 0, 'Em Andamento' => 0, 'Resolvido' => 0],
+            'priority_counts' => ['baixa' => 0, 'media' => 0, 'alta' => 0, 'urgente' => 0]
         ];
     }
 }
 
-function getReportsOverTimeData($pdo) {
+function getReportsOverTimeData($pdo)
+{
     $sql = "SELECT DATE(data_criacao) as report_date, COUNT(*) as count 
             FROM relatorios 
             WHERE data_criacao IS NOT NULL
             GROUP BY report_date 
             ORDER BY report_date ASC";
-    
+
     try {
         $stmt = $pdo->prepare($sql);
         $stmt->execute();
@@ -1212,20 +1266,21 @@ function getReportsOverTimeData($pdo) {
     }
 }
 
-function getReportsOverTimeHandler($pdo) {
+function getReportsOverTimeHandler($pdo)
+{
     $data = getReportsOverTimeData($pdo);
-    
+
     $labels = [];
     $cumulative_counts = [];
     $cumulative = 0;
-    
+
 
     foreach ($data as $row) {
-        $labels[] = $row['report_date']; 
-        $cumulative += (int)$row['count'];
-        $cumulative_counts[] = $cumulative; 
+        $labels[] = $row['report_date'];
+        $cumulative += (int) $row['count'];
+        $cumulative_counts[] = $cumulative;
     }
-    
+
     header('Content-Type: application/json');
     echo json_encode([
         'success' => true,
@@ -1234,15 +1289,110 @@ function getReportsOverTimeHandler($pdo) {
     ]);
 }
 
-function getMonthlyTier($profile) {
-    $score = (float)($profile['monthly_score'] ?? 0);
-    $rank = (float)($profile['reliability_rank'] ?? 0);
-    if ($score >= 250 && $rank >= 75) return 'Ouro';
-    if ($score >= 120 && $rank >= 55) return 'Prata';
+function getMonthlyTier($profile)
+{
+    $score = (float) ($profile['monthly_score'] ?? 0);
+    $rank = (float) ($profile['reliability_rank'] ?? 0);
+    if ($score >= 250 && $rank >= 75)
+        return 'Ouro';
+    if ($score >= 120 && $rank >= 55)
+        return 'Prata';
     return 'Bronze';
 }
 
-function getUserDashboardHandler($pdo) {
+/**
+ * getMonthlyTierFromPoints
+ * Mesma ideia do getMonthlyTier, mas usando pontos ganhos DE
+ * VERDADE dentro do mês atual (não o contador monthly_score, que
+ * nunca é resetado e por isso não representa "este mês").
+ */
+function getMonthlyTierFromPoints($pontos_mes, $reliability_rank)
+{
+    if ($pontos_mes >= 250 && $reliability_rank >= 75)
+        return 'Ouro';
+    if ($pontos_mes >= 120 && $reliability_rank >= 55)
+        return 'Prata';
+    return 'Bronze';
+}
+
+/**
+ * monthlyRankingHandler
+ * Ranking do mês corrente (estilo "liga" do Duolingo), calculado
+ * direto das tabelas com timestamp (urbanpoint_ledger, relatorios,
+ * report_validations) — não depende de nenhum contador que precise
+ * ser resetado manualmente todo mês.
+ *
+ * Devolve, para cada usuário com alguma atividade no mês atual:
+ *   - pontos_mes         (soma de pontos ganhos desde o dia 1)
+ *   - relatorios_mes     (relatórios criados desde o dia 1)
+ *   - validacoes_mes     (validações corretas desde o dia 1)
+ * O front-end decide qual dessas 3 colunas usar pra ordenar,
+ * dependendo de qual aba/categoria a pessoa escolher.
+ */
+function monthlyRankingHandler($pdo)
+{
+    $inicioMes = date('Y-m-01 00:00:00');
+    $diasNoMes = (int) date('t');
+    $diaAtual = (int) date('j');
+    $diasRestantes = max(0, $diasNoMes - $diaAtual);
+
+    $sql = "SELECT
+                ug.username,
+                ug.xp,
+                ug.level_num,
+                ug.reliability_rank,
+                COALESCE(pm.pontos_mes, 0) AS pontos_mes,
+                COALESCE(rm.relatorios_mes, 0) AS relatorios_mes,
+                COALESCE(vm.validacoes_mes, 0) AS validacoes_mes
+            FROM user_gamification ug
+            LEFT JOIN (
+                SELECT username, SUM(amount) AS pontos_mes
+                FROM urbanpoint_ledger
+                WHERE created_at >= ? AND amount > 0
+                GROUP BY username
+            ) pm ON pm.username = ug.username
+            LEFT JOIN (
+                SELECT user_id AS username, COUNT(*) AS relatorios_mes
+                FROM relatorios
+                WHERE data_criacao >= ?
+                GROUP BY user_id
+            ) rm ON rm.username = ug.username
+            LEFT JOIN (
+                SELECT username, COUNT(*) AS validacoes_mes
+                FROM report_validations
+                WHERE was_correct = 1 AND created_at >= ?
+                GROUP BY username
+            ) vm ON vm.username = ug.username
+            HAVING pontos_mes > 0 OR relatorios_mes > 0 OR validacoes_mes > 0
+            ORDER BY pontos_mes DESC, relatorios_mes DESC, validacoes_mes DESC
+            LIMIT 100";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$inicioMes, $inicioMes, $inicioMes]);
+
+    $usuarioAtual = getCurrentUser();
+    $linhas = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $i => $row) {
+        $row['pontos_mes'] = (int) $row['pontos_mes'];
+        $row['relatorios_mes'] = (int) $row['relatorios_mes'];
+        $row['validacoes_mes'] = (int) $row['validacoes_mes'];
+        $row['reliability_rank'] = (float) $row['reliability_rank'];
+        $row['posicao'] = $i + 1;
+        $row['liga'] = getMonthlyTierFromPoints($row['pontos_mes'], $row['reliability_rank']);
+        $row['sou_eu'] = ($usuarioAtual !== null && $row['username'] === $usuarioAtual);
+        $linhas[] = $row;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'mes_referencia' => date('F/Y'),
+        'dias_restantes' => $diasRestantes,
+        'ranking' => $linhas
+    ]);
+}
+
+function getUserDashboardHandler($pdo)
+{
     $username = getCurrentUser();
     if (!$username) {
         http_response_code(401);
@@ -1250,10 +1400,10 @@ function getUserDashboardHandler($pdo) {
         return;
     }
     $profile = ensureGameProfile($pdo, $username);
-    $level = max(1, (int)$profile['level_num']);
+    $level = max(1, (int) $profile['level_num']);
     $currentLevelXp = ($level - 1) * ($level - 1) * 100;
     $nextLevelXp = $level * $level * 100;
-    $xp = (int)$profile['xp'];
+    $xp = (int) $profile['xp'];
     $progress = $nextLevelXp > $currentLevelXp ? clampInt((($xp - $currentLevelXp) / ($nextLevelXp - $currentLevelXp)) * 100) : 0;
     echo json_encode([
         'success' => true,
@@ -1263,22 +1413,23 @@ function getUserDashboardHandler($pdo) {
             'level' => $level,
             'xp_progress' => $progress,
             'next_level_xp' => $nextLevelXp,
-            'urban_points' => (int)$profile['urban_points'],
-            'reliability_rank' => (float)$profile['reliability_rank'],
+            'urban_points' => (int) $profile['urban_points'],
+            'reliability_rank' => (float) $profile['reliability_rank'],
             'monthly_tier' => getMonthlyTier($profile),
-            'participation_count' => (int)$profile['participation_count'],
-            'validations_total' => (int)$profile['validations_total'],
-            'validations_correct' => (int)$profile['validations_correct'],
-            'validations_incorrect' => (int)$profile['validations_incorrect'],
-            'reports_created' => (int)$profile['reports_created'],
-            'reports_verified' => (int)$profile['reports_verified'],
-            'reports_invalidated' => (int)$profile['reports_invalidated'],
-            'suspicious_score' => (int)$profile['suspicious_score']
+            'participation_count' => (int) $profile['participation_count'],
+            'validations_total' => (int) $profile['validations_total'],
+            'validations_correct' => (int) $profile['validations_correct'],
+            'validations_incorrect' => (int) $profile['validations_incorrect'],
+            'reports_created' => (int) $profile['reports_created'],
+            'reports_verified' => (int) $profile['reports_verified'],
+            'reports_invalidated' => (int) $profile['reports_invalidated'],
+            'suspicious_score' => (int) $profile['suspicious_score']
         ]
     ]);
 }
 
-function leaderboardHandler($pdo) {
+function leaderboardHandler($pdo)
+{
     $tier = $_GET['tier'] ?? 'all';
     $period = $_GET['period'] ?? 'global';
     $order = $period === 'monthly' ? 'monthly_score' : 'reliability_rank';
@@ -1289,19 +1440,21 @@ function leaderboardHandler($pdo) {
         $row['position'] = $index + 1;
         $row['monthly_tier'] = getMonthlyTier($row);
         if ($tier === 'all' || mb_strtolower($row['monthly_tier']) === mb_strtolower($tier)) {
-            $row['accuracy'] = (int)$row['validations_total'] > 0 ? round(((int)$row['validations_correct'] / (int)$row['validations_total']) * 100, 1) : 0;
+            $row['accuracy'] = (int) $row['validations_total'] > 0 ? round(((int) $row['validations_correct'] / (int) $row['validations_total']) * 100, 1) : 0;
             $rows[] = $row;
         }
     }
     echo json_encode(['success' => true, 'period' => $period, 'tier' => $tier, 'leaders' => $rows]);
 }
 
-function rewardsHandler($pdo) {
+function rewardsHandler($pdo)
+{
     $stmt = $pdo->query("SELECT id, title, description, cost_points, reward_type, category, partner, image_url, estimated_value, inventory FROM rewards WHERE active = 1 ORDER BY partner ASC, cost_points ASC");
     echo json_encode(['success' => true, 'rewards' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
 }
 
-function rewardCenterHandler($pdo) {
+function rewardCenterHandler($pdo)
+{
     $username = getCurrentUser();
     if (!$username) {
         http_response_code(401);
@@ -1310,11 +1463,11 @@ function rewardCenterHandler($pdo) {
     }
 
     $profile = ensureGameProfile($pdo, $username);
-    $points = (int)$profile['urban_points'];
-    $level = max(1, (int)$profile['level_num']);
+    $points = (int) $profile['urban_points'];
+    $level = max(1, (int) $profile['level_num']);
     $currentLevelXp = ($level - 1) * ($level - 1) * 100;
     $nextLevelXp = $level * $level * 100;
-    $xp = (int)$profile['xp'];
+    $xp = (int) $profile['xp'];
     $xpProgress = $nextLevelXp > $currentLevelXp ? clampInt((($xp - $currentLevelXp) / ($nextLevelXp - $currentLevelXp)) * 100) : 0;
 
     $rewardStmt = $pdo->query("SELECT id, title, description, cost_points, reward_type, category, partner, image_url, estimated_value, inventory
@@ -1323,7 +1476,7 @@ function rewardCenterHandler($pdo) {
 
     $nextReward = null;
     foreach ($rewards as $reward) {
-        if ((int)$reward['cost_points'] > $points && (!$nextReward || (int)$reward['cost_points'] < (int)$nextReward['cost_points'])) {
+        if ((int) $reward['cost_points'] > $points && (!$nextReward || (int) $reward['cost_points'] < (int) $nextReward['cost_points'])) {
             $nextReward = $reward;
         }
     }
@@ -1351,26 +1504,27 @@ function rewardCenterHandler($pdo) {
             'xp_progress' => $xpProgress,
             'next_level_xp' => $nextLevelXp,
             'urban_points' => $points,
-            'reliability_rank' => (float)$profile['reliability_rank'],
+            'reliability_rank' => (float) $profile['reliability_rank'],
             'monthly_tier' => getMonthlyTier($profile),
-            'participation_count' => (int)$profile['participation_count'],
-            'validations_total' => (int)$profile['validations_total'],
-            'validations_correct' => (int)$profile['validations_correct'],
-            'reports_created' => (int)$profile['reports_created'],
-            'reports_verified' => (int)$profile['reports_verified']
+            'participation_count' => (int) $profile['participation_count'],
+            'validations_total' => (int) $profile['validations_total'],
+            'validations_correct' => (int) $profile['validations_correct'],
+            'reports_created' => (int) $profile['reports_created'],
+            'reports_verified' => (int) $profile['reports_verified']
         ],
         'summary' => [
-            'redemptions_count' => (int)$redemptionStats['total'],
-            'total_savings' => (float)$redemptionStats['savings'],
+            'redemptions_count' => (int) $redemptionStats['total'],
+            'total_savings' => (float) $redemptionStats['savings'],
             'next_reward' => $nextReward,
-            'points_to_next_reward' => $nextReward ? max(0, (int)$nextReward['cost_points'] - $points) : 0
+            'points_to_next_reward' => $nextReward ? max(0, (int) $nextReward['cost_points'] - $points) : 0
         ],
         'rewards' => $rewards,
         'history' => $historyStmt->fetchAll(PDO::FETCH_ASSOC)
     ]);
 }
 
-function redeemRewardHandler($pdo) {
+function redeemRewardHandler($pdo)
+{
     $username = getCurrentUser();
     if (!$username) {
         http_response_code(401);
@@ -1389,44 +1543,171 @@ function redeemRewardHandler($pdo) {
         $stmt = $pdo->prepare("SELECT * FROM rewards WHERE id = ? AND active = 1 FOR UPDATE");
         $stmt->execute([$rewardId]);
         $reward = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$reward || (int)$reward['inventory'] <= 0) {
+        if (!$reward || (int) $reward['inventory'] <= 0) {
             $pdo->rollBack();
             echo json_encode(['success' => false, 'message' => 'Recompensa indisponível.']);
             return;
         }
-        if ((int)$profile['urban_points'] < (int)$reward['cost_points']) {
+        if ((int) $profile['urban_points'] < (int) $reward['cost_points']) {
             $pdo->rollBack();
             echo json_encode(['success' => false, 'message' => 'UrbanPoints insuficientes.']);
             return;
         }
         $code = 'AU-' . strtoupper(bin2hex(random_bytes(4))) . '-' . $rewardId;
         $pdo->prepare("UPDATE rewards SET inventory = inventory - 1 WHERE id = ?")->execute([$rewardId]);
-        addXpAndPoints($pdo, $username, 0, -((int)$reward['cost_points']), 'Resgate: ' . $reward['title'], 'reward', $rewardId);
+        addXpAndPoints($pdo, $username, 0, -((int) $reward['cost_points']), 'Resgate: ' . $reward['title'], 'reward', $rewardId);
         $stmt = $pdo->prepare("INSERT INTO reward_redemptions (reward_id, username, code) VALUES (?, ?, ?)");
         $stmt->execute([$rewardId, $username, $code]);
         $pdo->commit();
         echo json_encode(['success' => true, 'message' => 'Recompensa resgatada.', 'code' => $code]);
     } catch (Exception $e) {
-        if ($pdo->inTransaction()) $pdo->rollBack();
+        if ($pdo->inTransaction())
+            $pdo->rollBack();
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Erro ao resgatar recompensa: ' . $e->getMessage()]);
     }
 }
 
-function antifraudSummaryHandler($pdo) {
+function antifraudSummaryHandler($pdo)
+{
     $stmt = $pdo->query("SELECT event_type, COUNT(*) AS total, SUM(severity) AS severity FROM antifraud_events GROUP BY event_type ORDER BY severity DESC");
     echo json_encode(['success' => true, 'events' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
 }
 
+/**
+ * weeklyCheckinHandler
+ * Mostra os 7 dias da semana atual (segunda a domingo) e marca como
+ * "feito" apenas o dia em que o usuário REALMENTE criou pelo menos
+ * um relatório — nada de check-in decorativo/fake.
+ *
+ * Se a semana inteira for completa (7/7), concede um bônus único
+ * (controlado via urbanpoint_ledger com reference_type='weekly_streak'
+ * e reference_id = ano+semana ISO, então nunca é concedido 2x).
+ */
+function weeklyCheckinHandler($pdo)
+{
+    $username = getCurrentUser();
+    if (!$username) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Autenticação necessária.']);
+        return;
+    }
+
+    $hoje = new DateTime('now');
+    $diaSemanaISO = (int) $hoje->format('N'); // 1=segunda ... 7=domingo
+    $segunda = (clone $hoje)->modify('-' . ($diaSemanaISO - 1) . ' days')->setTime(0, 0, 0);
+    $hojeStr = $hoje->format('Y-m-d');
+    $nomesDias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM relatorios WHERE user_id = ? AND DATE(data_criacao) = ?");
+    $dias = [];
+    $diasCompletos = 0;
+    for ($i = 0; $i < 7; $i++) {
+        $dia = (clone $segunda)->modify("+{$i} days");
+        $diaStr = $dia->format('Y-m-d');
+        $stmt->execute([$username, $diaStr]);
+        $feito = ((int) $stmt->fetchColumn()) > 0;
+        if ($feito)
+            $diasCompletos++;
+        $dias[] = [
+            'label' => $nomesDias[$i],
+            'data' => $diaStr,
+            'feito' => $feito,
+            'e_hoje' => $diaStr === $hojeStr,
+            'futuro' => $diaStr > $hojeStr
+        ];
+    }
+
+    $anoSemana = (int) $hoje->format('oW');
+    $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM urbanpoint_ledger WHERE username = ? AND reference_type = 'weekly_streak' AND reference_id = ?");
+    $checkStmt->execute([$username, $anoSemana]);
+    $bonusJaConcedido = ((int) $checkStmt->fetchColumn()) > 0;
+
+    $bonusConcedidoAgora = false;
+    if ($diasCompletos === 7 && !$bonusJaConcedido) {
+        addXpAndPoints($pdo, $username, 30, 50, 'Sequência perfeita da semana (7/7 dias com relatório)', 'weekly_streak', $anoSemana);
+        $bonusJaConcedido = true;
+        $bonusConcedidoAgora = true;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'dias' => $dias,
+        'dias_completos' => $diasCompletos,
+        'bonus_concedido' => $bonusJaConcedido,
+        'bonus_concedido_agora' => $bonusConcedidoAgora
+    ]);
+}
+
+/**
+ * dailyChallengeHandler
+ * 3 tarefas do dia: reportar, validar e comentar. Só marca como
+ * concluída se a ação realmente aconteceu HOJE (consulta direta nas
+ * tabelas com timestamp). Ao completar as 3 no mesmo dia, concede um
+ * bônus único (idempotente via reference_type='daily_challenge' +
+ * reference_id = data de hoje em formato numérico AAAAMMDD).
+ */
+function dailyChallengeHandler($pdo)
+{
+    $username = getCurrentUser();
+    if (!$username) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Autenticação necessária.']);
+        return;
+    }
+
+    $hoje = date('Y-m-d');
+    $hojeInt = (int) date('Ymd');
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM relatorios WHERE user_id = ? AND DATE(data_criacao) = ?");
+    $stmt->execute([$username, $hoje]);
+    $reportarFeito = ((int) $stmt->fetchColumn()) > 0;
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM report_validations WHERE username = ? AND DATE(created_at) = ?");
+    $stmt->execute([$username, $hoje]);
+    $validarFeito = ((int) $stmt->fetchColumn()) > 0;
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM comentarios WHERE user_name = ? AND DATE(created_at) = ?");
+    $stmt->execute([$username, $hoje]);
+    $comentarFeito = ((int) $stmt->fetchColumn()) > 0;
+
+    $tarefas = [
+        ['chave' => 'reportar', 'titulo' => 'Crie um relatório', 'icone' => 'fa-location-dot', 'feito' => $reportarFeito],
+        ['chave' => 'validar', 'titulo' => 'Valide um relatório', 'icone' => 'fa-shield-halved', 'feito' => $validarFeito],
+        ['chave' => 'comentar', 'titulo' => 'Comente em um relatório', 'icone' => 'fa-comment', 'feito' => $comentarFeito],
+    ];
+
+    $todasFeitas = $reportarFeito && $validarFeito && $comentarFeito;
+
+    $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM urbanpoint_ledger WHERE username = ? AND reference_type = 'daily_challenge' AND reference_id = ?");
+    $checkStmt->execute([$username, $hojeInt]);
+    $bonusJaConcedido = ((int) $checkStmt->fetchColumn()) > 0;
+
+    $bonusConcedidoAgora = false;
+    if ($todasFeitas && !$bonusJaConcedido) {
+        addXpAndPoints($pdo, $username, 15, 25, 'Desafios diários completos', 'daily_challenge', $hojeInt);
+        $bonusJaConcedido = true;
+        $bonusConcedidoAgora = true;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'tarefas' => $tarefas,
+        'todas_feitas' => $todasFeitas,
+        'bonus_concedido' => $bonusJaConcedido,
+        'bonus_concedido_agora' => $bonusConcedidoAgora
+    ]);
+}
+
 
 if (basename(__FILE__) === basename($_SERVER['PHP_SELF'])) {
-    
+
     $action = $_GET['action'] ?? '';
-    
+
     $pdo = connectDB();
     ensureGamificationSchema($pdo);
 
-   
+
     header('Content-Type: application/json');
 
     switch ($action) {
@@ -1444,62 +1725,85 @@ if (basename(__FILE__) === basename($_SERVER['PHP_SELF'])) {
         case 'dashboard_data':
             echo json_encode(getDashboardData($pdo));
             break;
-        
-        case 'get_report_details': 
+
+        case 'get_report_details':
             getReportDetails($pdo);
-            break; 
-        
+            break;
+
         case 'add_comment':
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 addCommentHandler($pdo);
             } else {
-                http_response_code(405); echo json_encode(['success' => false, 'message' => 'Use POST']);
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Use POST']);
             }
             break;
 
         case 'validate_report':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') validateReportHandler($pdo);
-            else { http_response_code(405); echo json_encode(['success' => false, 'message' => 'Use POST']); }
+            if ($_SERVER['REQUEST_METHOD'] === 'POST')
+                validateReportHandler($pdo);
+            else {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Use POST']);
+            }
             break;
 
         case 'validate_comment':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') validateCommentHandler($pdo);
-            else { http_response_code(405); echo json_encode(['success' => false, 'message' => 'Use POST']); }
+            if ($_SERVER['REQUEST_METHOD'] === 'POST')
+                validateCommentHandler($pdo);
+            else {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Use POST']);
+            }
             break;
-        
+
         case 'add_vote':
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 addVoteHandler($pdo);
             } else {
-                http_response_code(405); echo json_encode(['success' => false, 'message' => 'Use POST']);
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Use POST']);
             }
             break;
-        
+
         case 'register':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') registerUserHandler($pdo);
-            else { http_response_code(405); echo json_encode(['success' => false, 'message' => 'Use POST']); }
+            if ($_SERVER['REQUEST_METHOD'] === 'POST')
+                registerUserHandler($pdo);
+            else {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Use POST']);
+            }
             break;
         case 'login':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') loginUserHandler($pdo);
-            else { http_response_code(405); echo json_encode(['success' => false, 'message' => 'Use POST']); }
+            if ($_SERVER['REQUEST_METHOD'] === 'POST')
+                loginUserHandler($pdo);
+            else {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Use POST']);
+            }
             break;
         case 'change_password':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') changePasswordHandler($pdo);
-            else { http_response_code(405); echo json_encode(['success' => false, 'message' => 'Use POST']); }
+            if ($_SERVER['REQUEST_METHOD'] === 'POST')
+                changePasswordHandler($pdo);
+            else {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Use POST']);
+            }
             break;
         case 'logout':
             logoutUserHandler();
             break;
         case 'current_user':
             $username = getCurrentUser();
-            if ($username) ensureGameProfile($pdo, $username);
+            if ($username)
+                ensureGameProfile($pdo, $username);
             echo json_encode(['username' => $username]);
             break;
-            
+
         case 'get_stats':
             getStatsHandler($pdo);
             break;
-        
+
         case 'reports_over_time':
             getReportsOverTimeHandler($pdo);
             break;
@@ -1512,6 +1816,18 @@ if (basename(__FILE__) === basename($_SERVER['PHP_SELF'])) {
             leaderboardHandler($pdo);
             break;
 
+        case 'monthly_ranking':
+            monthlyRankingHandler($pdo);
+            break;
+
+        case 'weekly_checkin':
+            weeklyCheckinHandler($pdo);
+            break;
+
+        case 'daily_challenges':
+            dailyChallengeHandler($pdo);
+            break;
+
         case 'rewards':
             rewardsHandler($pdo);
             break;
@@ -1521,28 +1837,44 @@ if (basename(__FILE__) === basename($_SERVER['PHP_SELF'])) {
             break;
 
         case 'redeem_reward':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') redeemRewardHandler($pdo);
-            else { http_response_code(405); echo json_encode(['success' => false, 'message' => 'Use POST']); }
+            if ($_SERVER['REQUEST_METHOD'] === 'POST')
+                redeemRewardHandler($pdo);
+            else {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Use POST']);
+            }
             break;
 
         case 'antifraud_summary':
             antifraudSummaryHandler($pdo);
             break;
-            
+
         case 'claim_report':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') claimReportHandler();
-            else { http_response_code(405); echo json_encode(['success' => false, 'message' => 'Use POST']); }
+            if ($_SERVER['REQUEST_METHOD'] === 'POST')
+                claimReportHandler($pdo);
+            else {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Use POST']);
+            }
             break;
         case 'my_reports':
-            getMyReportsHandler();
+            getMyReportsHandler($pdo);
             break;
         case 'edit_report':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') editReportHandler($pdo);
-            else { http_response_code(405); echo json_encode(['success' => false, 'message' => 'Use POST']); }
+            if ($_SERVER['REQUEST_METHOD'] === 'POST')
+                editReportHandler($pdo);
+            else {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Use POST']);
+            }
             break;
         case 'delete_report':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') deleteReportHandler($pdo);
-            else { http_response_code(405); echo json_encode(['success' => false, 'message' => 'Use POST']); }
+            if ($_SERVER['REQUEST_METHOD'] === 'POST')
+                deleteReportHandler($pdo);
+            else {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Use POST']);
+            }
             break;
         default:
             http_response_code(400);

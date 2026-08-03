@@ -19,7 +19,10 @@
     <link rel="stylesheet" href="style.css">
     <!-- Assistente IA — estilos do botão flutuante e janela de chat -->
     <link rel="stylesheet" href="assistente.css">
-    <link rel="shortcut icon" href="./imagens/urbanoide.png" type="image/x-icon">
+    <!-- Slideshow de boas-vindas exibido na primeira visita -->
+    <link rel="stylesheet" href="onboarding.css">
+    <link rel="icon" href="urbanoide.png" type="image/png">
+    <link rel="shortcut icon" href="./imagens/urbanoide.png" type="image/png">
     <!-- Sobrescritas de CSS específicas da página e variáveis de layout.
             Mantidas inline para ajustes visuais rápidos usados apenas na página inicial. -->
     <style>
@@ -53,12 +56,18 @@
 
         /* Cursor: usar padrão do sistema (sem customizações) */
 
+        html {
+            overflow-x: hidden;
+            width: 100%;
+        }
+
         body {
             background-color: var(--main-bg-color);
             padding-top: var(--header-height);
             min-height: 100vh;
             position: relative;
             overflow-x: hidden;
+            width: 100%;
             background-image:
                 radial-gradient(circle at 10% 20%, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
                 radial-gradient(circle at 90% 80%, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
@@ -350,308 +359,309 @@
         body.no-scroll {
             overflow: hidden;
         }
-/* =======================================================
+
+        /* =======================================================
    CONTAINER PRINCIPAL
 ======================================================= */
 
-.main-content-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    width: 100%;
-    padding: clamp(15px, 3vw, 40px);
-    box-sizing: border-box;
-}
+        .main-content-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+            padding: clamp(15px, 3vw, 40px);
+            box-sizing: border-box;
+        }
 
-.container {
-    width: min(92vw, 1200px);
-    margin-top: clamp(10px, 2vw, 20px);
+        .container {
+            width: min(92vw, 1200px);
+            margin-top: clamp(10px, 2vw, 20px);
 
-    background: #ffffff;
-    border-radius: 12px;
-    overflow: hidden;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
 
-    box-shadow: 0 4px 12px rgba(0,0,0,.15);
-}
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+        }
 
-/* =======================================================
+        /* =======================================================
    HERO CARD
 ======================================================= */
 
-.main-card {
-    position: relative;
-    overflow: hidden;
+        .main-card {
+            position: relative;
+            overflow: hidden;
 
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
 
-    /* Altura responsiva */
-    height: clamp(380px, 42vw, 450px);
+            /* Altura responsiva */
+            height: clamp(380px, 42vw, 450px);
 
-    padding: clamp(30px, 3vw, 40px);
+            padding: clamp(30px, 3vw, 40px);
 
-    background: var(--card-bg-color);
-    color: white;
-    text-align: center;
-}
-/* =======================================================
+            background: var(--card-bg-color);
+            color: white;
+            text-align: center;
+        }
+
+        /* =======================================================
    FUNDO
 ======================================================= */
 
-.map-background {
-    position: absolute;
-    inset: 0;
+        .map-background {
+            position: absolute;
+            inset: 0;
 
-    z-index: 0;
+            z-index: 0;
 
-    background:
-        radial-gradient(circle at 85% 95%, var(--btn-blue) 8px, transparent 9px) no-repeat,
-        repeating-linear-gradient(45deg, #4A4D51, #4A4D51 1px, transparent 1px, transparent 10px),
-        repeating-linear-gradient(-45deg, #4A4D51, #4A4D51 1px, transparent 1px, transparent 10px);
+            background:
+                radial-gradient(circle at 85% 95%, var(--btn-blue) 8px, transparent 9px) no-repeat,
+                repeating-linear-gradient(45deg, #4A4D51, #4A4D51 1px, transparent 1px, transparent 10px),
+                repeating-linear-gradient(-45deg, #4A4D51, #4A4D51 1px, transparent 1px, transparent 10px);
 
-    background-size: 100% 100%;
-}
+            background-size: 100% 100%;
+        }
 
-#bg-video{
-    position:absolute;
-    inset:0;
+        #bg-video {
+            position: absolute;
+            inset: 0;
 
-    width:100%;
-    height:100%;
+            width: 100%;
+            height: 100%;
 
-    object-fit:cover;
+            object-fit: cover;
 
-    z-index:1;
-}
+            z-index: 1;
+        }
 
-#video-overlay-blue{
-    position:absolute;
-    inset:0;
+        #video-overlay-blue {
+            position: absolute;
+            inset: 0;
 
-    background:var(--blue-filter-color);
+            background: var(--blue-filter-color);
 
-    z-index:2;
-}
+            z-index: 2;
+        }
 
-.content-overlay{
-    position:relative;
-    z-index:3;
-}
+        .content-overlay {
+            position: relative;
+            z-index: 3;
+        }
 
-.content-overlay,
-.content-overlay *{
-    color:#fff !important;
-    opacity:1;
-}
+        .content-overlay,
+        .content-overlay * {
+            color: #fff !important;
+            opacity: 1;
+        }
 
-/* =======================================================
+        /* =======================================================
    TÍTULO
 ======================================================= */
 
-.main-title {
-    font-size: clamp(2rem, 4vw, 3.5rem);
-    font-weight: 700;
-    line-height: 1.1;
-    margin-bottom: 18px;
-    letter-spacing: -1px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,.25);
-}
+        .main-title {
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 18px;
+            letter-spacing: -1px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, .25);
+        }
 
-/* =======================================================
+        /* =======================================================
    SUBTÍTULO
 ======================================================= */
 
-.main-subtitle {
-    max-width: 650px;
-    margin: 0 auto 20px;
+        .main-subtitle {
+            max-width: 650px;
+            margin: 0 auto 20px;
 
-    font-size: clamp(1rem, 1.3vw, 1.2rem);
+            font-size: clamp(1rem, 1.3vw, 1.2rem);
 
-    line-height: 1.5;
-}
+            line-height: 1.5;
+        }
 
-/* =======================================================
+        /* =======================================================
    ESTATÍSTICAS
 ======================================================= */
 
-.stats {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
+        .stats {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: clamp(20px, 3vw, 45px);
+            margin: 15px 0 20px;
+        }
 
-    gap: clamp(20px, 3vw, 45px);
+        .stat-item {
+            text-align: center;
+            min-width: 120px;
+        }
 
-    margin: 15px 0 20px;
-}
+        .stat-number {
+            font-size: clamp(3rem, 5vw, 4.5rem);
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
 
-.stat-item {
-    text-align: center;
-    min-width: 120px;
-}
+        .stat-label {
+            font-size: clamp(.85rem, .9vw, 1rem);
+            font-weight: 500;
+        }
 
-.stat-number {
-    font-size: clamp(3rem, 5vw, 4.5rem);
-    font-weight: 700;
-    margin-bottom: 5px;
-}
-
-.stat-label {
-    font-size: clamp(.85rem, .9vw, 1rem);
-    font-weight: 500;
-}
-
-/* =======================================================
+        /* =======================================================
    BOTÕES
 ======================================================= */
 
-.actions {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
+        .actions {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            width: 100%;
+            margin: 20px 0;
+        }
 
-    gap: 20px;
+        .action-btn {
+            max-height: 50px;
+            flex: 1 1 220px;
+            max-width: 300px;
+            min-width: 180px;
+            padding: 14px 22px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: clamp(.9rem, 1vw, 1rem);
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: .3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, .25);
+        }
 
-    width: 100%;
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, .3);
+        }
 
-    margin: 20px 0;
-}
+        .action-btn i {
+            margin-right: 8px;
+        }
 
-.action-btn {
-    flex: 1 1 220px;
+        .btn-denunciar {
 
-    max-width: 300px;
+            background: var(--btn-blue);
+        }
 
-    min-width: 180px;
+        .btn-feed {
 
-    padding: 14px 22px;
+            background: var(--btn-gray);
+        }
 
-    border: none;
-    border-radius: 8px;
+        .btn-mapa {
 
-    color: white;
+            background: var(--btn-green);
+        }
 
-    font-size: clamp(.9rem, 1vw, 1rem);
-
-    font-weight: 600;
-
-    text-decoration: none;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    cursor: pointer;
-
-    transition: .3s;
-
-    box-shadow: 0 4px 8px rgba(0,0,0,.25);
-}
-
-.action-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 16px rgba(0,0,0,.3);
-}
-
-.action-btn i {
-    margin-right: 8px;
-}
-.btn-denunciar{
-
-    background:var(--btn-blue);
-}
-
-.btn-feed{
-
-    background:var(--btn-gray);
-}
-
-.btn-mapa{
-
-    background:var(--btn-green);
-}
-
-/* =======================================================
+        /* =======================================================
    TEXTO FINAL
 ======================================================= */
 
-.citizenship-message {
-    margin-top: 5px;
-    font-size: clamp(.9rem, 1vw, 1.05rem);
-    text-align: center;
-    font-weight: 500;
-}
+        .citizenship-message {
+            margin-top: 5px;
+            font-size: clamp(.9rem, 1vw, 1.05rem);
+            text-align: center;
+            font-weight: 500;
+        }
 
-/* =======================================================
+        /* =======================================================
    TABLET
 ======================================================= */
 
-@media (max-width: 900px) {
+        @media (max-width: 900px) {
 
-    .main-card {
-        height: auto;
-        min-height: 400px;
-        padding: 35px 25px;
-    }
+            .main-card {
+                height: auto;
+                min-height: 400px;
+                padding: 35px 25px;
+            }
 
-    .actions {
-        flex-direction: column;
-        align-items: center;
-    }
+            .actions {
+                flex-direction: column;
+                align-items: center;
+            }
 
-    .action-btn {
-        width: 100%;
-        max-width: 420px;
-    }
-}
+            .action-btn {
+                width: 100%;
+                max-width: 420px;
+            }
+        }
 
-/* =======================================================
+        /* =======================================================
    CELULAR
 ======================================================= */
 
-@media (max-width: 600px) {
-    
-    .main-card {
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        width: 100%;
-        padding: clamp(15px, 3vw, 40px);
-        box-sizing: border-box;
-    }
+        @media (max-width: 600px) {
 
-    .main-content-wrapper {
-        height: auto;
-        min-height: auto;
-        margin-top: 2vh;
-        padding: 30px 18px;
-    }
+            .main-card {
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                width: 100%;
+                padding: clamp(15px, 3vw, 40px);
+                box-sizing: border-box;
+            }
 
-    .main-title {
-        font-size: 2rem;
-    }
+            .main-content-wrapper {
+                height: auto;
+                min-height: auto;
+                margin-top: 3vh;
+                padding: 0px 18px;
+            }
 
-    .main-subtitle {
-        font-size: 1rem;
-    }
+            .main-title {
+                font-size: 2rem;
+            }
 
-    .stats {
-        flex-direction: column;
-        gap: 18px;
-    }
+            .main-subtitle {
+                font-size: 1rem;
+            }
 
-    .stat-number {
-        font-size: 3rem;
-    }
+            .stats {
+                display: flex;
+                justify-content: center;
+                gap: 30px;
+                /* distância entre os dois */
+                align-items: flex-start;
+            }
 
-    .action-btn {
-        min-width: 100%;
-        max-width: none;
-        max-height: max-content;
-    }
-}
+            .stat-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-comece-denunciar {
+                font-size: 8.5vw !important;
+                padding: 18px 40px;
+            }
+
+            .stat-number {
+                font-size: 3rem;
+            }
+
+            .action-btn {
+                min-width: 100%;
+                max-width: none;
+                max-height: max-content;
+            }
+        }
 
         ::-webkit-scrollbar {
             width: 8px;
@@ -796,7 +806,7 @@
         .category-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-            border-color: var(--primary-color);
+            border-color: #007bff;
         }
 
         .category-card i {
@@ -1118,17 +1128,36 @@
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            background: radial-gradient(circle, #fff 0%, rgba(255,255,255,0) 70%);
+            background: radial-gradient(circle, #fff 0%, rgba(255, 255, 255, 0) 70%);
             opacity: 0;
             pointer-events: none;
             z-index: 2;
             animation: sparkOrbit 3s linear infinite;
         }
 
-        .btn-comece-denunciar .spark:nth-child(1) { top: 10%; left: 20%; animation-delay: 0s; }
-        .btn-comece-denunciar .spark:nth-child(2) { top: 20%; right: 18%; animation-delay: 0.6s; }
-        .btn-comece-denunciar .spark:nth-child(3) { bottom: 12%; left: 28%; animation-delay: 1.2s; }
-        .btn-comece-denunciar .spark:nth-child(4) { bottom: 18%; right: 26%; animation-delay: 1.8s; }
+        .btn-comece-denunciar .spark:nth-child(1) {
+            top: 10%;
+            left: 20%;
+            animation-delay: 0s;
+        }
+
+        .btn-comece-denunciar .spark:nth-child(2) {
+            top: 20%;
+            right: 18%;
+            animation-delay: 0.6s;
+        }
+
+        .btn-comece-denunciar .spark:nth-child(3) {
+            bottom: 12%;
+            left: 28%;
+            animation-delay: 1.2s;
+        }
+
+        .btn-comece-denunciar .spark:nth-child(4) {
+            bottom: 18%;
+            right: 26%;
+            animation-delay: 1.8s;
+        }
 
         .btn-comece-denunciar:hover {
             transform: translateY(-4px) scale(1.02);
@@ -1173,62 +1202,137 @@
         }
 
         @keyframes floatCTA {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateY(0);
             }
+
             50% {
                 transform: translateY(-6px);
             }
         }
 
         @keyframes pulseRing {
-            0%, 100% { transform: scale(1); opacity: 0.7; }
-            50% { transform: scale(1.15); opacity: 1; }
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+
+            50% {
+                transform: scale(1.15);
+                opacity: 1;
+            }
         }
 
         @keyframes burstFlash {
-            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55), 0 0 0 12px rgba(0, 119, 255, 0.18); }
-            60% { box-shadow: 0 0 0 28px rgba(255, 255, 255, 0), 0 0 0 18px rgba(0, 119, 255, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 119, 255, 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55), 0 0 0 12px rgba(0, 119, 255, 0.18);
+            }
+
+            60% {
+                box-shadow: 0 0 0 28px rgba(255, 255, 255, 0), 0 0 0 18px rgba(0, 119, 255, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 119, 255, 0);
+            }
         }
 
         @keyframes shockwave {
-            0% { transform: scale(1); opacity: 0.9; filter: blur(12px); }
-            70% { transform: scale(1.4); opacity: 0.25; filter: blur(18px); }
-            100% { transform: scale(1.6); opacity: 0; filter: blur(24px); }
+            0% {
+                transform: scale(1);
+                opacity: 0.9;
+                filter: blur(12px);
+            }
+
+            70% {
+                transform: scale(1.4);
+                opacity: 0.25;
+                filter: blur(18px);
+            }
+
+            100% {
+                transform: scale(1.6);
+                opacity: 0;
+                filter: blur(24px);
+            }
         }
 
         @keyframes sparkOrbit {
-            0%   { transform: translate(0, 0) scale(0.5); opacity: 0; }
-            10%  { opacity: 1; }
-            50%  { transform: translate(14px, -16px) scale(1); }
-            90%  { opacity: 1; }
-            100% { transform: translate(-6px, 12px) scale(0.3); opacity: 0; }
+            0% {
+                transform: translate(0, 0) scale(0.5);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            50% {
+                transform: translate(14px, -16px) scale(1);
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(-6px, 12px) scale(0.3);
+                opacity: 0;
+            }
         }
 
         @keyframes stagePulse {
-            0%, 100% { transform: scale(1); opacity: 0.45; }
-            50% { transform: scale(1.05); opacity: 0.7; }
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.45;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 0.7;
+            }
         }
 
         @keyframes stageDrift {
-            0%, 100% { transform: translateX(0) scale(1); }
-            50% { transform: translateX(10px) scale(1.08); }
+
+            0%,
+            100% {
+                transform: translateX(0) scale(1);
+            }
+
+            50% {
+                transform: translateX(10px) scale(1.08);
+            }
         }
 
         @keyframes spotlightSweep {
-            0%, 100% { transform: perspective(900px) rotateX(30deg) translateX(-12px); opacity: 0.6; }
-            50% { transform: perspective(900px) rotateX(25deg) translateX(12px); opacity: 0.9; }
+
+            0%,
+            100% {
+                transform: perspective(900px) rotateX(30deg) translateX(-12px);
+                opacity: 0.6;
+            }
+
+            50% {
+                transform: perspective(900px) rotateX(25deg) translateX(12px);
+                opacity: 0.9;
+            }
         }
 
         .site-footer {
             padding: 80px 30px 40px;
-            width: 100vw;
-            margin-left: calc(-50vw + 50%);
+            width: 100%;
             background: linear-gradient(135deg, #1a1f2e 0%, #16213e 100%);
             color: #ffffff;
             text-align: left;
             position: relative;
+            box-sizing: border-box;
         }
 
         .footer-card {
@@ -1285,6 +1389,7 @@
             font-weight: 800;
             color: #ffffff;
             margin-top: 0;
+            line-height: 110%;
             letter-spacing: -0.5px;
             transition: 1s;
         }
@@ -1489,6 +1594,7 @@
             padding: 80px 20px;
             background-color: #f8f9fa;
             text-align: center;
+            width: 100vw;
             border-top: 1px solid var(--border-color-new);
         }
 
@@ -1510,10 +1616,30 @@
         .testimonial-card {
             background-color: #ffffff;
             border-radius: 12px;
+            border: 1px solid var(--border-color-new);
             padding: 30px;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
             transition: all 0.3s ease;
             text-align: left;
+        }
+
+        /* Celulares em pé */
+        @media (max-width: 768px) and (orientation: portrait) {
+            .testimonials-list {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Celulares deitados */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .testimonials-list {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+            }
+
+            .testimonial-card {
+                padding: 16px;
+            }
         }
 
         .testimonial-card:hover {
@@ -1725,10 +1851,31 @@
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
         }
 
+        body.dark-mode .faq-answer-text {
+            color: var(--text-light);
+        }
+
+        body.dark-mode .faq-item:hover {
+            border: 1px solid var(--primary-color);
+        }
+
+        body.dark-mode .testimonial-card:hover {
+            border-color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+
+        body.dark-mode .category-card:hover {
+            border-color: var(--primary-color);
+        }
+
         body.dark-mode .testimonial-text,
         body.dark-mode .faq-answer,
         body.dark-mode p {
             color: #cbd5e1;
+        }
+
+        body.dark-mode .faq-answer {
+            background-color: var(--card-bg-color);
         }
 
         body.dark-mode .testimonial-author,
@@ -1743,6 +1890,10 @@
         body.dark-mode .faq-section {
             background-color: #0b1220;
             border-color: #1f2937;
+        }
+
+        body.dark-mode .about-card:hover {
+            border-color: var(--primary-color);
         }
 
         body.dark-mode .faq-item .faq-question {
@@ -1833,13 +1984,14 @@
 
 <body>
 
-    <div vw class="enabled" style="left: initial; right: 0px; top: 50%; bottom: initial; transform: translateY(calc(-50% - 10px));">
+    <div vw class="enabled"
+        style="left: initial; right: 0px; top: 50%; bottom: initial; transform: translateY(calc(-50% - 10px));">
         <div vw-access-button class="active"></div>
         <div vw-plugin-wrapper>
             <div class="vw-plugin-top-wrapper"></div>
         </div>
     </div>
-      <script class="widgetdeacessibilidade" src="https://cdn.userway.org/widget.js" data-account="lqELz1dV9X"></script>
+    <script class="widgetdeacessibilidade" src="https://cdn.userway.org/widget.js" data-account="lqELz1dV9X"></script>
     <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
     <script>
         new window.VLibras.Widget('https://vlibras.gov.br/app');
@@ -2129,6 +2281,20 @@
         </div>
         <p class="scroll-hint">← Deslize para ver todas as categorias →</p>
     </section>
+    <section style="max-width: 900px; margin: 60px auto; padding: 0 24px; text-align: center;">
+        <h2>Veja como funciona</h2>
+        <p class="section-subtitle">Em menos de 1 minuto: como reportar, acompanhar e validar problemas na sua cidade.
+        </p>
+        <div
+            style="position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.25); margin-top: 24px;">
+            <iframe src="https://www.youtube.com/embed/nKvwh8yaMqQ?controls=0&rel=0&modestbranding=1&playsinline=1"
+                title="Vídeo explicativo — Agente Urbano"
+                style="position: absolute; inset: 0; width: 100%; height: 100%; border: none;"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen>
+            </iframe>
+        </div>
+    </section>
 
     <!--
         Seção: Sobre (about-section)
@@ -2298,7 +2464,8 @@
             <div class="footer-content">
 
                 <div class="footer-logo-section footer-section">
-                    <a style="cursor:default;" href="./secret/secret.html"><img style="cursor: help;" src="imagens/urbanoide.png" alt="Urbanoide" class="logo-icon"></a>
+                    <a style="cursor:default;" href="./secret/secret.html"><img style="cursor: help;"
+                            src="imagens/urbanoide.png" alt="Urbanoide" class="logo-icon"></a>
                     <div class="logo-text">Agente Urbano</div>
                 </div>
 
@@ -2858,7 +3025,7 @@
                 const deltaTime = Math.max(1, currentTime - lastTime);
                 const deltaX = currentX - lastX;
                 velocity = -deltaX / deltaTime * 15;
-                
+
                 lastX = currentX;
                 lastTime = currentTime;
             });
@@ -2895,7 +3062,7 @@
                 const deltaTime = Math.max(1, currentTime - lastTime);
                 const deltaX = currentX - lastX;
                 velocity = -deltaX / deltaTime * 15;
-                
+
                 lastX = currentX;
                 lastTime = currentTime;
             });
@@ -2934,17 +3101,18 @@
     <button id="ai-fab" aria-label="Abrir assistente de IA" aria-expanded="false" title="Assistente IA">
         <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <!-- Círculo externo -->
-            <circle cx="14" cy="14" r="11" stroke="currentColor" stroke-width="1.4" opacity="0.4"/>
+            <circle cx="14" cy="14" r="11" stroke="currentColor" stroke-width="1.4" opacity="0.4" />
             <!-- Corpo do robô -->
-            <rect x="8" y="10" width="12" height="9" rx="3" stroke="currentColor" stroke-width="1.4"/>
+            <rect x="8" y="10" width="12" height="9" rx="3" stroke="currentColor" stroke-width="1.4" />
             <!-- Olhos -->
-            <circle cx="11.5" cy="14" r="1.3" fill="currentColor"/>
-            <circle cx="16.5" cy="14" r="1.3" fill="currentColor"/>
+            <circle cx="11.5" cy="14" r="1.3" fill="currentColor" />
+            <circle cx="16.5" cy="14" r="1.3" fill="currentColor" />
             <!-- Antena -->
-            <line x1="14" y1="10" x2="14" y2="7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            <circle cx="14" cy="6" r="1.2" fill="currentColor"/>
+            <line x1="14" y1="10" x2="14" y2="7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            <circle cx="14" cy="6" r="1.2" fill="currentColor" />
             <!-- Sorriso -->
-            <path d="M11 17 Q14 18.8 17 17" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+            <path d="M11 17 Q14 18.8 17 17" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"
+                fill="none" />
         </svg>
         <!-- Badge de mensagens não lidas -->
         <span id="ai-fab-badge" class="ai-fab-badge hidden" aria-hidden="true">1</span>
@@ -2958,12 +3126,13 @@
             <div class="ai-chat-header-info">
                 <div class="ai-chat-avatar" aria-hidden="true">
                     <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="4" y="7" width="12" height="8" rx="2.5" stroke="white" stroke-width="1.3"/>
-                        <circle cx="7.8" cy="11" r="1.1" fill="white"/>
-                        <circle cx="12.2" cy="11" r="1.1" fill="white"/>
-                        <line x1="10" y1="7" x2="10" y2="5" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
-                        <circle cx="10" cy="4.2" r="0.9" fill="white"/>
-                        <path d="M7.8 13.5 Q10 14.8 12.2 13.5" stroke="white" stroke-width="1" stroke-linecap="round" fill="none"/>
+                        <rect x="4" y="7" width="12" height="8" rx="2.5" stroke="white" stroke-width="1.3" />
+                        <circle cx="7.8" cy="11" r="1.1" fill="white" />
+                        <circle cx="12.2" cy="11" r="1.1" fill="white" />
+                        <line x1="10" y1="7" x2="10" y2="5" stroke="white" stroke-width="1.3" stroke-linecap="round" />
+                        <circle cx="10" cy="4.2" r="0.9" fill="white" />
+                        <path d="M7.8 13.5 Q10 14.8 12.2 13.5" stroke="white" stroke-width="1" stroke-linecap="round"
+                            fill="none" />
                     </svg>
                 </div>
                 <div>
@@ -2975,7 +3144,8 @@
                 <!-- Limpar conversa -->
                 <button class="ai-hdr-btn" id="ai-btn-clear" title="Limpar conversa" aria-label="Limpar conversa">
                     <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M2 4h10M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3 4l.8 7.5h6.4L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 4h10M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3 4l.8 7.5h6.4L11 4" stroke="currentColor"
+                            stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                 </button>
                 <!-- Minimizar -->
@@ -2983,7 +3153,8 @@
                 <!-- Fechar -->
                 <button class="ai-hdr-btn ai-hdr-close" id="ai-btn-close" title="Fechar" aria-label="Fechar assistente">
                     <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5"
+                            stroke-linecap="round" />
                     </svg>
                 </button>
             </div>
@@ -3014,10 +3185,11 @@
         <div class="ai-typing-row" id="ai-typing-row" hidden aria-live="polite" aria-label="Assistente está digitando">
             <div class="ai-msg-icon" aria-hidden="true">
                 <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="10" cy="10" r="7" stroke="white" stroke-width="1.4"/>
-                    <circle cx="7.5" cy="8.5" r="1.2" fill="white"/>
-                    <circle cx="12.5" cy="8.5" r="1.2" fill="white"/>
-                    <path d="M7 12.5 Q10 14.5 13 12.5" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+                    <circle cx="10" cy="10" r="7" stroke="white" stroke-width="1.4" />
+                    <circle cx="7.5" cy="8.5" r="1.2" fill="white" />
+                    <circle cx="12.5" cy="8.5" r="1.2" fill="white" />
+                    <path d="M7 12.5 Q10 14.5 13 12.5" stroke="white" stroke-width="1.2" stroke-linecap="round"
+                        fill="none" />
                 </svg>
             </div>
             <div class="ai-typing-bubble">
@@ -3031,21 +3203,16 @@
         <!-- Área de entrada -->
         <div class="ai-input-area">
             <div class="ai-input-wrapper">
-                <textarea
-                    id="ai-input"
-                    placeholder="Digite uma mensagem..."
-                    rows="1"
-                    aria-label="Digite sua mensagem"
-                    autocomplete="off"
-                    spellcheck="true"
-                ></textarea>
+                <textarea id="ai-input" placeholder="Digite uma mensagem..." rows="1" aria-label="Digite sua mensagem"
+                    autocomplete="off" spellcheck="true"></textarea>
                 <button id="ai-send-btn" aria-label="Enviar mensagem" title="Enviar (Enter)">
                     <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M14 8L2 2l2.5 6L2 14l12-6z" fill="currentColor"/>
+                        <path d="M14 8L2 2l2.5 6L2 14l12-6z" fill="currentColor" />
                     </svg>
                 </button>
             </div>
-            <div class="ai-input-hint" aria-hidden="true">Enter para enviar &nbsp;·&nbsp; Shift+Enter para nova linha</div>
+            <div class="ai-input-hint" aria-hidden="true">Enter para enviar &nbsp;·&nbsp; Shift+Enter para nova linha
+            </div>
         </div>
     </div>
     <!-- ── fim do Assistente IA ─────────────────────────────────────── -->
@@ -3055,6 +3222,8 @@
     <script src="chat.js"></script>
     <script src="ui.js"></script>
     <script src="assistente.js"></script>
+    <!-- Slideshow de boas-vindas exibido na primeira visita -->
+    <script src="onboarding.js"></script>
 </body>
 
 </html>

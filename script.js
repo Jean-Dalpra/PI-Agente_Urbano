@@ -19,7 +19,9 @@ let isSelectingLocation = false;
 let problemsLayerGroup = null;
 let geocoder;
 let streetLayer;
+let streetDarkLayer;
 let satelliteLayer;
+let modoMapaEscuro = false;
 let currentUser = null;
 let panorama;
 let streetViewMarkers = [];
@@ -489,39 +491,95 @@ function initMap() {
     }
 
     isMapInitialized = true;
+    // Limites de um único "mundo" — evita o Leaflet repetir o mapa
+    // infinitamente pros lados ao dar zoom out ou arrastar (o que
+    // também deixava possível criar relatório numa cópia repetida do
+    // mapa, fora do lugar real).
+    var LIMITES_MUNDO = L.latLngBounds(L.latLng(-89.9, -180), L.latLng(89.9, 180));
+
+    
     // inicialização normal do mapa; animações de zoom/fade ativadas para evitar bugs
     map = L.map(mapElement, {
         zoomAnimation: true,
         markerZoomAnimation: true,
         fadeAnimation: true,
         inertia: true,
+        attributionControl: false,
         wheelDebounceTime: 16,
-        wheelPxPerZoomLevel: 80
+        wheelPxPerZoomLevel: 80,
+        maxBounds: LIMITES_MUNDO,
+        maxBoundsViscosity: 1.0, // "parede dura" — não deixa nem arrastar um pouco pra fora
+        worldCopyJump: false,
+        minZoom: 2,
+        maxZoom: 22
     }).setView(DEFAULT_COORDS, INITIAL_ZOOM);
 
     const fastTileOpts = {
-        maxZoom: 19,
+        maxZoom: 22,
+        maxNativeZoom: 19,  
+        attributionControl: false,      // os servidores de tile só têm imagem de verdade até aqui — acima disso, o Leaflet amplia (upscale) o último nível disponível
         keepBuffer: 10,           // mantém um anel bem maior de tiles ao redor
         unloadInvisibleTiles: false, // não descarta tiles fora da tela (menos “cinza”, mais memória)
         updateWhenIdle: false,    // continua baixando enquanto arrasta
         updateWhenZooming: true,  // pré-carrega durante zoom/fly
         updateInterval: 50,       // agenda updates de forma mais agressiva
-        subdomains: ['a', 'b', 'c'],
         crossOrigin: true,
-        attribution: ''
+        attribution: '',
+        noWrap: true,             // não repete o mapa nas laterais
+        detectRetina: true        // em tela de alta densidade (celular), pede automaticamente
+                                   // o tile @2x quando o provedor suportar — sem isso, o
+                                   // navegador só amplia o tile normal e fica borrado
     };
 
-    streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        ...fastTileOpts,
-        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    });
+    // Token do Mapbox já usado no modo 3D/rotas/geocoding deste projeto
+    // (window.mapa3D é definido de forma síncrona pelo módulo 3D, então
+    // já está disponível aqui). Os tiles do Mapbox têm versão @2x de
+    // verdade — diferente do servidor puro do OpenStreetMap, que só
+    // tem uma resolução fixa e por isso fica borrado em tela retina.
+    var mapboxToken = (window.mapa3D && typeof window.mapa3D.getAccessToken === 'function')
+        ? window.mapa3D.getAccessToken()
+        : '';
 
-    satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        ...fastTileOpts,
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, swisstopo, and the GIS User Community'
-    });
+    streetLayer = mapboxToken
+        ? L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}{r}?access_token=' + mapboxToken, {
+            ...fastTileOpts,
+            attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        })
+        : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            ...fastTileOpts,
+            subdomains: ['a', 'b', 'c'],
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }); // sem token disponível — volta pro OSM puro como reserva
 
-    streetLayer.addTo(map);
+    // Versão escura do mapa de ruas — Mapbox Dark (mesmo motivo:
+    // suporta @2x e fica nítido em celular).
+    streetDarkLayer = mapboxToken
+        ? L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/{z}/{x}/{y}{r}?access_token=' + mapboxToken, {
+            ...fastTileOpts,
+            attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        })
+        : L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            ...fastTileOpts,
+            subdomains: 'abcd',
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        });
+
+    // Satélite — Mapbox Satellite em vez do Esri: além de suportar
+    // @2x (nítido no celular), a resolução de imagem costuma ser
+    // igual ou melhor que a do Esri em boa parte das regiões.
+    satelliteLayer = mapboxToken
+        ? L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/256/{z}/{x}/{y}{r}?access_token=' + mapboxToken, {
+            ...fastTileOpts,
+            attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a>'
+        })
+        : L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            ...fastTileOpts,
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, swisstopo, and the GIS User Community'
+        });
+
+    try { modoMapaEscuro = localStorage.getItem('au_map_dark_mode') === '1'; } catch (_) {}
+
+    (modoMapaEscuro ? streetDarkLayer : streetLayer).addTo(map);
 
     problemsLayerGroup = L.layerGroup().addTo(map);
 
@@ -544,9 +602,8 @@ window.initMap = initMap;
  */
 function switchMapMode(mode) {
     if (mode === 'satellite') {
-        if (map.hasLayer(streetLayer)) {
-            map.removeLayer(streetLayer);
-        }
+        if (map.hasLayer(streetLayer)) map.removeLayer(streetLayer);
+        if (map.hasLayer(streetDarkLayer)) map.removeLayer(streetDarkLayer);
         satelliteLayer.addTo(map);
         modeSatBtn.classList.add('active-mode');
         modeStreetBtn.classList.remove('active-mode');
@@ -554,11 +611,39 @@ function switchMapMode(mode) {
         if (map.hasLayer(satelliteLayer)) {
             map.removeLayer(satelliteLayer);
         }
-        streetLayer.addTo(map);
+        (modoMapaEscuro ? streetDarkLayer : streetLayer).addTo(map);
         modeStreetBtn.classList.add('active-mode');
         modeSatBtn.classList.remove('active-mode');
     }
 }
+
+/**
+ * toggleDarkMapMode
+ * Alterna o mapa (2D e 3D) para a versão escura. No 2D, troca a
+ * camada de tiles de rua pela versão CARTO Dark Matter (o Satélite
+ * não é afetado — imagem de satélite não tem "versão escura"). No
+ * 3D, delega pro módulo do Mapbox (window.mapa3D), que troca o
+ * estilo e reconstrói as camadas de protocolos.
+ */
+function toggleDarkMapMode() {
+    modoMapaEscuro = !modoMapaEscuro;
+    try { localStorage.setItem('au_map_dark_mode', modoMapaEscuro ? '1' : '0'); } catch (_) {}
+
+    // 2D: só troca de fato se estiver no modo "Mapa" (rua), não no Satélite
+    if (map.hasLayer(streetLayer) || map.hasLayer(streetDarkLayer)) {
+        if (map.hasLayer(streetLayer)) map.removeLayer(streetLayer);
+        if (map.hasLayer(streetDarkLayer)) map.removeLayer(streetDarkLayer);
+        (modoMapaEscuro ? streetDarkLayer : streetLayer).addTo(map);
+    }
+
+    // 3D: delega pro módulo do Mapbox, se ele existir
+    if (window.mapa3D && typeof window.mapa3D.alternarModoEscuro === 'function') {
+        window.mapa3D.alternarModoEscuro(modoMapaEscuro);
+    }
+
+    return modoMapaEscuro;
+}
+window.toggleDarkMapMode = toggleDarkMapMode;
 
 function setupModeSwitching() {
     if (modeStreetBtn && modeSatBtn) {
@@ -809,9 +894,12 @@ function locateUserAndCenterMap(map, options = {}) {
               map.stop();
 
               const targetZoom = Math.max(map.getZoom(), 15);
+              // duration mais curto e sem forçar easeLinearity — deixa
+              // o easing padrão do Leaflet (mesmo ajuste usado no
+              // projeto "Comércio no Mapa"), fica mais suave e os
+              // pins não "balançam" tanto durante a viagem.
               const animationOpts = {
-                  duration: 1.2,
-                  easeLinearity: 0.2,
+                  duration: 0.6,
                   animate: true
               };
 
@@ -1004,6 +1092,40 @@ function applyFilters() {
         filteredData.sort((a, b) => a.id - b.id);
     }
 
+    // ── Editar / excluir relatório — reutilizado tanto pelo popup
+    //    padrão quanto pela sidebar de detalhes (mapa.html).
+    window.abrirEdicaoRelatorio = function (problem) {
+        createFormModal('Editar Relatório', [
+            { name: 'titulo', label: 'Título', value: problem.titulo || '' },
+            { name: 'descricao', label: 'Descrição', type: 'textarea', value: problem.descricao || '' },
+            { name: 'imagem_upload', label: 'Imagem (opcional)', type: 'file', preview: problem.imagem_url || '' }
+        ], (values, { close, files }) => {
+            const formData = new FormData();
+            formData.append('id', problem.id);
+            formData.append('titulo', values.titulo || '');
+            formData.append('descricao', values.descricao || '');
+            if (files && files.imagem_upload) {
+                formData.append('imagem_upload', files.imagem_upload);
+            }
+
+            fetch('api.php?action=edit_report', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(resp => { showToast(resp.message || 'Atualizado', resp.success ? 'success' : 'error'); loadProblems(); close(); })
+                .catch(err => { console.error(err); showMessage('Erro', '<p>Erro ao editar o relatório.</p>'); });
+        });
+    };
+
+    window.excluirRelatorio = function (id) {
+        createConfirmModal('Confirmar exclusão', 'Confirma exclusão deste relatório?', () => {
+            const form = new URLSearchParams();
+            form.append('id', id);
+            fetch('api.php?action=delete_report', { method: 'POST', body: form })
+                .then(r => r.json())
+                .then(resp => { showToast(resp.message || 'Excluído', resp.success ? 'success' : 'error'); loadProblems(); })
+                .catch(err => { console.error(err); showMessage('Erro', '<p>Não foi possível excluir o relatório.</p>'); });
+        });
+    };
+
     filteredData.forEach(problem => {
         const marker = L.marker([problem.latitude, problem.longitude], {
             icon: getMarkerIcon(problem.tipo)
@@ -1026,75 +1148,68 @@ function applyFilters() {
 
         const problemIdStr = String(problem.id);
         const isOwned = ownedReportIds.includes(problemIdStr);
-        const imageHtml = problem.imagem_url ?
-            `<img src="${problem.imagem_url}" alt="Imagem do Problema" style="max-width: 100%; height: auto; margin-top: 10px;">` : '';
-
-        const actionsHtml = isOwned ?
-            `<div class="actions" style="margin-top: 10px; border-top: 1px solid #ccc; padding-top: 10px;">
-                <button class="edit-btn" data-id="${problem.id}" style="background: #007bff; color: white; border: none; padding: 5px 10px; margin-right: 5px; border-radius: 3px; cursor: pointer;">Editar</button>
-                <button class="del-btn" data-id="${problem.id}" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Excluir</button>
-            </div>` : '';
-
-        const infoWindowContent = `
-            <div class="info-window">
-                <h4>${problem.titulo || 'Problema sem título'}</h4>
-                <p>Tipo: ${problem.tipo}</p>
-                <p>Descrição: ${problem.descricao}</p>
-                <p>Endereço: ${problem.endereco || 'Não informado'}</p>
-                <p>Status: <strong>${problem.status}</strong></p>
-                <p>Prioridade: ${problem.prioridade}</p>
-                ${imageHtml}
-                ${actionsHtml}
-            </div>
-        `;
-
-        marker.bindPopup(infoWindowContent);
         marker.reportId = problem.id;
 
-        marker.on('popupopen', function (e) {
-            const popup = e.popup;
-            const container = popup.getElement ? popup.getElement() : document.querySelector('.leaflet-popup');
-            if (!container) return;
-            const editBtn = container.querySelector('.edit-btn[data-id="' + problem.id + '"]');
-            const delBtn = container.querySelector('.del-btn[data-id="' + problem.id + '"]');
-
-            if (editBtn) {
-                editBtn.addEventListener('click', () => {
-                    createFormModal('Editar Relatório', [
-                        { name: 'titulo', label: 'Título', value: problem.titulo || '' },
-                        { name: 'descricao', label: 'Descrição', type: 'textarea', value: problem.descricao || '' },
-                        { name: 'imagem_upload', label: 'Imagem (opcional)', type: 'file', preview: problem.imagem_url || '' }
-                    ], (values, { close, files }) => {
-                        // use FormData so we can optionally upload a new image
-                        const formData = new FormData();
-                        formData.append('id', problem.id);
-                        formData.append('titulo', values.titulo || '');
-                        formData.append('descricao', values.descricao || '');
-                        if (files && files.imagem_upload) {
-                            formData.append('imagem_upload', files.imagem_upload);
-                        }
-
-                        fetch('api.php?action=edit_report', { method: 'POST', body: formData })
-                            .then(r => r.json())
-                            .then(resp => { showToast(resp.message || 'Atualizado', resp.success ? 'success' : 'error'); loadProblems(); close(); })
-                            .catch(err => { console.error(err); showMessage('Erro', '<p>Erro ao editar o relatório.</p>'); });
-                    });
-                });
-            }
-
-            if (delBtn) {
-                delBtn.addEventListener('click', () => {
-                    createConfirmModal('Confirmar exclusão', 'Confirma exclusão deste relatório?', () => {
-                        const form = new URLSearchParams();
-                        form.append('id', problem.id);
-                        fetch('api.php?action=delete_report', { method: 'POST', body: form })
-                            .then(r => r.json())
-                            .then(resp => { showToast(resp.message || 'Excluído', resp.success ? 'success' : 'error'); loadProblems(); })
-                            .catch(err => { console.error(err); showMessage('Erro', '<p>Não foi possível excluir o relatório.</p>'); });
-                    });
-                });
-            }
+        // Ao clicar em qualquer pin, o mapa voa até centralizar nele —
+        // mesmo ajuste de flyTo usado no projeto "Comércio no Mapa":
+        // duration curto (0.6s) e easing padrão do Leaflet (sem
+        // forçar easeLinearity), fica mais suave e o pin não balança.
+        marker.on('click', function () {
+            map.stop();
+            const targetZoom = Math.max(map.getZoom(), 15);
+            map.flyTo([problem.latitude, problem.longitude], targetZoom, {
+                duration: 0.6,
+                animate: true
+            });
         });
+
+        // ── Modo de exibição ao clicar no pin: "popup" (padrão) ou
+        //    "sidebar" (alternável pelo botão na barra de ferramentas
+        //    do mapa.html — veja #toggle-pin-mode-btn). Se a função
+        //    global não existir (outra página que também usa este
+        //    script), cai no comportamento padrão de sempre.
+        const modoExibicao = (typeof window.getPinDisplayMode === 'function') ? window.getPinDisplayMode() : 'popup';
+
+        if (modoExibicao === 'sidebar' && typeof window.abrirDetalhesRelatorioSidebar === 'function') {
+            marker.on('click', function () {
+                window.abrirDetalhesRelatorioSidebar(problem, isOwned);
+            });
+        } else {
+            const imageHtml = problem.imagem_url ?
+                `<img src="${problem.imagem_url}" alt="Imagem do Problema" style="max-width: 100%; height: auto; margin-top: 10px;">` : '';
+
+            const actionsHtml = isOwned ?
+                `<div class="actions" style="margin-top: 10px; border-top: 1px solid #ccc; padding-top: 10px;">
+                    <button class="edit-btn" data-id="${problem.id}" style="background: #007bff; color: white; border: none; padding: 5px 10px; margin-right: 5px; border-radius: 3px; cursor: pointer;">Editar</button>
+                    <button class="del-btn" data-id="${problem.id}" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Excluir</button>
+                </div>` : '';
+
+            const infoWindowContent = `
+                <div class="info-window">
+                    <h4>${problem.titulo || 'Problema sem título'}</h4>
+                    <p>Tipo: ${problem.tipo}</p>
+                    <p>Descrição: ${problem.descricao}</p>
+                    <p>Endereço: ${problem.endereco || 'Não informado'}</p>
+                    <p>Status: <strong>${problem.status}</strong></p>
+                    <p>Prioridade: ${problem.prioridade}</p>
+                    ${imageHtml}
+                    ${actionsHtml}
+                </div>
+            `;
+
+            marker.bindPopup(infoWindowContent);
+
+            marker.on('popupopen', function (e) {
+                const popup = e.popup;
+                const container = popup.getElement ? popup.getElement() : document.querySelector('.leaflet-popup');
+                if (!container) return;
+                const editBtn = container.querySelector('.edit-btn[data-id="' + problem.id + '"]');
+                const delBtn = container.querySelector('.del-btn[data-id="' + problem.id + '"]');
+
+                if (editBtn) editBtn.addEventListener('click', () => window.abrirEdicaoRelatorio(problem));
+                if (delBtn) delBtn.addEventListener('click', () => window.excluirRelatorio(problem.id));
+            });
+        }
 
         marker.addTo(problemsLayerGroup);
     });

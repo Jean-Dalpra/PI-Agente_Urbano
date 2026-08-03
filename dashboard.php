@@ -1,9 +1,10 @@
 <?php
-require_once 'api.php'; 
-$pdo = connectDB(); 
+require_once 'api.php';
+$pdo = connectDB();
 $data = getDashboardData($pdo);
-$currentUser = getCurrentUser(); 
-function calculateBarWidth($current, $total) {
+$currentUser = getCurrentUser();
+function calculateBarWidth($current, $total)
+{
     return ($total > 0) ? round(($current / $total) * 100) : 0;
 }
 $status_counts = $data['status_counts'] ?? [];
@@ -11,28 +12,44 @@ $chart_labels = json_encode(array_keys($status_counts));
 $chart_data = json_encode(array_values($status_counts));
 
 $status_colors_map = [
-    'Pendente' => 'rgb(220, 53, 69)', 
-    'Em Análise' => 'rgb(0, 123, 255)', 
-    'Em Andamento' => 'rgb(255, 193, 7)', 
-    'Resolvido' => 'rgb(40, 167, 69)', 
+    'Pendente' => 'rgb(220, 53, 69)',
+    'Em Análise' => 'rgb(0, 123, 255)',
+    'Em Andamento' => 'rgb(255, 193, 7)',
+    'Resolvido' => 'rgb(40, 167, 69)',
     'Verificado' => 'rgb(25, 135, 84)',
     'Invalidado' => 'rgb(108, 117, 125)',
 ];
 $chart_colors = [];
 foreach (array_keys($status_counts) as $status) {
-    $chart_colors[] = $status_colors_map[$status] ?? 'rgb(100, 149, 237)'; 
+    $chart_colors[] = $status_colors_map[$status] ?? 'rgb(100, 149, 237)';
 }
 $chart_colors_json = json_encode($chart_colors);
 $total_reports = $data['total'] ?? 0;
-$in_review_count = $data['em_analise'] ?? 0; 
+$in_review_count = $data['em_analise'] ?? 0;
 $pending_count = $data['pendentes'] ?? 0;
 $resolved_count = $data['resolvidos'] ?? 0;
 $in_progress_count = $data['em_andamento'] ?? 0;
+
+$priority_counts = $data['priority_counts'] ?? ['baixa' => 0, 'media' => 0, 'alta' => 0, 'urgente' => 0];
+$priority_names_map = [
+    'baixa' => 'Baixa',
+    'media' => 'Média',
+    'alta' => 'Alta',
+    'urgente' => 'Urgente',
+];
+$priority_colors_map = [
+    'baixa' => '#6c757d',
+    'media' => '#0d6efd',
+    'alta' => '#fd7e14',
+    'urgente' => '#dc3545',
+];
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Agente Urbano</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -61,17 +78,18 @@ $in_progress_count = $data['em_andamento'] ?? 0;
         new window.VLibras.Widget('https://vlibras.gov.br/app');
     </script>
 </head>
+
 <body class="dashboard-page">
     <script>
         document.body.classList.toggle('dark-mode', document.documentElement.classList.contains('dark-mode'));
     </script>
-        <div class="header-nav">
-            <div class="logo">
-                <a href="index.html">
-                    <img src="imagens/urbanoide.png" alt="Urbanoide" class="logo-icon">
-                    Agente Urbano
-                </a>
-            </div>
+    <div class="header-nav">
+        <div class="logo">
+            <a href="index.html">
+                <img src="imagens/urbanoide.png" alt="Urbanoide" class="logo-icon">
+                Agente Urbano
+            </a>
+        </div>
         <nav class="main-menu">
             <a href="dashboard.php" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
             <a href="mapa.html"><i class="fas fa-map"></i> Mapa</a>
@@ -123,15 +141,15 @@ $in_progress_count = $data['em_andamento'] ?? 0;
     </aside>
     <main class="dashboard-content">
         <section class="page-header">
-            <h2 style="font-size: 4vw; margin-bottom: 0.5rem;">Dashboard</h2>
+            <h2 style="margin-bottom: 0.5rem;">Dashboard</h2>
             <p class="subtitle">Visão geral dos problemas reportados na cidade</p>
         </section>
         <section class="status-cards">
-            <div class="card total"> 
-                <h3>Em Análise</h3> 
+            <div class="card total">
+                <h3>Em Análise</h3>
                 <div class="card-main">
-                    <span class="value"><?= $in_review_count ?></span> 
-                    <i class="fas fa-search icon"></i> 
+                    <span class="value"><?= $in_review_count ?></span>
+                    <i class="fas fa-search icon"></i>
                 </div>
                 <p class="detail"><?= calculateBarWidth($in_review_count, $total_reports) ?>% do total</p>
             </div>
@@ -146,7 +164,7 @@ $in_progress_count = $data['em_andamento'] ?? 0;
             <div class="card andamento">
                 <h3>Em Andamento</h3>
                 <div class="card-main">
-                    <span class="value"><?= $in_progress_count ?></span> 
+                    <span class="value"><?= $in_progress_count ?></span>
                     <i class="fas fa-clock icon"></i>
                 </div>
                 <p class="detail"><?= calculateBarWidth($in_progress_count, $total_reports) ?>% do total</p>
@@ -159,20 +177,68 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                 </div>
                 <p class="detail"><?= $data['taxa_resolucao'] ?>% taxa de resolução</p>
             </div>
-            <div class="card invalidado">
-                <h3>Invalidado</h3>
-                <div class="card-main">
-                    <span class="value"><?= $data['status_counts']['Invalidado'] ?? 0 ?></span>
-                    <i class="fas fa-ban icon"></i>
+        </section>
+        <section class="chart-grids">
+            <div class="grid-item">
+                <h3><i class="fas fa-shield-alt" style="color: var(--primary-color);"></i> Validação da Comunidade</h3>
+                <div class="validation-stats">
+                    <div class="validation-stat validado">
+                        <span class="value"><?= $data['status_counts']['Verificado'] ?? 0 ?></span>
+                        <span class="label"><i class="fas fa-check-circle"></i> Validados</span>
+                    </div>
+                    <div class="validation-stat invalidado">
+                        <span class="value"><?= $data['status_counts']['Invalidado'] ?? 0 ?></span>
+                        <span class="label"><i class="fas fa-ban"></i> Invalidados</span>
+                    </div>
                 </div>
-                <p class="detail">Relatórios rejeitados pelo grupo</p>
+            </div>
+        </section>
+        <section class="chart-grids">
+            <div class="grid-item">
+                <h3><i class="fas fa-exclamation-circle" style="color: var(--primary-color);"></i> Distribuição por
+                    Prioridade</h3>
+                <div class="chart-content">
+                    <?php
+                    $priority_color_map = [
+                        'baixa' => 'var(--secondary-color)',
+                        'media' => 'var(--primary-color)',
+                        'alta' => 'var(--warning-color)',
+                        'urgente' => 'var(--danger-color)',
+                    ];
+                    $total_priority = array_sum($priority_counts) ?: 1;
+                    ?>
+                    <div class="priority-stacked-bar">
+                        <?php foreach ($priority_counts as $p_key => $p_count):
+                            if ($p_count <= 0)
+                                continue;
+                            $p_pct = round(($p_count / $total_priority) * 100, 1);
+                            ?>
+                            <div class="priority-segment"
+                                style="flex-grow: <?= $p_count ?>; background-color: <?= $priority_color_map[$p_key] ?? 'var(--primary-color)' ?>;"
+                                title="<?= htmlspecialchars($priority_names_map[$p_key] ?? ucfirst($p_key)) ?>: <?= $p_count ?> (<?= $p_pct ?>%)">
+                                <?= $p_pct >= 8 ? $p_pct . '%' : '' ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <div class="priority-legend">
+                        <?php foreach ($priority_counts as $p_key => $p_count): ?>
+                            <div class="priority-legend-item">
+                                <span class="priority-dot"
+                                    style="background-color: <?= $priority_color_map[$p_key] ?? 'var(--primary-color)' ?>;"></span>
+                                <span
+                                    class="priority-legend-label"><?= htmlspecialchars($priority_names_map[$p_key] ?? ucfirst($p_key)) ?></span>
+                                <span class="priority-legend-value"><?= $p_count ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
             </div>
         </section>
         <section class="chart-grids">
             <div class="grid-item">
                 <h3><i class="fas fa-map-marker-alt"></i> Problemas por Categoria</h3>
                 <div class="chart-content">
-                    <?php 
+                    <?php
                     $category_names_map = [
                         'iluminacao' => 'Iluminação',
                         'asfalto' => 'Asfalto',
@@ -195,21 +261,21 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                         'outros' => 'Outros'
                     ];
                     if (!empty($data['tipos'])):
-                        $max_count = max(array_column($data['tipos'], 'count') ?: [1]); 
-                        foreach ($data['tipos'] as $item): 
-                            $width = calculateBarWidth($item['count'], $max_count); 
+                        $max_count = max(array_column($data['tipos'], 'count') ?: [1]);
+                        foreach ($data['tipos'] as $item):
+                            $width = calculateBarWidth($item['count'], $max_count);
                             $db_key = $item['tipo'] ?? $item['category'] ?? 'N/A';
-                            $display_name = $category_names_map[$db_key] ?? ucfirst($db_key); 
-                    ?>
-                    <div class="bar-item">
-                        <span class="category"><?= htmlspecialchars($display_name) ?></span>
-                        <div class="bar-container">
-                            <div class="bar" style="width: <?= $width ?>%;"></div>
-                        </div>
-                        <span class="bar-value"><?= $item['count'] ?></span>
-                    </div>
-                    <?php 
-                        endforeach; 
+                            $display_name = $category_names_map[$db_key] ?? ucfirst($db_key);
+                            ?>
+                            <div class="bar-item">
+                                <span class="category"><?= htmlspecialchars($display_name) ?></span>
+                                <div class="bar-container">
+                                    <div class="bar" style="width: <?= $width ?>%;"></div>
+                                </div>
+                                <span class="bar-value"><?= $item['count'] ?></span>
+                            </div>
+                        <?php
+                        endforeach;
                     else:
                         echo "<p>Nenhum dado de categoria encontrado.</p>";
                     endif;
@@ -219,23 +285,27 @@ $in_progress_count = $data['em_andamento'] ?? 0;
             <div class="grid-item">
                 <h3><i class="fas fa-chart-pie" style="color: var(--primary-color);"></i> Status dos Problemas</h3>
                 <div class="chart-content">
-                    <div style="max-height: 350px;">
+                    <div class="pie-chart-wrapper">
                         <canvas id="statusPieChart"></canvas>
                     </div>
                 </div>
             </div>
         </section>
         <section class="chart-grids" style="margin-top: 20px;">
-            <div class="grid-item" style="grid-column: 1 / -1;"> 
+            <div class="grid-item" style="grid-column: 1 / -1;">
                 <div class="full-width-chart-layout">
                     <div class="chart-summary-card">
-                        <h4 style="font-size: 2.2vw;">Relatórios Acumulados</h4>
-                        <p style="color: #555a5f; font-size: 1.5vw;">Total Geral de Registros</p>
-                        <span class="total-number" style="font-size: 4vw;" ><?= $total_reports ?></span>
-                        <p class="card-note" style="color: #555a5f; font-size: 1.5vw;">Crescimento total de problemas reportados ao longo do tempo.</p>
+                        <h4 style="font-size: clamp(1rem, 1.4vw + 0.6rem, 1.3rem);">Relatórios Acumulados</h4>
+                        <p style="color: #555a5f; font-size: clamp(0.8rem, 0.6vw + 0.6rem, 0.95rem);">Total Geral de
+                            Registros</p>
+                        <span class="total-number"
+                            style="font-size: clamp(2rem, 3vw + 1rem, 3.2rem);"><?= $total_reports ?></span>
+                        <p class="card-note"
+                            style="color: #555a5f; font-size: clamp(0.75rem, 0.5vw + 0.55rem, 0.85rem);">Crescimento
+                            total de problemas reportados ao longo do tempo.</p>
                     </div>
                     <div class="main-chart-area">
-                          <h3 style="color: #007BFF;"><i class="fas fa-chart-line"></i> Crescimento de Relatórios</h3>
+                        <h3 style="color: #007BFF;"><i class="fas fa-chart-line"></i> Crescimento de Relatórios</h3>
                         <div style="height: 350px; position: relative;">
                             <canvas id="reportsOverTimeChart"></canvas>
                         </div>
@@ -245,18 +315,21 @@ $in_progress_count = $data['em_andamento'] ?? 0;
         </section>
     </main>
     <div id="auth-modal" class="modal hidden">
-        <div class="modal-content profile-modal"> 
+        <div class="modal-content profile-modal">
             <span class="auth-close-btn">&times;</span>
             <h2 id="auth-title">Entrar</h2>
             <div class="profile-image-container" style="display: none; text-align: center; margin-bottom: 15px;">
-                <img id="profile-image" src="https://www.gravatar.com/avatar/?d=mp" alt="Imagem de Perfil" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+                <img id="profile-image" src="https://www.gravatar.com/avatar/?d=mp" alt="Imagem de Perfil"
+                    style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
                 <input type="file" id="profile-image-input" accept="image/*" style="display: none;">
                 <div class="image-controls" style="margin-top: 10px;">
                     <button type="button" id="change-image-btn" style="display: none;">Escolher Foto</button>
                     <button type="button" id="take-photo-btn" style="display: none;">Tirar Foto</button>
                 </div>
-                <video id="profile-video" autoplay style="display: none; width: 100%; max-width: 200px; margin-top: 10px;"></video>
-                <button type="button" id="capture-photo-btn" style="display: none; margin-top: 5px;">Capturar Foto</button>
+                <video id="profile-video" autoplay
+                    style="display: none; width: 100%; max-width: 200px; margin-top: 10px;"></video>
+                <button type="button" id="capture-photo-btn" style="display: none; margin-top: 5px;">Capturar
+                    Foto</button>
             </div>
             <form id="auth-form">
                 <div class="form-group">
@@ -303,32 +376,40 @@ $in_progress_count = $data['em_andamento'] ?? 0;
         const labelsPie = <?= $chart_labels ?>;
         const dataValuesPie = <?= $chart_data ?>;
         const backgroundColorsPie = <?= $chart_colors_json ?>;
+        const pieBorderColor = dashboardDarkMode ? '#0b1220' : '#ffffff';
         const ctxPie = document.getElementById('statusPieChart');
         if (ctxPie) {
+            const isNarrowScreen = window.innerWidth <= 640;
             new Chart(ctxPie, {
                 type: 'pie',
                 data: {
-                    labels: labelsPie, 
+                    labels: labelsPie,
                     datasets: [{
                         label: 'Número de Problemas',
-                        data: dataValuesPie, 
+                        data: dataValuesPie,
                         backgroundColor: backgroundColorsPie,
+                        borderColor: pieBorderColor,
+                        borderWidth: 2,
                         hoverOffset: 4
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false, 
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'right',
+                            position: isNarrowScreen ? 'bottom' : 'right',
                             labels: {
-                                color: chartTextColor
+                                color: chartTextColor,
+                                boxWidth: isNarrowScreen ? 12 : 40,
+                                font: {
+                                    size: isNarrowScreen ? 11 : 12
+                                }
                             }
                         },
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
+                                label: function (context) {
                                     let label = context.label || '';
                                     if (label) {
                                         label += ': ';
@@ -360,18 +441,18 @@ $in_progress_count = $data['em_andamento'] ?? 0;
         }
         function renderReportsOverTimeChart(labels, cumulativeCounts) {
             const ctxLine = document.getElementById('reportsOverTimeChart');
-            if (!ctxLine) return; 
+            if (!ctxLine) return;
             new Chart(ctxLine, {
                 type: 'line',
                 data: {
-                    labels: labels, 
+                    labels: labels,
                     datasets: [{
                         label: 'Total Acumulado de Relatórios',
-                        data: cumulativeCounts, 
-                        borderColor: 'rgb(0, 123, 255)', 
-                        backgroundColor: 'rgba(0, 123, 255, 0.1)', 
-                        fill: true, 
-                        tension: 0.3, 
+                        data: cumulativeCounts,
+                        borderColor: 'rgb(0, 123, 255)',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        fill: true,
+                        tension: 0.3,
                         pointBackgroundColor: 'rgb(0, 123, 255)',
                         pointRadius: 3,
                         pointHoverRadius: 5
@@ -379,13 +460,13 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false, 
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: false 
+                            display: false
                         },
                         title: {
-                            display: false 
+                            display: false
                         }
                     },
                     scales: {
@@ -415,7 +496,7 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                                 color: chartMutedColor,
                                 text: 'Data'
                             },
-                            type: 'category', 
+                            type: 'category',
                         }
                     }
                 }
@@ -438,7 +519,7 @@ $in_progress_count = $data['em_andamento'] ?? 0;
         const profileVideo = document.getElementById('profile-video');
         const capturePhotoBtn = document.getElementById('capture-photo-btn');
         let mediaStream = null;
-        let authMode = 'login'; 
+        let authMode = 'login';
 
         function initSidebarMenu() {
             const menuToggle = document.getElementById('menu-toggle');
@@ -481,7 +562,7 @@ $in_progress_count = $data['em_andamento'] ?? 0;
             if (currentUser) {
                 userNameText.textContent = currentUser;
                 if (sidebarProfileSubtext) sidebarProfileSubtext.textContent = 'Ver meu perfil';
-                
+
                 const savedAvatar = localStorage.getItem(`avatar_${currentUser}`);
                 if (savedAvatar) {
                     userAvatar.src = savedAvatar;
@@ -495,8 +576,8 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                 if (sidebarProfileSubtext) sidebarProfileSubtext.textContent = 'Acessar opções e reports';
                 userAvatar.src = 'https://www.gravatar.com/avatar/?d=mp';
             }
-        } 
-        
+        }
+
         function fetchCurrentUser() {
             fetch('api.php?action=current_user')
                 .then(r => r.json())
@@ -505,7 +586,7 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                     updateAuthUI();
                 });
         }
-        
+
         if (takePhotoBtn && profileVideo && capturePhotoBtn) {
             takePhotoBtn.addEventListener('click', async () => {
                 try {
@@ -537,20 +618,20 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                 }
             });
         }
-        
+
         if (profileBtn) profileBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            const authUsernameInput = document.getElementById('auth-username'); 
+            const authUsernameInput = document.getElementById('auth-username');
             const profileImageContainer = document.querySelector('.profile-image-container');
 
             if (currentUser) {
-                authMode = 'profile'; 
+                authMode = 'profile';
                 authTitle.textContent = 'Meu Perfil';
                 authUsernameInput.value = currentUser;
-                
-                authUsernameInput.disabled = true; 
-                if (changeImageBtn) changeImageBtn.style.display = 'none'; 
-                if (takePhotoBtn) takePhotoBtn.style.display = 'none'; 
+
+                authUsernameInput.disabled = true;
+                if (changeImageBtn) changeImageBtn.style.display = 'none';
+                if (takePhotoBtn) takePhotoBtn.style.display = 'none';
                 if (profileVideo) profileVideo.style.display = 'none';
                 if (capturePhotoBtn) capturePhotoBtn.style.display = 'none';
 
@@ -558,15 +639,15 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                 document.getElementById('auth-submit').style.display = 'none';
                 switchToRegisterBtn.textContent = 'Deslogar';
                 if (profileImageContainer) profileImageContainer.style.display = 'block';
-                
+
             } else {
                 authMode = 'login';
                 if (authTitle) authTitle.textContent = 'Entrar';
                 authUsernameInput.value = '';
 
                 authUsernameInput.disabled = false;
-                if (changeImageBtn) changeImageBtn.style.display = 'none'; 
-                if (takePhotoBtn) takePhotoBtn.style.display = 'none'; 
+                if (changeImageBtn) changeImageBtn.style.display = 'none';
+                if (takePhotoBtn) takePhotoBtn.style.display = 'none';
                 if (profileVideo) profileVideo.style.display = 'none';
                 if (capturePhotoBtn) capturePhotoBtn.style.display = 'none';
 
@@ -583,7 +664,7 @@ $in_progress_count = $data['em_andamento'] ?? 0;
         });
 
 
-        if (authCloseBtn) authCloseBtn.addEventListener('click', () => { 
+        if (authCloseBtn) authCloseBtn.addEventListener('click', () => {
             if (authModal) {
                 authModal.classList.add('hidden');
             }
@@ -610,21 +691,21 @@ $in_progress_count = $data['em_andamento'] ?? 0;
 
             authMode = authMode === 'login' ? 'register' : 'login';
             if (authTitle) authTitle.textContent = authMode === 'login' ? 'Entrar' : 'Registrar';
-            
+
             const imageContainer = document.querySelector('.profile-image-container');
             const isRegister = authMode === 'register';
 
             if (imageContainer) imageContainer.style.display = isRegister ? 'block' : 'none';
-            
+
             if (changeImageBtn) changeImageBtn.style.display = isRegister ? 'inline-block' : 'none';
             if (takePhotoBtn) takePhotoBtn.style.display = isRegister ? 'inline-block' : 'none';
-            document.getElementById('auth-username').disabled = false; 
+            document.getElementById('auth-username').disabled = false;
 
             document.getElementById('auth-password').closest('.form-group').style.display = 'block';
 
             const submitBtn = document.getElementById('auth-submit');
             if (submitBtn) submitBtn.textContent = authMode === 'login' ? 'Entrar' : 'Registrar';
-            if (submitBtn) submitBtn.style.display = 'block'; 
+            if (submitBtn) submitBtn.style.display = 'block';
 
             switchToRegisterBtn.textContent = authMode === 'login' ? 'Registrar' : 'Entrar';
         });
@@ -632,13 +713,13 @@ $in_progress_count = $data['em_andamento'] ?? 0;
         if (changeImageBtn) changeImageBtn.addEventListener('click', () => {
             profileImageInput.click();
         });
-        
+
         if (profileImageInput) {
-            profileImageInput.addEventListener('change', function(e) {
+            profileImageInput.addEventListener('change', function (e) {
                 const file = this.files[0];
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = function(e) {
+                    reader.onload = function (e) {
                         const imageDataUrl = e.target.result;
                         profileImage.src = imageDataUrl;
                         profileImage.style.display = 'block';
@@ -653,12 +734,12 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                 }
             });
         }
-        
+
         if (authForm) authForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const formData = new FormData(authForm);
             const url = authMode === 'login' ? 'api.php?action=login' : 'api.php?action=register';
-            
+
             if (authMode === 'register' && profileImage.src && !profileImage.src.includes('gravatar')) {
                 const dataURL = profileImage.src;
                 const arr = dataURL.split(',');
@@ -667,14 +748,14 @@ $in_progress_count = $data['em_andamento'] ?? 0;
                 let n = bstr.length;
                 const u8arr = new Uint8Array(n);
 
-                while(n--){
+                while (n--) {
                     u8arr[n] = bstr.charCodeAt(n);
                 }
 
-                const file = new File([u8arr], "profile_photo.png", {type: mime});
+                const file = new File([u8arr], "profile_photo.png", { type: mime });
                 formData.append('avatar_file', file);
             }
-            
+
             fetch(url, { method: 'POST', body: formData })
                 .then(r => r.json())
                 .then(res => {
@@ -694,7 +775,7 @@ $in_progress_count = $data['em_andamento'] ?? 0;
         initSidebarMenu();
         fetchCurrentUser();
     </script>
-    
+
     <style>
         body.dark-mode.dashboard-page {
             --primary-color: #0ea5e9;
@@ -828,50 +909,143 @@ $in_progress_count = $data['em_andamento'] ?? 0;
 
         .full-width-chart-layout {
             display: flex;
-            flex-wrap: wrap; 
+            flex-wrap: wrap;
             gap: 20px;
         }
+
         .chart-summary-card {
-            flex-basis: 240px; 
-            flex-grow: 1; 
+            flex-basis: 240px;
+            flex-grow: 1;
             background-color: #f8f9fa;
             border-radius: 8px;
             padding: 20px;
             border: 1px solid #e9ecef;
             text-align: center;
+            box-sizing: border-box;
         }
+
         .chart-summary-card h4 {
             margin-top: 0;
             font-size: 1.1em;
             color: #333;
         }
+
         .chart-summary-card p {
             font-size: 0.9em;
             color: #6c757d;
             margin: 5px 0;
         }
+
         .chart-summary-card .total-number {
             font-size: 2.5em;
             font-weight: 700;
-            color: var(--primary-color, #007bff); 
+            color: var(--primary-color, #007bff);
             display: block;
             margin: 10px 0;
         }
+
         .chart-summary-card .card-note {
             font-size: 0.8em;
             color: #adb5bd;
         }
+
         .main-chart-area {
-            flex-basis: 300px; 
-            flex-grow: 3; 
+            flex-basis: 300px;
+            flex-grow: 3;
             min-height: 350px;
         }
+
         .main-chart-area h3 {
-             margin-top: 0;
-             margin-bottom: 15px;
-             font-size: 1.4em;
-             color: #333;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+            color: #333;
+        }
+
+        /* ── Validação da Comunidade (validados / invalidados) ──── */
+        .validation-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .validation-stat {
+            flex: 1 1 160px;
+            box-sizing: border-box;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            text-align: center;
+        }
+
+        .validation-stat .value {
+            display: block;
+            font-size: 2.4rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .validation-stat .label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            color: var(--secondary-color, #6c757d);
+        }
+
+        .validation-stat.validado .value,
+        .validation-stat.validado .label i {
+            color: #28a745;
+        }
+
+        .validation-stat.invalidado .value,
+        .validation-stat.invalidado .label i {
+            color: #dc3545;
+        }
+
+        body.dark-mode.dashboard-page .validation-stat {
+            background-color: #111827;
+            border-color: #1f2937;
+        }
+
+        /* ── Responsividade do dashboard ──────────────────────── */
+        @media (max-width: 768px) {
+            .full-width-chart-layout {
+                flex-direction: column;
+            }
+
+            .chart-summary-card,
+            .main-chart-area {
+                flex-basis: 100%;
+                width: 100%;
+            }
+
+            .main-chart-area {
+                min-height: 280px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-chart-area {
+                min-height: 220px;
+            }
+
+            .chart-summary-card {
+                padding: 14px;
+            }
+
+            .validation-stat {
+                padding: 14px;
+            }
+
+            .validation-stat .value {
+                font-size: 1.8rem;
+            }
         }
     </style>
 </body>
+
 </html>

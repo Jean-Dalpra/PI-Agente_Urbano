@@ -77,12 +77,13 @@ html {
     height: 100%;
 }
 
-/* Suavizar transição dos ícones dos marcadores ao fazer zoom */
-.custom-fa-icon-pin {
-    transition: transform 0.2s ease-out !important;
-}
-
+/* O Leaflet reposiciona o pin via `transform` a cada frame durante
+   pan/zoom/flyTo — por isso NÃO colocamos transition aqui (senão o
+   pin fica "atrasado" em relação à posição real e só encaixa quando
+   a animação do mapa termina). A suavização do hover fica só na
+   regra :hover abaixo, que não interfere no reposicionamento. */
 .custom-fa-icon-pin:hover {
+    transition: transform 0.15s ease-out;
     transform: scale(1.3);
     z-index: 1000;
 }
@@ -248,11 +249,18 @@ body .header-nav .logo img.logo-icon {
 body .header-nav .main-menu {
     display: flex !important;
     align-items: center !important;
-    flex-grow: 1 !important;
     justify-content: center !important;
+    flex-wrap: nowrap !important;
+    /* Centraliza de verdade em relação à tela toda, não só no espaço
+       que sobra entre a logo e os botões da direita (que têm
+       larguras diferentes e deixavam o menu torto). */
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    flex-grow: 0 !important;
     width: auto !important;
     margin: 0 !important;
-    flex-wrap: nowrap !important;
 }
 
 body .header-nav .main-menu a {
@@ -1330,6 +1338,15 @@ body .header-nav .new-report-btn {
     gap: 10px;
 }
 
+.logo{
+transition:.35s ease all;
+}
+
+.logo:hover{
+transition:.35s ease all;
+ transform:scale(1.08);
+ }
+
 .cancel-btn,
 .submit-btn {
     padding: 10px 20px;
@@ -1459,17 +1476,34 @@ body .header-nav .new-report-btn {
 
 
 .chart-grids {
-    display: flex;
-    gap: 30px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
 }
 
 .grid-item {
-    flex: 1 1 45%;
+    min-width: 0;
     background-color: #fff;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+/* Wrapper do gráfico de pizza — precisa de altura explícita (não
+   max-height) para o Chart.js (responsive + maintainAspectRatio:false)
+   calcular o tamanho do canvas corretamente em qualquer largura de tela */
+.chart-content {
+    position: relative;
+    width: 100%;
+}
+
+.pie-chart-wrapper {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    max-width: 100%;
 }
 
 .grid-item h3 {
@@ -1542,6 +1576,57 @@ body .header-nav .new-report-btn {
 .bar-info {
     background-color: var(--primary-color);
 }
+
+.bar-secondary {
+    background-color: var(--secondary-color);
+}
+
+/* ── Barra segmentada de prioridade ──────────────────────── */
+.priority-stacked-bar {
+    display: flex;
+    width: 100%;
+    height: 32px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--light-bg);
+}
+
+.priority-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-width: 2px;
+    transition: flex-grow 0.5s ease;
+}
+
+.priority-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.priority-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--dark-text);
+}
+
+.priority-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.priority-legend-value {
+    font-weight: 700;
+}
 #map-mode-selector {
     position: fixed;
     bottom: clamp(10px, 2vh, 20px);
@@ -1549,7 +1634,7 @@ body .header-nav .new-report-btn {
 
     z-index: 1000;
 
-    width: clamp(220px, 25vw, 420px);
+    width: clamp(260px, 55vw, 640px);
     max-width: calc(100vw - 20px);
 
     background: #fff;
@@ -1558,11 +1643,41 @@ body .header-nav .new-report-btn {
 
     display: flex;
     overflow: hidden;
+
+    transition: width 0.3s ease, max-height 0.3s ease;
+}
+
+/* Estado recolhido: só o botão de alternância fica visível, a barra
+   encolhe para o tamanho de um botão quadrado — sobra tela livre. */
+#map-mode-selector.collapsed {
+    width: 46px;
+}
+
+#map-mode-selector.collapsed .map-mode-btn:not(.toolbar-toggle-btn) {
+    display: none;
+}
+
+.toolbar-toggle-btn {
+    flex: 0 0 auto !important;
+    width: 46px;
+    transition: 3s; 
+    border-right: 1px solid #ccc;
+  }
+  .mapra{
+    height: 10vh;
+  }
+
+#map-mode-selector.collapsed .toolbar-toggle-btn {
+    border-right: none;
+}
+
+body.dark-mode .toolbar-toggle-btn {
+    border-right-color: rgba(255, 255, 255, 0.15);
 }
 
 .map-mode-btn {
     flex: 1;
-    padding: clamp(8px, 1vh, 12px);
+    padding: clamp(1vh, 1vh, 1vh);
 
     font-size: clamp(12px, 0.9vw, 16px);
     font-weight: bold;
@@ -1979,75 +2094,6 @@ div.gm-style div.gm-style-iw-d .fa-solid,
     line-height: 1 !important;
 }
 
-.chart-grids {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); 
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.chart-grids.grid-full-section {
-    grid-template-columns: 1fr; 
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #ccc; 
-}
-
-.grid-item.grid-full {
-    background-color: #ffffff; 
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.full-width-content {
-    display: flex;
-    gap: 30px;
-    align-items: flex-start;
-}
-
-.total-summary-card {
-    flex-shrink: 0; 
-    width: 250px;
-    padding: 20px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    text-align: center;
-    background-color: #f7f7f7;
-}
-
-.total-summary-card h3 {
-    font-size: 1.1em;
-    color: #555;
-    margin-bottom: 15px;
-}
-
-.total-summary-card .large-value {
-    font-size: 3em;
-    font-weight: 700;
-    color: #007bff;
-    display: block;
-    margin-bottom: 5px;
-}
-
-.chart-container-large {
-    flex-grow: 1;
-    max-height: 400px;
-}
-
-.chart-container-large h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.2em;
-    color: #333;
-}
-.chart-grids {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    margin-top: 20px;
-}
-
 /* UI message modal tweaks (used to replace native alert) */
 #ui-message-modal .modal-content {
     padding: 22px;
@@ -2104,58 +2150,6 @@ div.gm-style div.gm-style-iw-d .fa-solid,
     border: 1px solid rgba(0,0,0,0.06);
 }
 
-
-.chart-grids.grid-full-section {
-    grid-template-columns: 1fr;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #ccc;
-}
-
-.grid-item.grid-full {
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.full-width-content {
-    display: flex; 
-    gap: 30px;
-    align-items: flex-start;
-    min-height: 350px; 
-}
-
-.total-summary-card {
-    flex-shrink: 0;
-    width: 250px;
-    padding: 20px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    text-align: center;
-    background-color: #f7f7f7;
-}
-
-.total-summary-card .large-value {
-    font-size: 3em;
-    font-weight: 700;
-    color: #007bff;
-    display: block;
-    margin-bottom: 5px;
-}
-
-.chart-container-large {
-    flex-grow: 1;
-    height: 350px; 
-    max-height: 400px;
-}
-
-.chart-container-large h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.2em;
-    color: #333;
-}
 
 /* Google Maps Autocomplete Dropdown Styling */
 .pac-container {
@@ -2232,11 +2226,15 @@ body .header-nav .logo img.logo-icon {
 body .header-nav .main-menu {
     display: flex !important;
     align-items: center !important;
-    flex-grow: 1 !important;
     justify-content: center !important;
+    flex-wrap: nowrap !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    flex-grow: 0 !important;
     width: auto !important;
     margin: 0 !important;
-    flex-wrap: nowrap !important;
 }
 
 body .header-nav > .user-actions {
@@ -2516,6 +2514,46 @@ body.dark-mode .sidebar-panel .sidebar-action.primary i {
     .dashboard-page {
         padding-top: 60px !important;
     }
+
+    /* Conteúdo do dashboard */
+    .dashboard-content {
+        padding: 16px 18px;
+    }
+
+    .page-header h2 {
+        font-size: 1.6rem;
+    }
+
+    .status-cards {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 14px;
+    }
+
+    .chart-grids {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .grid-item {
+        padding: 16px;
+    }
+
+    .pie-chart-wrapper {
+        height: 320px;
+    }
+
+    .full-width-chart-layout {
+        flex-direction: column;
+    }
+
+    .main-chart-area {
+        min-height: 280px;
+        width: 100%;
+    }
+
+    .chart-summary-card {
+        width: 100%;
+    }
 }
 
 /* --- Mobile (até 480px) --- */
@@ -2593,5 +2631,52 @@ body.dark-mode .sidebar-panel .sidebar-action.primary i {
 
     .dashboard-page {
         padding-top: 56px !important;
+    }
+
+    /* Conteúdo do dashboard */
+    .dashboard-content {
+        padding: 14px 12px;
+    }
+
+    .page-header h2 {
+        font-size: 1.35rem;
+    }
+
+    .status-cards {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+    }
+
+    .card {
+        padding: 14px;
+    }
+
+    .card-main .value {
+        font-size: 1.5rem;
+    }
+
+    .card-main i {
+        font-size: 1.8rem;
+        padding: 8px;
+    }
+
+    .grid-item {
+        padding: 14px;
+    }
+
+    .grid-item h3 {
+        font-size: 1rem;
+    }
+
+    .pie-chart-wrapper {
+        height: 300px;
+    }
+
+    .main-chart-area {
+        min-height: 220px;
+    }
+
+    .chart-summary-card .total-number {
+        font-size: 2.2rem;
     }
 }

@@ -22,7 +22,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="shortcut icon" href="./imagens/urbanoide.png" type="image/x-icon">
+    <link rel="icon" href="./imagens/urbanoide.png" type="image/png">
+    <link rel="shortcut icon" href="./imagens/urbanoide.png" type="image/png">
 
     <style>
         :root {
@@ -194,8 +195,23 @@
         }
 
         .leaflet-marker-pane .leaflet-marker-icon {
-            transition: opacity 0.25s ease, filter 0.2s ease, transform 0.25s ease;
+            /* Sem "transform" aqui de propósito — é a propriedade que o
+               próprio Leaflet usa pra reposicionar o pin a cada frame
+               durante o flyTo (que já anima manualmente, quadro a
+               quadro). Transicionar ela faria o pin ficar "atrasado"
+               da posição real durante a viagem. Mantemos só
+               opacity/filter, usados pelos estados .dimmed/.highlighted. */
+            transition: opacity 0.25s ease, filter 0.2s ease;
             will-change: transform;
+        }
+
+        /* Zoom simples (scroll, botões +/-, duplo clique) é diferente
+           do flyTo: o Leaflet faz UM salto de escala só, usando a
+           classe .leaflet-zoom-anim + transição CSS pra suavizar esse
+           salto — por isso, e só nesse caso, o transform PRECISA de
+           transição (senão o pin muda de tamanho de forma brusca). */
+        .leaflet-zoom-anim .leaflet-marker-pane .leaflet-marker-icon {
+            transition: opacity 0.25s ease, filter 0.2s ease, transform 0.25s cubic-bezier(0, 0, 0.25, 1);
         }
 
         .leaflet-marker-pane .leaflet-marker-icon.dimmed {
@@ -208,10 +224,19 @@
             z-index: 999;
         }
 
-        /* evitar "cubes" brancos ao carregar tiles: manter transparente, mas preservar transição para zoom */
+        /* Evitar "quadrados feios" enquanto um tile ainda não carregou:
+           em vez de transparente (que fica branco/cinza chapado em
+           cima do fundo da página), usa uma cor neutra parecida com
+           o tom de "terra" do próprio OpenStreetMap — assim, mesmo
+           os tiles que ainda não chegaram, disfarçam bem mais.
+           O fade-in também fica um pouco mais longo/suave. */
         .leaflet-container .leaflet-tile {
-            background-color: transparent;
-            /* deixa transição para zoom in/out ocorrer suavemente */
+            background-color: #f2efe9;
+            transition: opacity 0.35s ease;
+        }
+
+        body.dark-mode .leaflet-container .leaflet-tile {
+            background-color: #1b2536;
         }
 
         .enabled {
@@ -592,6 +617,283 @@
             font-size: 10px;
             opacity: 0.7;
         }
+        /* ── Sidebar de detalhes: começa abaixo do header, não do
+           topo da tela (diferente da sidebar de navegação), e sem
+           o padding padrão — a imagem cola nas bordas do painel ── */
+        #report-details-panel {
+            top: 12vh !important;
+            height: 88vh !important;
+            padding: 0 !important;
+            gap: 0 !important;
+            position: relative;
+        }
+
+        #report-details-body {
+            overflow-y: auto;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        #report-details-body .rd-content {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding: 20px 24px 24px;
+        }
+
+        /* Sem imagem: o conteúdo começa direto, então precisa de mais
+           respiro no topo pra não ficar embaixo do X flutuante */
+        #report-details-body > .rd-content:first-child {
+            padding-top: 56px;
+        }
+
+        .rd-float-close {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 5;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0, 0, 0, 0.45);
+            color: #fff;
+            font-size: 1.3rem;
+            line-height: 1;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+        }
+
+        .rd-float-close:hover {
+            background: rgba(0, 0, 0, 0.65);
+        }
+
+        /* ── Conteúdo da sidebar de detalhes do relatório ──────────── */
+        #report-details-body .rd-image {
+            width: 100%;
+            display: block;
+            max-height: 220px;
+            object-fit: cover;
+        }
+        #report-details-body h3 {
+            margin: 0;
+            font-size: 1.15rem;
+        }
+        #report-details-body .rd-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        #report-details-body .rd-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            background: #e9ecef;
+            color: #343a40;
+        }
+        #report-details-body .rd-badge.status { background: rgba(0,123,255,0.12); color: #0056b3; }
+        #report-details-body .rd-badge.prioridade-alta,
+        #report-details-body .rd-badge.prioridade-urgente { background: rgba(220,53,69,0.12); color: #dc3545; }
+        #report-details-body .rd-badge.prioridade-media { background: rgba(255,193,7,0.16); color: #8a6d00; }
+        #report-details-body .rd-badge.prioridade-baixa { background: rgba(108,117,125,0.14); color: #495057; }
+        #report-details-body .rd-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            font-size: 0.88rem;
+            color: #495057;
+        }
+        #report-details-body .rd-row i {
+            width: 16px;
+            padding-top: 2px;
+            color: var(--primary-color);
+        }
+        #report-details-body .rd-actions {
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 14px;
+            margin-top: 4px;
+        }
+        #report-details-body .rd-actions button {
+            flex: 1;
+            border: none;
+            border-radius: 6px;
+            padding: 9px;
+            font-weight: 700;
+            cursor: pointer;
+            color: #fff;
+        }
+        #report-details-body .rd-edit-btn { background: #007bff; }
+        #report-details-body .rd-del-btn { background: #dc3545; }
+        #report-details-body .rd-link-btn {
+            display: block;
+            text-align: center;
+            padding: 9px;
+            border-radius: 6px;
+            background: var(--light-bg);
+            color: var(--dark-text);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.88rem;
+        }
+        body.dark-mode #report-details-body .rd-row,
+        body.dark-mode #report-details-body p {
+            color: #cbd5e1;
+        }
+
+        /* Acompanha os mesmos breakpoints do header-nav (que passa a
+           usar altura fixa em px, não mais vh, em telas menores) */
+        @media (max-width: 1024px) {
+            #report-details-panel {
+                top: 64px !important;
+                height: calc(100vh - 64px) !important;
+            }
+        }
+        @media (max-width: 768px) {
+            #report-details-panel {
+                top: 60px !important;
+                height: calc(100vh - 60px) !important;
+            }
+        }
+        @media (max-width: 480px) {
+            #report-details-panel {
+                top: 56px !important;
+                height: calc(100vh - 56px) !important;
+            }
+        }
+
+        /* ══════════════════════════════════════════════════════════
+           Responsividade da barra de ferramentas (#map-mode-selector)
+           Ela já ganhou bastante botão (modo, satélite, street view,
+           recentralizar, filtro, pin/sidebar, escuro, rota, calor,
+           3D) — em tela pequena precisa se adaptar pra dar pra
+           acessar tudo.
+        ══════════════════════════════════════════════════════════ */
+
+        /* Tela larga porém baixa (celular deitado, por ex.): se não
+           couber tudo numa linha só, deixa rolar de lado em vez de
+           espremer os ícones a ponto de ficarem ilegíveis. */
+        @media (max-height: 480px) and (orientation: landscape) {
+            #map-mode-selector:not(.collapsed) {
+                max-width: min(90vw, 520px);
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+            }
+            #map-mode-selector:not(.collapsed) .map-mode-btn {
+                flex: 0 0 auto;
+                min-width: 44px;
+            }
+        }
+
+        /* Tela em modo retrato (mais alta do que larga): a barra
+           deixa de ficar deitada no rodapé e vira uma coluna vertical
+           encostada no topo, abaixo do header — assim todos os
+           botões ficam visíveis rolando pra baixo, em vez de
+           espremidos numa linha horizontal minúscula. */
+        @media (orientation: portrait) {
+            #map-mode-selector {
+                /* NÃO mexe em bottom/left — continua ancorada exatamente
+                   onde já estava (herda de #map-mode-selector base). */
+                /* column-reverse: o botão de abrir (primeiro no HTML)
+                   fica visualmente por ÚLTIMO — ou seja, embaixo, fixo
+                   no lugar de sempre — e os outros botões aparecem
+                   ACIMA dele quando expande, crescendo pra cima. Isso
+                   espelha o comportamento do modo normal (botão fica
+                   parado à esquerda, os outros abrem pra direita). */
+                flex-direction: column-reverse;
+                width: auto !important;
+                max-width: 54px;
+                max-height: 46px; /* recolhida = só a altura do botão */
+            }
+            #map-mode-selector:not(.collapsed) {
+                max-width: none;
+                max-height: calc(100vh - 140px);
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+            .toolbar-toggle-btn {
+                border-right: none !important;
+                border-top: 1px solid #ccc;
+                border-bottom: none;
+            }
+            body.dark-mode .toolbar-toggle-btn {
+                border-top-color: rgba(255, 255, 255, 0.15);
+            }
+            #map-mode-selector.collapsed .toolbar-toggle-btn {
+                border-top: none;
+            }
+            #map-mode-selector .map-mode-btn {
+                justify-content: flex-start;
+                padding-left: 14px;
+                white-space: nowrap;
+            }
+        }
+        /* ── Ferramenta de cálculo de rota ─────────────────────────── */
+        .au-route-mode-picker {
+            position: fixed;
+            z-index: 1002;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            padding: 8px;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 170px;
+        }
+        .au-route-mode-picker.show { display: flex; }
+        .au-route-mode-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #343a40;
+            text-align: left;
+            font-family: inherit;
+        }
+        .au-route-mode-option:hover { background: #f1f5f9; }
+        .au-route-mode-option i { width: 18px; text-align: center; color: var(--map-primary, #007bff); }
+        body.dark-mode .au-route-mode-picker { background: #111827; }
+        body.dark-mode .au-route-mode-option { color: #e5e7eb; }
+        body.dark-mode .au-route-mode-option:hover { background: #1f2937; }
+
+        .au-route-info-panel {
+            position: fixed;
+            bottom: clamp(70px, 10vh, 90px);
+            left: clamp(10px, 1vw, 20px);
+            z-index: 1000;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            padding: 14px 16px;
+            max-width: 280px;
+            display: none;
+            color: #343a40;
+        }
+        .au-route-info-panel.show { display: block; }
+        body.dark-mode .au-route-info-panel { background: #111827; color: #e5e7eb; }
+
+        #toggle-route-btn.active-mode {
+            background: var(--map-primary, #007bff) !important;
+            color: #fff !important;
+        }
     </style>
     <script>
         (function applyInitialTheme() {
@@ -680,6 +982,21 @@
         <div class="sidebar-links">
             <a href="mapa.html" class="sidebar-action primary"><i class="fas fa-flag"></i> Novo problema</a>
 
+        </div>
+    </aside>
+
+    <!-- Sidebar de detalhes do relatório — usada quando o modo de
+         exibição dos pins está em "sidebar" (alternável pelo botão
+         #toggle-pin-mode-btn na barra de ferramentas). Sem overlay
+         de propósito: o mapa continua livre pra interagir enquanto
+         o painel está aberto. Sem título no topo — começa direto
+         pela foto do relatório. -->
+    <aside id="report-details-panel" class="sidebar-panel" aria-label="Detalhes do relatório">
+        <button id="report-details-close" class="rd-float-close" aria-label="Fechar detalhes">&times;</button>
+        <div id="report-details-body">
+            <div class="rd-content">
+                <p style="color: var(--muted-text, #6b7280); padding-top: 20px;">Clique em um pin no mapa para ver os detalhes aqui.</p>
+            </div>
         </div>
     </aside>
 
@@ -800,8 +1117,13 @@
             </div>
         </div>
 
-        <!-- Map mode selector: botões para alternar entre Mapa / Satélite / Street View e outras ações -->
-        <div id="map-mode-selector">
+        <!-- Map mode selector: botões para alternar entre Mapa / Satélite / Street View e outras ações.
+             Começa recolhida (classe "collapsed") — só o botão de alternância
+             (#toolbar-toggle-btn) fica visível até o usuário clicar nele. -->
+        <div id="map-mode-selector" class="collapsed">
+            <button id="toolbar-toggle-btn" class="map-mode-btn toolbar-toggle-btn" title="Mostrar/ocultar ferramentas do mapa">
+                <i class="fas fa-sliders"></i>
+            </button>
             <button id="mode-street-btn" class="map-mode-btn active-mode"><i class="fas fa-road"></i> Mapa</button>
             <button id="mode-sat-btn" class="map-mode-btn"><i class="fas fa-satellite"></i> Satélite</button>
 
@@ -813,6 +1135,18 @@
             </button>
             <button id="open-filter-btn" class="map-mode-btn" title="Filtros e Estatísticas">
                 <i class="fas fa-filter"></i>
+            </button>
+            <button id="toggle-pin-mode-btn" class="map-mode-btn" title="Alternar: clique no pin abre popup ou sidebar">
+                <i class="fas fa-square"></i>
+            </button>
+            <button id="toggle-map-dark-btn" class="map-mode-btn" title="Alternar mapa (2D e 3D) para modo escuro">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button id="toggle-route-btn" class="map-mode-btn" title="Calcular rota entre dois pontos">
+                <i class="fas fa-route"></i>
+            </button>
+            <button id="toggle-heatmap-btn" class="map-mode-btn" title="Mapa de calor dos relatórios">
+                <i class="fas fa-fire"></i>
             </button>
             <!-- ─── BOTÃO MODO 3D ──────────────────────────────────────────────
                  Carrega o Mapbox GL JS apenas na primeira ativação (lazy load).
@@ -1046,6 +1380,7 @@
     </div>
     <!-- API Do Google Maps -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <!-- Google Maps API carregado apenas se houver API key válida -->
     <script type="text/javascript">
@@ -1259,6 +1594,174 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Botão que recolhe/expande a barra de ferramentas do mapa
+            // (Mapa/Satélite/Street View/Recentralizar/Filtros/Modo 3D),
+            // pra deixar mais espaço livre na tela por padrão.
+            var toolbarToggleBtn = document.getElementById('toolbar-toggle-btn');
+            var toolbar = document.getElementById('map-mode-selector');
+            if (toolbarToggleBtn && toolbar) {
+                toolbarToggleBtn.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    toolbar.classList.toggle('collapsed');
+                });
+            }
+
+            // ── Alternância de como um clique num pin mostra o relatório:
+            //    "popup" (padrão, comportamento de sempre) ou "sidebar"
+            //    (painel lateral, igual ao menu de navegação do header).
+            var PIN_MODE_KEY = 'au_pin_display_mode';
+
+            window.getPinDisplayMode = function () {
+                try { return localStorage.getItem(PIN_MODE_KEY) || 'popup'; }
+                catch (_) { return 'popup'; }
+            };
+
+            function atualizarIconePinMode(btn, modo) {
+                if (!btn) return;
+                if (modo === 'sidebar') {
+                    btn.innerHTML = '<i class="fas fa-table-columns"></i>';
+                    btn.title = 'Modo atual: sidebar. Clique para voltar ao popup no pin.';
+                } else {
+                    btn.innerHTML = '<i class="fas fa-square"></i>';
+                    btn.title = 'Modo atual: popup no pin. Clique para abrir como sidebar.';
+                }
+            }
+
+            var pinModeBtn = document.getElementById('toggle-pin-mode-btn');
+            atualizarIconePinMode(pinModeBtn, window.getPinDisplayMode());
+
+            if (pinModeBtn) {
+                pinModeBtn.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    var novoModo = window.getPinDisplayMode() === 'sidebar' ? 'popup' : 'sidebar';
+                    try { localStorage.setItem(PIN_MODE_KEY, novoModo); } catch (_) {}
+                    atualizarIconePinMode(pinModeBtn, novoModo);
+                    fecharDetalhesRelatorio();
+                    // Recria os marcadores já com o novo tipo de interação
+                    if (typeof window.loadProblems === 'function') window.loadProblems();
+                    if (typeof showToast === 'function') {
+                        showToast(
+                            novoModo === 'sidebar'
+                                ? '📋 Clique num pin agora abre a sidebar de detalhes.'
+                                : '📍 Clique num pin agora abre o popup de sempre.',
+                            'info', 2600
+                        );
+                    }
+                });
+            }
+
+            // ── Mapa escuro (2D e 3D) ────────────────────────────────
+            var mapDarkBtn = document.getElementById('toggle-map-dark-btn');
+
+            function atualizarIconeMapaEscuro(ligado) {
+                if (!mapDarkBtn) return;
+                mapDarkBtn.innerHTML = ligado ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+                mapDarkBtn.title = ligado
+                    ? 'Modo escuro do mapa ativo. Clique para voltar ao claro.'
+                    : 'Alternar mapa (2D e 3D) para modo escuro';
+                mapDarkBtn.classList.toggle('active-mode', ligado);
+            }
+
+            try {
+                atualizarIconeMapaEscuro(localStorage.getItem('au_map_dark_mode') === '1');
+            } catch (_) {
+                atualizarIconeMapaEscuro(false);
+            }
+
+            if (mapDarkBtn) {
+                mapDarkBtn.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    if (typeof window.toggleDarkMapMode !== 'function') return;
+                    var ligado = window.toggleDarkMapMode();
+                    atualizarIconeMapaEscuro(ligado);
+                    if (typeof showToast === 'function') {
+                        showToast(
+                            ligado ? '🌙 Mapa em modo escuro.' : '☀️ Mapa em modo claro.',
+                            'info', 2200
+                        );
+                    }
+                });
+            }
+
+            // ── Sidebar de detalhes do relatório ─────────────────────
+            // Sem overlay/backdrop de propósito: o mapa e o resto da
+            // página continuam 100% interativos com o painel aberto
+            // (dá pra mexer no mapa, clicar em outro pin, usar filtros
+            // etc. — só o painel em si ocupa a faixa da direita).
+            var reportPanel = document.getElementById('report-details-panel');
+            var reportBody = document.getElementById('report-details-body');
+            var reportCloseBtn = document.getElementById('report-details-close');
+
+            function fecharDetalhesRelatorio() {
+                if (!reportPanel) return;
+                reportPanel.classList.remove('open');
+            }
+
+            if (reportCloseBtn) reportCloseBtn.addEventListener('click', fecharDetalhesRelatorio);
+            document.addEventListener('keydown', function (ev) {
+                if (ev.key === 'Escape') fecharDetalhesRelatorio();
+            });
+
+            /**
+             * abrirDetalhesRelatorioSidebar
+             * Chamada pelo script.js quando o modo "sidebar" está ativo e
+             * o usuário clica num pin. Recebe o mesmo objeto `problem` que
+             * o script.js já usa para montar o popup — sem requisição
+             * extra ao servidor.
+             */
+            window.abrirDetalhesRelatorioSidebar = function (problem, isOwned) {
+                if (!reportPanel || !reportBody) return;
+
+                // Fecha a sidebar de navegação, se estiver aberta — as
+                // duas ocupam o mesmo canto da tela (topo direito).
+                var navSidebar = document.getElementById('sidebar-panel');
+                var navOverlay = document.getElementById('sidebar-overlay');
+                if (navSidebar) navSidebar.classList.remove('open');
+                if (navOverlay) navOverlay.classList.remove('show');
+                document.body.classList.remove('no-scroll');
+
+                var prioridadeClasse = 'prioridade-' + String(problem.prioridade || '').toLowerCase();
+                var imagemHtml = problem.imagem_url
+                    ? '<img class="rd-image" src="' + problem.imagem_url + '" alt="Imagem do relatório">'
+                    : '';
+
+                var acoesHtml = isOwned
+                    ? '<div class="rd-actions">'
+                        + '<button class="rd-edit-btn" data-id="' + problem.id + '"><i class="fas fa-pen"></i> Editar</button>'
+                        + '<button class="rd-del-btn" data-id="' + problem.id + '"><i class="fas fa-trash"></i> Excluir</button>'
+                      + '</div>'
+                    : '';
+
+                // A foto vem primeiro (só quando o relatório tem uma,
+                // colada na borda do painel, sem padding) — o resto
+                // das informações vem depois, com respiro.
+                reportBody.innerHTML = ''
+                    + imagemHtml
+                    + '<div class="rd-content">'
+                        + '<h3>' + (problem.titulo || 'Problema sem título') + '</h3>'
+                        + '<div class="rd-badges">'
+                            + '<span class="rd-badge status"><i class="fas fa-circle-dot"></i> ' + (problem.status || '—') + '</span>'
+                            + '<span class="rd-badge ' + prioridadeClasse + '"><i class="fas fa-triangle-exclamation"></i> ' + (problem.prioridade || '—') + '</span>'
+                            + '<span class="rd-badge"><i class="fas fa-tag"></i> ' + (problem.tipo || '—') + '</span>'
+                        + '</div>'
+                        + '<div class="rd-row"><i class="fas fa-align-left"></i><span>' + (problem.descricao || 'Sem descrição.') + '</span></div>'
+                        + '<div class="rd-row"><i class="fas fa-location-dot"></i><span>' + (problem.endereco || 'Endereço não informado') + '</span></div>'
+                        + '<a class="rd-link-btn" href="detalhes-relatorio.html?id=' + problem.id + '"><i class="fas fa-up-right-from-square"></i> Ver página completa (comentários, validações)</a>'
+                        + acoesHtml
+                    + '</div>';
+
+                reportPanel.classList.add('open');
+
+                var editBtn = reportBody.querySelector('.rd-edit-btn');
+                var delBtn = reportBody.querySelector('.rd-del-btn');
+                if (editBtn && typeof window.abrirEdicaoRelatorio === 'function') {
+                    editBtn.addEventListener('click', function () { window.abrirEdicaoRelatorio(problem); });
+                }
+                if (delBtn && typeof window.excluirRelatorio === 'function') {
+                    delBtn.addEventListener('click', function () { window.excluirRelatorio(problem.id); });
+                }
+            };
+
             fetch('api.php?action=current_user')
                 .then(r => r.json())
                 .then(data => {
@@ -1296,11 +1799,15 @@
         var CONFIG = {
             versaoMapboxGL: '2.15.0',
             estilo:         'mapbox://styles/mapbox/streets-v12',
+            estiloDark:     'mapbox://styles/mapbox/dark-v11',
             pitch:          60,
             bearing:        -20,
             duracaoFlyTo:   1200,
             curveFlyTo:     1.4,
         };
+
+        var modoEscuro3D = false;
+        try { modoEscuro3D = localStorage.getItem('au_map_dark_mode') === '1'; } catch (e) {}
 
         var SOURCE_ID   = 'au-protocols';
         var LAYER_OUTER = 'au-protocols-outer';
@@ -1427,6 +1934,39 @@
         // ════════════════════════════════════════════════════════════════
         // 5. PRÉDIOS 3D
         // ════════════════════════════════════════════════════════════════
+        /**
+         * _adicionarCeu
+         * Adiciona uma camada de céu (type: 'sky') ao Mapbox — sem
+         * isso, o mapa só mostra o fundo padrão do próprio estilo
+         * acima do horizonte, quase sempre cinza/neutro. O gradiente
+         * vai de branco (perto do centro/zênite) até azul claro
+         * (perto do horizonte), parecido com um céu real.
+         */
+        function _adicionarCeu(m) {
+            if (m.getLayer('au-sky')) return;
+            try {
+                m.addLayer({
+                    id: 'au-sky',
+                    type: 'sky',
+                    paint: {
+                        'sky-type': 'gradient',
+                        'sky-gradient-center': [0, 90],
+                        'sky-gradient-radius': 90,
+                        'sky-gradient': [
+                            'interpolate',
+                            ['linear'],
+                            ['sky-radial-progress'],
+                            0, '#ffffff',
+                            1, '#bfe3f7'
+                        ],
+                        'sky-opacity': 1
+                    }
+                });
+            } catch (e) {
+                console.warn('[Modo 3D] Não foi possível adicionar a camada de céu:', e);
+            }
+        }
+
         function adicionarPredios3D(m) {
             if (m.getLayer('au-predios-3d')) return;
             var layers = m.getStyle().layers;
@@ -1486,7 +2026,7 @@
             var pos = obterPosicao2D();
 
             estado.mapbox3d = new mapboxgl.Map({
-                container: 'map3d', style: CONFIG.estilo,
+                container: 'map3d', style: modoEscuro3D ? CONFIG.estiloDark : CONFIG.estilo,
                 center: [pos.lng, pos.lat], zoom: pos.zoom,
                 pitch: CONFIG.pitch, bearing: CONFIG.bearing, antialias: true,
             });
@@ -1500,7 +2040,10 @@
                 _configurarLayers(m);
                 _carregarIconesFA(m);
                 carregarMarcadoresProtocolos();
+                _adicionarCeu(m);
+                if (modoEscuro3D) _aplicarCoresModoEscuro(m);
                 console.info('[Modo 3D] Mapa inicializado com layers nativas.');
+                document.dispatchEvent(new CustomEvent('au:mapa3dCarregado', { detail: { mapa: m } }));
             });
 
             m.on('click', LAYER_DOT, _onProtocoloClick);
@@ -1585,6 +2128,71 @@
                     + '.au-popup-3d .mapboxgl-popup-close-button:hover{color:#e2e8f0;}';
                 document.head.appendChild(s);
             }
+        }
+
+        /**
+         * alternarModoEscuro3D
+         * Troca o estilo do Mapbox entre o normal (CONFIG.estilo) e o
+         * escuro (CONFIG.estiloDark). Trocar de estilo remove qualquer
+         * camada/fonte customizada (os protocolos), então, depois que
+         * o novo estilo terminar de carregar ('style.load'), refaz os
+         * prédios 3D, as layers de protocolos e os marcadores.
+         *
+         * @param {boolean} [ligar] - true força escuro, false força
+         *   claro, omitido alterna o estado atual.
+         * @returns {boolean} o novo estado (true = escuro)
+         */
+        /**
+         * _aplicarCoresModoEscuro
+         * No estilo escuro do Mapbox, deixa as ruas brancas e os
+         * prédios cinza. Usa `source-layer` (não o id da layer, que
+         * pode variar entre versões do estilo) pra achar as camadas
+         * certas de forma confiável: tudo que vem da fonte de "road"
+         * vira branco, tudo que vem da fonte de "building" vira cinza.
+         */
+        function _aplicarCoresModoEscuro(m) {
+            var layers = m.getStyle() && m.getStyle().layers;
+            if (!layers) return;
+
+            layers.forEach(function (layer) {
+                try {
+                    if (layer['source-layer'] === 'road') {
+                        if (layer.type === 'line') {
+                            m.setPaintProperty(layer.id, 'line-color', '#ffffff');
+                        } else if (layer.type === 'fill') {
+                            m.setPaintProperty(layer.id, 'fill-color', '#ffffff');
+                        }
+                    } else if (layer['source-layer'] === 'building') {
+                        if (layer.type === 'fill') {
+                            m.setPaintProperty(layer.id, 'fill-color', '#16213e');
+                        } else if (layer.type === 'fill-extrusion') {
+                            m.setPaintProperty(layer.id, 'fill-extrusion-color', '#16213e');
+                        }
+                    }
+                } catch (e) {
+                    // Alguma camada pode não aceitar essa propriedade — ignora e segue
+                }
+            });
+        }
+
+        function alternarModoEscuro3D(ligar) {
+            modoEscuro3D = (typeof ligar === 'boolean') ? ligar : !modoEscuro3D;
+            try { localStorage.setItem('au_map_dark_mode', modoEscuro3D ? '1' : '0'); } catch (e) {}
+
+            if (!estado.mapbox3d) return modoEscuro3D; // ainda não inicializado — a próxima inicialização já usa a flag
+
+            var m = estado.mapbox3d;
+            m.setStyle(modoEscuro3D ? CONFIG.estiloDark : CONFIG.estilo);
+            m.once('style.load', function () {
+                adicionarPredios3D(m);
+                _configurarLayers(m);
+                _carregarIconesFA(m);
+                carregarMarcadoresProtocolos();
+                _adicionarCeu(m);
+                if (modoEscuro3D) _aplicarCoresModoEscuro(m);
+            });
+
+            return modoEscuro3D;
         }
 
         // ════════════════════════════════════════════════════════════════
@@ -1688,6 +2296,32 @@
             var tipo   = props.tipo || 'outros';
             var corT   = TIPO_CORES[tipo]          || '#6b7280';
             var corS   = STATUS_CORES[props.status] || '#9ca3af';
+
+            // ── Modo sidebar: mesma preferência usada no 2D (botão
+            //    #toggle-pin-mode-btn na barra de ferramentas). Se
+            //    estiver ativo, abre a sidebar de detalhes em vez do
+            //    popup nativo do Mapbox — sem precisar de nenhuma
+            //    requisição extra, já que os dados já vieram na
+            //    própria feature do GeoJSON.
+            var modoExibicao = (typeof window.getPinDisplayMode === 'function') ? window.getPinDisplayMode() : 'popup';
+            if (modoExibicao === 'sidebar' && typeof window.abrirDetalhesRelatorioSidebar === 'function') {
+                var isOwned = false;
+                try {
+                    isOwned = (typeof ownedReportIds !== 'undefined') && ownedReportIds.includes(String(props.id));
+                } catch (err) { /* ownedReportIds pode não estar acessível — segue como false */ }
+
+                window.abrirDetalhesRelatorioSidebar({
+                    id: props.id,
+                    titulo: props.titulo,
+                    tipo: props.tipo,
+                    status: props.status,
+                    prioridade: props.prioridade,
+                    descricao: props.descricao,
+                    endereco: props.endereco,
+                    imagem_url: props.imagem_url
+                }, isOwned);
+                return;
+            }
 
             if (estado._popupAtivo) { estado._popupAtivo.remove(); estado._popupAtivo = null; }
 
@@ -2205,6 +2839,9 @@
             geocodingReverso:  _geocodingReverso,
             adicionarLayer: function(def,antes) { if (estado.mapbox3d) estado.mapbox3d.addLayer(def,antes); },
             adicionarFonte: function(id,def)    { if (estado.mapbox3d&&!estado.mapbox3d.getSource(id)) estado.mapbox3d.addSource(id,def); },
+            alternarModoEscuro: alternarModoEscuro3D,
+            isModoEscuro: function() { return modoEscuro3D; },
+            getAccessToken: function() { return MAPBOX_ACCESS_TOKEN; },
             voarePara: function(lat,lng,zoom,pitch,bearing) {
                 if (!estado.mapbox3d) return;
                 estado.mapbox3d.flyTo({ center:[lng,lat],
@@ -2229,6 +2866,647 @@
         });
 
     })(); // fim do IIFE iniciarModulo3D
+    </script>
+
+    <!-- ════════════════════════════════════════════════════════════
+         MÓDULO: Cálculo de rotas (2D e 3D)
+         Usa a API Directions do Mapbox (o token já existe no projeto,
+         exposto por window.mapa3D.getAccessToken()). Perfis reais:
+           - "A pé"     → profile "walking"  (ignora mão de tráfego,
+                          prioriza calçadas/faixas de pedestre)
+           - "Carro"    → profile "driving"  (respeita ruas de mão
+                          única, sentido de tráfego real)
+           - "Moto"     → também "driving" — motos seguem as MESMAS
+                          regras de trânsito que carros (não existe
+                          perfil de moto separado em nenhuma API
+                          gratuita, e não faria sentido ignorar mão
+                          de tráfego pra moto)
+           - "Bicicleta"→ profile "cycling"  (considera ciclovias/
+                          ciclofaixas mapeadas)
+    ════════════════════════════════════════════════════════════ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var PERFIS = {
+            pe:    { profile: 'walking', label: 'A pé',      icon: 'fa-person-walking', cor: '#22c55e' },
+            carro: { profile: 'driving', label: 'Carro',     icon: 'fa-car',            cor: '#0ea5e9' },
+            moto:  { profile: 'driving', label: 'Moto',      icon: 'fa-motorcycle',     cor: '#f59e0b' },
+            bike:  { profile: 'cycling', label: 'Bicicleta', icon: 'fa-bicycle',        cor: '#a855f7' }
+        };
+
+        var ROUTE_SOURCE_ID = 'au-route';
+        var ROUTE_LAYER_ID  = 'au-route-line';
+        var ROUTE_MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoiamVhbmRhbHByYSIsImEiOiJjbXIzd3R1Ym4wNXRpMnlwd3U0MWM2djN3In0.oQ2u9Cw8_sYnea_s2kOp8g';
+
+        var estado = {
+            ativo: false,
+            perfilAtual: null,
+            pontoA: null,
+            pontoB: null,
+            markerA2D: null, markerB2D: null,
+            markerA3D: null, markerB3D: null,
+            rotaLayer2D: null,
+            rotaAtiva: false,
+            rotaGeojson: null,
+            perfilRota: null,
+            clique2DLigado: false,
+            clique3DLigado: false
+        };
+
+        var routeBtn, pickerEl, infoPanelEl;
+
+        function mapaEstaEm3D() {
+            return !!(window.mapa3D && window.mapa3D.isAtivo && window.mapa3D.isAtivo());
+        }
+
+        function pegarTokenMapbox() {
+            if (window.mapa3D && window.mapa3D.getAccessToken) return window.mapa3D.getAccessToken();
+            return ROUTE_MAPBOX_ACCESS_TOKEN;
+        }
+
+        function toast(msg, tipo, dur) {
+            if (typeof showToast === 'function') showToast(msg, tipo || 'info', dur || 3000);
+        }
+
+        // ── Menu de escolha do meio de transporte ──────────────────
+        function construirPickerMenu() {
+            pickerEl = document.createElement('div');
+            pickerEl.className = 'au-route-mode-picker';
+            pickerEl.innerHTML = Object.keys(PERFIS).map(function (key) {
+                var p = PERFIS[key];
+                return '<button type="button" class="au-route-mode-option" data-perfil="' + key + '">'
+                    + '<i class="fas ' + p.icon + '"></i> ' + p.label + '</button>';
+            }).join('');
+            document.body.appendChild(pickerEl);
+
+            pickerEl.addEventListener('click', function (ev) {
+                var btn = ev.target.closest('[data-perfil]');
+                if (!btn) return;
+                iniciarSelecaoDePontos(btn.getAttribute('data-perfil'));
+                fecharPicker();
+            });
+        }
+
+        function _fecharPickerFora(ev) {
+            if (pickerEl && !pickerEl.contains(ev.target) && ev.target !== routeBtn && !routeBtn.contains(ev.target)) {
+                fecharPicker();
+            }
+        }
+
+        function abrirPicker() {
+            if (!pickerEl) construirPickerMenu();
+            var rect = routeBtn.getBoundingClientRect();
+            pickerEl.style.left = rect.left + 'px';
+            pickerEl.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
+            pickerEl.classList.add('show');
+            setTimeout(function () { document.addEventListener('click', _fecharPickerFora); }, 0);
+        }
+
+        function fecharPicker() {
+            if (pickerEl) pickerEl.classList.remove('show');
+            document.removeEventListener('click', _fecharPickerFora);
+        }
+
+        // ── Seleção dos dois pontos no mapa ──────────────────────────
+        function iniciarSelecaoDePontos(perfilKey) {
+            limparRota();
+            estado.ativo = true;
+            estado.perfilAtual = perfilKey;
+            if (routeBtn) routeBtn.classList.add('active-mode');
+            toast('🗺️ Clique no mapa para marcar o ponto de PARTIDA (' + PERFIS[perfilKey].label + ')', 'info', 3800);
+        }
+
+        function onMapaClicado(lat, lng) {
+            if (!estado.ativo) return;
+
+            if (!estado.pontoA) {
+                estado.pontoA = { lat: lat, lng: lng };
+                _colocarMarcador('A', lat, lng);
+                toast('📍 Partida marcada. Agora clique no DESTINO.', 'info', 3200);
+                return;
+            }
+
+            if (!estado.pontoB) {
+                estado.pontoB = { lat: lat, lng: lng };
+                _colocarMarcador('B', lat, lng);
+                estado.ativo = false;
+                if (routeBtn) routeBtn.classList.remove('active-mode');
+                calcularRotaCompleta();
+            }
+        }
+
+        function _colocarMarcador(letra, lat, lng) {
+            var cor = letra === 'A' ? '#22c55e' : '#ef4444';
+
+            if (typeof L !== 'undefined' && typeof map !== 'undefined' && map) {
+                var icon2D = L.divIcon({
+                    className: '',
+                    html: '<div style="width:22px;height:22px;border-radius:50%;background:' + cor + ';border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.5);"></div>',
+                    iconSize: [22, 22], iconAnchor: [11, 11]
+                });
+                var m2d = L.marker([lat, lng], { icon: icon2D, zIndexOffset: 3000, interactive: false }).addTo(map);
+                if (letra === 'A') estado.markerA2D = m2d; else estado.markerB2D = m2d;
+            }
+
+            if (window.mapboxgl && window.mapa3D && window.mapa3D.getMap && window.mapa3D.getMap()) {
+                var el = document.createElement('div');
+                el.style.cssText = 'width:20px;height:20px;border-radius:50%;background:' + cor + ';border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.5);';
+                var m3d = new mapboxgl.Marker({ element: el }).setLngLat([lng, lat]).addTo(window.mapa3D.getMap());
+                if (letra === 'A') estado.markerA3D = m3d; else estado.markerB3D = m3d;
+            }
+        }
+
+        // ── Cálculo da rota via Mapbox Directions API ────────────────
+        function calcularRotaCompleta() {
+            var perfilInfo = PERFIS[estado.perfilAtual];
+            var token = pegarTokenMapbox();
+            if (!token) {
+                toast('Não foi possível calcular a rota (token do mapa ausente).', 'error');
+                limparRota();
+                return;
+            }
+
+            var coordsStr = estado.pontoA.lng + ',' + estado.pontoA.lat + ';' + estado.pontoB.lng + ',' + estado.pontoB.lat;
+            var url = 'https://api.mapbox.com/directions/v5/mapbox/' + perfilInfo.profile + '/' + coordsStr
+                + '?geometries=geojson&overview=full&steps=false&language=pt&access_token=' + encodeURIComponent(token);
+
+            toast('Calculando rota...', 'info', 1800);
+            console.info('[Rotas] Chamando Directions API:', url.replace(token, '[token]'));
+
+            fetch(url)
+                .then(function (r) {
+                    return r.json().then(function (data) {
+                        if (!r.ok) {
+                            // Mostra o erro REAL que o Mapbox devolveu (ex: token
+                            // inválido, restrito a outro domínio, profile errado
+                            // etc.) em vez de esconder atrás de uma mensagem genérica.
+                            var msg = (data && (data.message || data.error)) || ('HTTP ' + r.status);
+                            throw new Error(msg);
+                        }
+                        return data;
+                    });
+                })
+                .then(function (data) {
+                    console.info('[Rotas] Resposta da Directions API:', data);
+                    if (data.code && data.code !== 'Ok') {
+                        toast('Mapbox retornou: ' + data.code + (data.message ? ' — ' + data.message : ''), 'error', 5000);
+                        return;
+                    }
+                    if (!data.routes || !data.routes.length) {
+                        toast('Não foi possível encontrar uma rota entre esses pontos.', 'error');
+                        return;
+                    }
+                    var rota = data.routes[0];
+                    desenharRota(rota, perfilInfo);
+                    mostrarInfoRota(rota, perfilInfo);
+                })
+                .catch(function (err) {
+                    console.error('[Rotas] Erro ao calcular:', err);
+                    toast('Erro ao calcular a rota: ' + err.message, 'error', 5000);
+                });
+        }
+
+        function desenharRota(rota, perfilInfo) {
+            var geojson = { type: 'Feature', geometry: rota.geometry, properties: {} };
+            estado.rotaGeojson = geojson;
+            estado.perfilRota = perfilInfo;
+
+            if (typeof L !== 'undefined' && typeof map !== 'undefined' && map) {
+                if (estado.rotaLayer2D) map.removeLayer(estado.rotaLayer2D);
+                estado.rotaLayer2D = L.geoJSON(geojson, {
+                    style: { color: perfilInfo.cor, weight: 5, opacity: 0.85 }
+                }).addTo(map);
+                try { map.fitBounds(estado.rotaLayer2D.getBounds(), { padding: [70, 70] }); } catch (e) {}
+            }
+
+            desenharRota3D(geojson, perfilInfo, true);
+
+            estado.rotaAtiva = true;
+        }
+
+        function desenharRota3D(geojson, perfilInfo, ajustarCamera) {
+            if (!window.mapa3D || !window.mapa3D.getMap || !window.mapa3D.getMap()) return;
+            var m3 = window.mapa3D.getMap();
+            if (!m3 || (m3.isStyleLoaded && !m3.isStyleLoaded())) {
+                if (m3 && m3.once) {
+                    m3.once('style.load', function () {
+                        if (!estado.rotaAtiva || estado.rotaGeojson !== geojson || estado.perfilRota !== perfilInfo) return;
+                        desenharRota3D(geojson, perfilInfo, ajustarCamera);
+                    });
+                }
+                return;
+            }
+
+            try {
+                if (m3.getLayer(ROUTE_LAYER_ID)) m3.removeLayer(ROUTE_LAYER_ID);
+                if (m3.getSource(ROUTE_SOURCE_ID)) m3.removeSource(ROUTE_SOURCE_ID);
+                m3.addSource(ROUTE_SOURCE_ID, { type: 'geojson', data: geojson });
+                m3.addLayer({
+                    id: ROUTE_LAYER_ID,
+                    type: 'line',
+                    source: ROUTE_SOURCE_ID,
+                    layout: { 'line-join': 'round', 'line-cap': 'round' },
+                    paint: { 'line-color': perfilInfo.cor, 'line-width': 5, 'line-opacity': 0.9 }
+                });
+
+                if (ajustarCamera && window.mapboxgl && mapaEstaEm3D()) {
+                    ajustarCamera3D(m3, geojson.geometry.coordinates);
+                }
+            } catch (e) {
+                console.warn('[Rotas] Nao foi possivel desenhar a rota no 3D:', e);
+            }
+        }
+
+        function ajustarCamera3D(m3, coords) {
+            if (!coords || !coords.length || !window.mapboxgl) return;
+            var bounds = coords.reduce(function (b, coord) {
+                return b.extend(coord);
+            }, new mapboxgl.LngLatBounds(coords[0], coords[0]));
+            m3.fitBounds(bounds, { padding: 90, duration: 900, pitch: 55, bearing: 0 });
+        }
+
+        function mostrarInfoRota(rota, perfilInfo) {
+            if (!infoPanelEl) construirInfoPanel();
+            var km = (rota.distance / 1000).toFixed(1);
+            var minutos = Math.round(rota.duration / 60);
+            var tempoTexto = minutos >= 60
+                ? Math.floor(minutos / 60) + 'h ' + (minutos % 60) + 'min'
+                : minutos + ' min';
+
+            infoPanelEl.innerHTML =
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;">'
+                    + '<strong style="display:flex;align-items:center;gap:6px;"><i class="fas ' + perfilInfo.icon + '" style="color:' + perfilInfo.cor + ';"></i> ' + perfilInfo.label + '</strong>'
+                    + '<button type="button" id="au-route-close-btn" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:inherit;opacity:0.6;line-height:1;">&times;</button>'
+                + '</div>'
+                + '<div style="font-size:1.3rem;font-weight:800;">' + tempoTexto + '</div>'
+                + '<div style="font-size:0.85rem;opacity:0.75;">' + km + ' km</div>';
+
+            infoPanelEl.classList.add('show');
+            document.getElementById('au-route-close-btn').addEventListener('click', limparRota);
+        }
+
+        function construirInfoPanel() {
+            infoPanelEl = document.createElement('div');
+            infoPanelEl.className = 'au-route-info-panel';
+            document.body.appendChild(infoPanelEl);
+        }
+
+        function limparRota() {
+            estado.ativo = false;
+            estado.pontoA = null;
+            estado.pontoB = null;
+            estado.rotaAtiva = false;
+            estado.rotaGeojson = null;
+            estado.perfilRota = null;
+            if (routeBtn) routeBtn.classList.remove('active-mode');
+
+            if (typeof map !== 'undefined' && map) {
+                if (estado.markerA2D) map.removeLayer(estado.markerA2D);
+                if (estado.markerB2D) map.removeLayer(estado.markerB2D);
+                if (estado.rotaLayer2D) map.removeLayer(estado.rotaLayer2D);
+            }
+            estado.markerA2D = estado.markerB2D = estado.rotaLayer2D = null;
+
+            if (window.mapa3D && window.mapa3D.getMap && window.mapa3D.getMap()) {
+                var m3 = window.mapa3D.getMap();
+                if (m3.getLayer(ROUTE_LAYER_ID)) m3.removeLayer(ROUTE_LAYER_ID);
+                if (m3.getSource(ROUTE_SOURCE_ID)) m3.removeSource(ROUTE_SOURCE_ID);
+            }
+            if (estado.markerA3D) { estado.markerA3D.remove(); estado.markerA3D = null; }
+            if (estado.markerB3D) { estado.markerB3D.remove(); estado.markerB3D = null; }
+
+            if (infoPanelEl) infoPanelEl.classList.remove('show');
+        }
+
+        function conectarClique2D() {
+            if (estado.clique2DLigado) return;
+            if (typeof map === 'undefined' || !map || !map.on) {
+                setTimeout(conectarClique2D, 120);
+                return;
+            }
+            map.on('click', function (ev) {
+                if (!estado.ativo || mapaEstaEm3D()) return;
+                onMapaClicado(ev.latlng.lat, ev.latlng.lng);
+            });
+            estado.clique2DLigado = true;
+        }
+
+        function conectarClique3D(m) {
+            if (!m || estado.clique3DLigado) return;
+            m.on('click', function (e) {
+                if (!estado.ativo || !mapaEstaEm3D()) return;
+                onMapaClicado(e.lngLat.lat, e.lngLat.lng);
+            });
+            m.on('style.load', function () {
+                if (estado.rotaAtiva && estado.rotaGeojson && estado.perfilRota) {
+                    desenharRota3D(estado.rotaGeojson, estado.perfilRota, false);
+                }
+            });
+            estado.clique3DLigado = true;
+        }
+
+        // ── Conexão com os cliques dos dois mapas ────────────────────
+        document.addEventListener('DOMContentLoaded', function () {
+            routeBtn = document.getElementById('toggle-route-btn');
+            if (!routeBtn) return;
+
+            routeBtn.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                if (estado.ativo || estado.rotaAtiva) {
+                    limparRota();
+                    return;
+                }
+                abrirPicker();
+            });
+
+            document.addEventListener('keydown', function (ev) {
+                if (ev.key === 'Escape' && estado.ativo) limparRota();
+            });
+
+            // 2D (Leaflet) já existe desde o carregamento da página
+            conectarClique2D();
+        });
+
+        // 3D (Mapbox) só existe depois de ativado a primeira vez —
+        // conecta assim que o módulo 3D avisa que terminou de carregar
+        // (sem precisar de polling/setTimeout).
+        document.addEventListener('au:mapa3dCarregado', function (ev) {
+            var m = ev.detail && ev.detail.mapa;
+            if (!m) return;
+            conectarClique3D(m);
+            if (estado.rotaAtiva && estado.rotaGeojson && estado.perfilRota) {
+                desenharRota3D(estado.rotaGeojson, estado.perfilRota, false);
+            }
+        });
+
+    })();
+    </script>
+
+    <!-- ════════════════════════════════════════════════════════════
+         MÓDULO: Mapa de calor (2D e 3D)
+         2D → círculos (L.circleMarker) coloridos por prioridade,
+              partir de allProblemsData (mesma fonte que os pins).
+         3D → layer nativa "heatmap" do Mapbox GL, na MESMA fonte
+              GeoJSON que já alimenta os pins (SOURCE_ID au-protocols
+              do módulo 3D) — não precisa duplicar dados.
+         Enquanto o calor está ativo, os pins individuais do 3D ficam
+         escondidos (visibility:none), pra não poluir a visualização;
+         voltam a aparecer quando o calor é desligado.
+    ════════════════════════════════════════════════════════════ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var HEAT_LAYER_ID_3D = 'au-heatmap';
+        var PONTO_LAYERS_3D = ['au-protocols-outer', 'au-protocols-dot', 'au-protocols-label'];
+
+        // Peso por prioridade — baixa/média/alta/urgente, nessa ordem.
+        // O piso foi levantado (0.4 em vez de 0.25): como os relatórios
+        // no mapa costumam estar espalhados (não empilhados), um ponto
+        // "baixa" isolado com peso muito baixo ficava quase invisível.
+        // Com esse piso, mesmo um ponto sozinho já aparece na cor certa
+        // com força visual decente.
+        var PRIORIDADE_PESO = { baixa: 0.4, media: 0.6, alta: 0.8, urgente: 1.0 };
+        var PESO_PADRAO = 0.4;
+
+        // Faixas de cor FIXAS — cada prioridade tem uma cor sólida só
+        // dela, sem misturar com a vizinha (nada de degradê). No 3D
+        // isso é uma expressão "step" nativa do Mapbox (corte exato).
+        // No 2D, o plugin Leaflet.heat só entende gradiente contínuo,
+        // então simulamos o "corte duro" colocando dois estágios bem
+        // próximos (ex.: 0.599 e 0.6) — a transição vira tão estreita
+        // que passa a impressão de faixa sólida.
+        var FAIXAS_COR = [
+            { min: 0.0, cor: 'rgba(0,0,0,0)' },
+            { min: PRIORIDADE_PESO.baixa,   cor: '#4ade80' }, // verde — baixa
+            { min: PRIORIDADE_PESO.media,   cor: '#facc15' }, // amarelo — média
+            { min: PRIORIDADE_PESO.alta,    cor: '#fb923c' }, // laranja — alta
+            { min: PRIORIDADE_PESO.urgente, cor: '#ef4444' }  // vermelho — urgente
+        ];
+
+        var estado = { ativo: false, heatLayer2D: null };
+        var heatBtn;
+
+        function toast(msg, tipo, dur) {
+            if (typeof showToast === 'function') showToast(msg, tipo || 'info', dur || 2500);
+        }
+
+        function pesoPorPrioridade(prioridade) {
+            var chave = String(prioridade || '').toLowerCase();
+            return PRIORIDADE_PESO.hasOwnProperty(chave) ? PRIORIDADE_PESO[chave] : PESO_PADRAO;
+        }
+
+        // Expressão "step" do Mapbox — corte exato, sem interpolação.
+        function expressaoCorMapbox() {
+            var partes = ['step', ['heatmap-density'], FAIXAS_COR[0].cor];
+            for (var i = 1; i < FAIXAS_COR.length; i++) {
+                partes.push(FAIXAS_COR[i].min, FAIXAS_COR[i].cor);
+            }
+            return partes;
+        }
+
+        // ── Raio/blur que acompanham o zoom (pra dar pra ver de longe) ─
+        // Interpolação linear, travada entre 22 e 55px — nada de
+        // crescimento exponencial sem limite.
+        function radioPorZoom(zoom) {
+            var zoomMin = 9, zoomMax = 18;
+            var raioMin = 12, raioMax = 26;
+            var z = Math.max(zoomMin, Math.min(zoomMax, zoom));
+            var t = (zoomMax - z) / (zoomMax - zoomMin); // 0 no zoom alto, 1 no zoom baixo
+            return raioMin + t * (raioMax - raioMin);
+        }
+
+        // ── 2D — Leaflet.heat de verdade ─────────────────────────────
+        // Usa o plugin (canvas com acumulação de densidade real) pra
+        // ter a MESMA mistura/acúmulo que já existe no 3D — onde
+        // vários pontos se sobrepõem, a cor sobe de faixa de verdade,
+        // em vez de só empilhar círculos opacos uns sobre os outros.
+        function gradienteLeaflet() {
+            var g = {};
+            var EPS = 0.004;
+            FAIXAS_COR.forEach(function (faixa, i) {
+                if (i === 0) { g[0] = faixa.cor; return; }
+                var anterior = FAIXAS_COR[i - 1];
+                g[Math.max(0, faixa.min - EPS)] = anterior.cor; // último "pixel" da faixa anterior
+                g[faixa.min] = faixa.cor;                        // primeiro "pixel" dessa faixa
+            });
+            g[1.0] = FAIXAS_COR[FAIXAS_COR.length - 1].cor;
+            return g;
+        }
+
+        function construirPontos2D() {
+            var pontos = [];
+            if (typeof allProblemsData === 'undefined' || !allProblemsData) return pontos;
+            allProblemsData.forEach(function (p) {
+                if (!p.latitude || !p.longitude) return;
+                pontos.push([parseFloat(p.latitude), parseFloat(p.longitude), pesoPorPrioridade(p.prioridade)]);
+            });
+            return pontos;
+        }
+
+        function ligarHeatmap2D() {
+            if (typeof L === 'undefined' || typeof L.heatLayer !== 'function') {
+                console.warn('[Calor] Plugin leaflet-heat.js não carregou.');
+                toast('Não foi possível carregar o mapa de calor (plugin ausente).', 'error');
+                return;
+            }
+            if (typeof map === 'undefined' || !map) return;
+
+            var pontos = construirPontos2D();
+            if (!pontos.length) toast('Nenhum relatório com localização pra mostrar no calor ainda.', 'info');
+
+            var raioInicial = radioPorZoom(map.getZoom());
+            estado.heatLayer2D = L.heatLayer(pontos, {
+                radius: raioInicial,
+                blur: raioInicial * 0.75,
+                max: 0.7,              // abaixa o teto → mais força visual pra todo mundo
+                // maxZoom aqui é "zoom em que a intensidade é máxima" —
+                // em qualquer zoom MENOR que isso, a lib escurece de
+                // propósito (foi isso que causava o efeito de "sombra"
+                // ao afastar). Deixando bem baixo, a intensidade já
+                // fica sempre no máximo em qualquer zoom que a gente
+                // realmente usa (cidade/bairro/rua).
+                maxZoom: 1,
+                gradient: gradienteLeaflet()
+            }).addTo(map);
+
+            map.on('zoomend', _aoZoom2D);
+
+            // Esconde os pins normais enquanto o calor está ativo —
+            // mesmo comportamento já feito no 3D.
+            if (typeof problemsLayerGroup !== 'undefined' && problemsLayerGroup && map.hasLayer(problemsLayerGroup)) {
+                map.removeLayer(problemsLayerGroup);
+            }
+        }
+
+        function _aoZoom2D() {
+            if (!estado.ativo || !estado.heatLayer2D) return;
+            var r = radioPorZoom(map.getZoom());
+            estado.heatLayer2D.setOptions({ radius: r, blur: r * 0.75 });
+        }
+
+        function desligarHeatmap2D() {
+            if (estado.heatLayer2D && typeof map !== 'undefined' && map) {
+                map.removeLayer(estado.heatLayer2D);
+                map.off('zoomend', _aoZoom2D);
+            }
+            estado.heatLayer2D = null;
+
+            // Devolve os pins normais pro mapa.
+            if (typeof map !== 'undefined' && map && typeof problemsLayerGroup !== 'undefined' && problemsLayerGroup && !map.hasLayer(problemsLayerGroup)) {
+                map.addLayer(problemsLayerGroup);
+            }
+        }
+
+        // ── 3D — layer nativa "heatmap" do Mapbox ────────────────────
+        function ligarHeatmap3D() {
+            if (!window.mapa3D || !window.mapa3D.getMap) return;
+            var m3 = window.mapa3D.getMap();
+            if (!m3 || !m3.getSource('au-protocols')) return;
+            if (m3.getLayer(HEAT_LAYER_ID_3D)) return;
+
+            try {
+                m3.addLayer({
+                    id: HEAT_LAYER_ID_3D,
+                    type: 'heatmap',
+                    source: 'au-protocols',
+                    paint: {
+                        // Peso por ponto, de acordo com a prioridade do
+                        // relatório — mesmos valores usados no 2D.
+                        'heatmap-weight': [
+                            'match', ['get', 'prioridade'],
+                            'baixa',   PRIORIDADE_PESO.baixa,
+                            'media',   PRIORIDADE_PESO.media,
+                            'alta',    PRIORIDADE_PESO.alta,
+                            'urgente', PRIORIDADE_PESO.urgente,
+                            PESO_PADRAO
+                        ],
+                        'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 2, 15, 3.5],
+                        // Raio maior em zoom baixo (dá pra ver de longe),
+                        // crescendo um pouco mais em zoom alto também.
+                        'heatmap-radius': [
+                            'interpolate', ['linear'], ['zoom'],
+                            0, 22,
+                            9, 34,
+                            13, 48,
+                            17, 62
+                        ],
+                        'heatmap-opacity': 0.88,
+                        'heatmap-color': expressaoCorMapbox()
+                    }
+                });
+
+                PONTO_LAYERS_3D.forEach(function (id) {
+                    if (m3.getLayer(id)) m3.setLayoutProperty(id, 'visibility', 'none');
+                });
+            } catch (e) {
+                console.warn('[Calor] Não foi possível ligar o calor no 3D:', e);
+            }
+        }
+
+        function desligarHeatmap3D() {
+            if (!window.mapa3D || !window.mapa3D.getMap) return;
+            var m3 = window.mapa3D.getMap();
+            if (!m3) return;
+
+            try {
+                if (m3.getLayer(HEAT_LAYER_ID_3D)) m3.removeLayer(HEAT_LAYER_ID_3D);
+                PONTO_LAYERS_3D.forEach(function (id) {
+                    if (m3.getLayer(id)) m3.setLayoutProperty(id, 'visibility', 'visible');
+                });
+            } catch (e) { /* mapa pode ter trocado de estilo — ignora */ }
+        }
+
+        // ── Controle geral ────────────────────────────────────────
+        function ligar() {
+            estado.ativo = true;
+            if (heatBtn) heatBtn.classList.add('active-mode');
+            ligarHeatmap2D();
+            ligarHeatmap3D();
+            toast('🔥 Mapa de calor ativado.', 'info', 2200);
+        }
+
+        function desligar() {
+            estado.ativo = false;
+            if (heatBtn) heatBtn.classList.remove('active-mode');
+            desligarHeatmap2D();
+            desligarHeatmap3D();
+        }
+
+        function alternar() {
+            if (estado.ativo) desligar(); else ligar();
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            heatBtn = document.getElementById('toggle-heatmap-btn');
+            if (heatBtn) {
+                heatBtn.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    alternar();
+                });
+            }
+        });
+
+        // Sempre que o mapa 3D (re)carrega — inclusive troca de estilo
+        // claro/escuro, que apaga camadas customizadas — religa o
+        // calor automaticamente se ele estava ativo.
+        document.addEventListener('au:mapa3dCarregado', function () {
+            if (estado.ativo) ligarHeatmap3D();
+        });
+
+        // Se um relatório novo for salvo, atualiza os pontos do calor
+        // no 2D (no 3D não precisa: a fonte au-protocols já é
+        // recarregada pelo próprio módulo 3D, e a layer de heatmap
+        // aponta pra ela, então atualiza sozinha).
+        document.addEventListener('au:relatorioSalvo', function () {
+            if (estado.ativo && estado.heatLayer2D) {
+                desligarHeatmap2D();
+                ligarHeatmap2D();
+            }
+        });
+
+    })();
     </script>
 </body>
 

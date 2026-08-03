@@ -1,0 +1,198 @@
+/**
+ * video-tutorial.css — Modal de vídeo explicativo + seção "Como funciona"
+ * Agente Urbano
+ *
+ * Usa as mesmas variáveis de cor do style.css, então já respeita o
+ * modo escuro (body.dark-mode) automaticamente.
+ */
+
+/* ── Seção dedicada (Opção A) ──────────────────────────────────── */
+.au-video-section {
+    max-width: 960px;
+    margin: 60px auto;
+    padding: 0 24px;
+    text-align: center;
+}
+
+.au-video-section h2 {
+    margin-bottom: 8px;
+}
+
+.au-video-section .section-subtitle {
+    margin-bottom: 28px;
+}
+
+.au-video-thumb {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    display: block;
+    background: linear-gradient(135deg, #0b2540 0%, #0ea5e9 100%);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.au-video-thumb svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.au-video-play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s ease;
+}
+
+.au-video-thumb:hover .au-video-play-btn {
+    transform: translate(-50%, -50%) scale(1.08);
+}
+
+.au-video-play-btn::after {
+    content: '';
+    border-style: solid;
+    border-width: 13px 0 13px 22px;
+    border-color: transparent transparent transparent #0ea5e9;
+    margin-left: 4px;
+}
+
+.au-video-thumb-caption {
+    position: absolute;
+    bottom: 18px;
+    left: 0;
+    right: 0;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Modal / lightbox ───────────────────────────────────────────── */
+.au-video-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(4, 8, 16, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.au-video-overlay.au-show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.au-video-modal-box {
+    position: relative;
+    width: 100%;
+    max-width: 860px;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+    transform: scale(0.96);
+    transition: transform 0.25s ease;
+}
+
+.au-video-overlay.au-show .au-video-modal-box {
+    transform: scale(1);
+}
+
+.au-video-modal-frame-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+}
+
+.au-video-modal-frame-wrap iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.au-video-unmute-btn {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
+.au-video-unmute-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: translateY(-1px);
+}
+
+.au-video-unmute-btn.au-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+}
+
+.au-video-modal-close {
+    position: absolute;
+    top: -42px;
+    right: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.au-video-modal-close:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+@media (max-width: 600px) {
+    .au-video-modal-close {
+        top: -40px;
+        right: 4px;
+    }
+    .au-video-play-btn {
+        width: 60px;
+        height: 60px;
+    }
+    .au-video-play-btn::after {
+        border-width: 10px 0 10px 17px;
+    }
+}
