@@ -30,7 +30,7 @@ Este projeto está licenciado sob a GNU General Public License v3.0 (GPL-3.0).
 Consulte o arquivo LICENSE para mais informações.
 ---
 
-## 📑 Introdução
+<h2><img src="https://api.iconify.design/lucide:file-text.svg?color=%23007bff" width="22"> Introdução</h2>
 
 O crescimento acelerado e, por vezes, desordenado das malhas urbanas contemporâneas impõe desafios complexos à gestão pública e à qualidade de vida dos cidadãos. Problemas associados à manutenção da infraestrutura, falhas de sinalização, bloqueios de vias e avarias nos serviços de utilidade pública frequentemente permanecem invisíveis ou demoram a ser reportados devido à fragmentação dos canais tradicionais de atendimento. O **Agente Urbano** nasce da necessidade imperativa de centralizar, georreferenciar e dar transparência a estas ocorrências, mitigando a assimetria de informação entre a população e os órgãos decisores.
 
@@ -40,7 +40,7 @@ A arquitetura do **Agente Urbano** foi desenhada com foco obsessivo em desempenh
 
 ---
 
-## 👁️ Visão Geral
+<h2><img src="https://api.iconify.design/lucide:eye.svg?color=%23007bff" width="22"> Visão Geral</h2>
 
 O **Agente Urbano** opera sob a filosofia de que o mapeamento aberto e comunitário é um direito fundamental para o desenvolvimento de cidades sustentáveis e inteligentes. O projeto adota uma abordagem descentralizada, fornecendo as ferramentas necessárias para mapear incidentes, extrair métricas de zonas críticas e fornecer dados estruturados que possam servir de base para intervenções urbanísticas pontuais ou planeamentos estratégicos de larga escala.
 
@@ -56,7 +56,7 @@ A plataforma estende o seu valor a múltiplos perfis de utilizadores: **habitant
 
 ---
 
-## 🎯 Objetivos Estratégicos
+<h2><img src="https://api.iconify.design/lucide:target.svg?color=%23007bff" width="22"> Objetivos Estratégicos</h2>
 
 ### 🌎 Centralizar informações urbanas
 Agrupar os fluxos de notificações e dados geográficos espalhados por diferentes setores num único centro operacional visual, reduzindo o tempo entre a identificação do problema e a sua efetiva resolução.
@@ -72,28 +72,28 @@ Estruturar o fluxo de dados para que os polígonos urbanos, malhas viárias e ma
 
 ---
 
-## 🚀 Funcionalidades
+<h2><img src="https://api.iconify.design/lucide:rocket.svg?color=%23007bff" width="22"> Funcionalidades</h2>
 
 O sistema divide-se em componentes lógicos robustos, modelados para oferecer uma experiência de uso imersiva.
 
 <table width="100%">
   <tr>
     <td width="50%" valign="top">
-      <h3>📍 Mapa Interativo Vetorial</h3>
+      <h3><img src="https://api.iconify.design/lucide:map-pinned.svg?color=%23007bff" width="18"> Mapa Interativo Vetorial</h3>
       <p>Renderização de mapas de alta fidelidade baseados em vetores com capacidade para alternar estilos de visualização, ativar visualizações de satélite e sobrepor dados coropléticos.</p>
     </td>
     <td width="50%" valign="top">
-      <h3>🛠️ Ferramentas de Filtragem Avançada</h3>
+      <h3><img src="https://api.iconify.design/lucide:funnel.svg?color=%23007bff" width="18"> Ferramentas de Filtragem Avançada</h3>
       <p>Consultas espaciais e temporais detalhadas. Filtre incidentes por gravidade, estado operacional, tipo de infraestrutura ou data de abertura através de controlos laterais fluidos.</p>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <h3>📊 Dashboard de Métricas</h3>
+      <h3><img src="https://api.iconify.design/lucide:chart-column.svg?color=%23007bff" width="18"> Dashboard de Métricas</h3>
       <p>Gráficos consolidados e indicadores-chave de desempenho (KPIs) exibindo estatísticas de reparações efetuadas, tempo médio de resposta e os pontos com maior densidade de reclamações.</p>
     </td>
     <td width="50%" valign="top">
-      <h3>⚙️ Painel de Configurações do Sistema</h3>
+      <h3><img src="https://api.iconify.design/lucide:settings.svg?color=%23007bff" width="18"> Painel de Configurações do Sistema</h3>
       <p>Customização integral da experiência cartográfica, gestão de chaves de API das camadas de mapas, parametrização de limites geográficos municipais e perfis administrativos.</p>
     </td>
   </tr>
@@ -101,7 +101,7 @@ O sistema divide-se em componentes lógicos robustos, modelados para oferecer um
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+<h2><img src="https://api.iconify.design/lucide:wrench.svg?color=%23007bff" width="22"> Tecnologias Utilizadas</h2>
 
 | Tecnologia | Finalidade |
 | :--- | :--- |
@@ -116,7 +116,7 @@ O sistema divide-se em componentes lógicos robustos, modelados para oferecer um
 
 ---
 
-## 📐 Arquitetura do Sistema
+<h2><img src="https://api.iconify.design/lucide:network.svg?color=%23007bff" width="22"> Arquitetura do Sistema</h2>
 
 O **Agente Urbano** utiliza uma topologia cliente-servidor otimizada para a transferência ágil de ficheiros geográficos vectoriais estruturados:
 
@@ -154,7 +154,7 @@ O **Agente Urbano** utiliza uma topologia cliente-servidor otimizada para a tran
 
 ---
 
-## 📁 Estrutura de Pastas
+<h2><img src="https://api.iconify.design/lucide:folder-tree.svg?color=%23007bff" width="22"> Estrutura de Pastas</h2>
 
 A organização interna do código reflete a separação clara de responsabilidades entre lógica de negócio, assets e componentes visuais:
 
@@ -191,7 +191,7 @@ agente-urbano/
 
 ---
 
-## ⚡ Instalação e Execução
+<h2><img src="https://api.iconify.design/lucide:download.svg?color=%23007bff" width="22"> Instalação e Execução</h2>
 
 ### Pré-requisitos
 
@@ -232,7 +232,7 @@ Antes de iniciar, certifique-se de que possui os seguintes ambientes configurado
 
 ---
 
-## 📖 Como Utilizar
+<h2><img src="https://api.iconify.design/lucide:book-open.svg?color=%23007bff" width="22"> Como Utilizar</h2>
 
 O ecossistema **Agente Urbano** disponibiliza caminhos bem definidos para interagir com o território urbano mapeado:
 
@@ -243,7 +243,7 @@ O ecossistema **Agente Urbano** disponibiliza caminhos bem definidos para intera
 
 ---
 
-## 📸 Capturas de Ecrã (Placeholders)
+<h2><img src="https://api.iconify.design/lucide:image.svg?color=%23007bff" width="22"> Capturas de Ecrã</h2> (Placeholders)
 
 <p align="center">
   <strong>Página Inicial do Ecossistema</strong><br>
@@ -271,40 +271,9 @@ O ecossistema **Agente Urbano** disponibiliza caminhos bem definidos para intera
 </p>
 
 ---
-<!-- ========================================= -->
-<!-- Demonstração -->
-<!-- ========================================= -->
 
-<h2 align="center">
-    🎬 Demonstração
-</h2>
-
-<p align="center">
-    <em>Veja o Agente Urbano em funcionamento antes mesmo de acessar o projeto.</em>
-</p>
-
-<p align="center">
-    <img
-        src="imagens/exemploAU.gif"
-        alt="Demonstração do Agente Urbano"
-        width="95%"
-        style="border-radius:14px; border:1px solid #d1d5db;">
-</p>
-
-<p align="center">
-
-<a href="https://agenteurbano.page.gd/" target="_blank">
-    <img src="https://img.shields.io/badge/🌐%20Experimentar%20a%20Demonstração-007bff?style=for-the-badge&logo=googlemaps&logoColor=white">
-</a>
-&nbsp;&nbsp;
-</p>
-<p align="center">
-Clique nos botões acima para explorar o projeto em tempo real.
-</p>
-
----
-
-## 🧠 Filosofia do Projeto
+<h2 align="center"><img src="https://api.iconify.design/lucide:play-circle.svg?color=%23007bff" width="26"> Demonstração </h2> <p align="center"> <em>Veja o Agente Urbano em funcionamento</em> </p> <p align="center"> <img src="imagens/gif.gif" alt="Demonstração do Agente Urbano" width="95%" style="border-radius:14px; border:1px solid #d1d5db;"> </p> <p align="center"> <a href="https://agenteurbano.page.gd/" target="_blank"> <img src="https://img.shields.io/badge/🌐%20Experimentar%20a%20Demonstração-007bff?style=for-the-badge&logo=googlemaps&logoColor=white"> </a> &nbsp;&nbsp; </p> <p align="center"> Clique nos botões acima para explorar o projeto em tempo real. </p> ---
+<h2><img src="https://api.iconify.design/lucide:brain.svg?color=%23007bff" width="22"> Filosofia do Projeto</h2>
 
 > *"A cidade não é um aglomerado de pedras, betão e asfalto; é um organismo dinâmico constituído pelas relações entre o espaço físico e os indivíduos que o habitam."*
 
@@ -312,7 +281,7 @@ Compreender as cidades é o primeiro passo para as transformar. O **Agente Urban
 
 ---
 
-## 🤝 Contribuindo
+<h2><img src="https://api.iconify.design/lucide:git-pull-request.svg?color=%23007bff" width="22"> Contribuindo</h2>
 
 Contribuições de código, relatórios de erros e melhorias de design são extremamente bem-vampiras. Para manter a estabilidade do ecossistema, siga o protocolo de desenvolvimento:
 
