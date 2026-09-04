@@ -1,4 +1,45 @@
-﻿<!DOCTYPE html>
+﻿<?php
+
+require_once 'api.php';
+
+$pdo = connectDB();
+
+$username = "Miguel";
+
+$stmt = $pdo->prepare("
+    SELECT reliability_rank, urban_points
+    FROM user_gamification
+    WHERE username = ?
+");
+
+$stmt->execute([$username]);
+
+$profile = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$ranking = $profile['reliability_rank'];
+$urbanPoints = $profile['urban_points'];
+
+if ($ranking >= 85) {
+    $classe = "Elite";
+} elseif ($ranking >= 70) {
+    $classe = "Diamante";
+} elseif ($ranking >= 60) {
+    $classe = "Ouro";
+} elseif ($ranking >= 40) {
+    $classe = "Prata";
+} elseif ($ranking >= 20) {
+    $classe = "Bronze";
+} else {
+    $classe = "Banido";
+}
+?>
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -785,25 +826,22 @@
             </div>
         </div>
 
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <span class="metric-label"><i class="fas fa-star"></i> XP</span>
-                <div class="metric-value" id="metric-xp">0</div>
-                <span class="metric-detail" id="metric-xp-detail">-</span>
-            </div>
+        <div class="metrics-grid">            
             <div class="metric-card">
                 <span class="metric-label"><i class="fas fa-medal"></i> Ranking</span>
-                <div class="metric-value" id="metric-rank">50</div>
+                <div class="metric-value" id="metric-rank">
+                    <?= $profile['reliability_rank'] ?? 0 ?>
+                </div>
                 <span class="metric-detail">Confiabilidade</span>
             </div>
             <div class="metric-card">
                 <span class="metric-label"><i class="fas fa-coins"></i> UrbanPoints</span>
-                <div class="metric-value" id="metric-points">0</div>
+                <div class="metric-value" id="metric-points"><?= $urbanPoints ?></div>
                 <span class="metric-detail">Para resgatar</span>
             </div>
             <div class="metric-card">
                 <span class="metric-label"><i class="fas fa-crown"></i> Classe Mensal</span>
-                <div class="metric-value" id="metric-tier">Bronze</div>
+                <div class="metric-value" id="metric-tier"><?= $classe ?>   </div>
                 <span class="metric-detail" id="metric-tier-detail">-</span>
             </div>
         </div>
