@@ -1392,7 +1392,7 @@
                 <div class="stat-card">
                     <i class="fas fa-shield-halved"></i>
                     <span id="user-rank" class="stat-number">50</span>
-                    <span class="stat-label">Ranking</span>
+                    <span class="stat-label">Reputação</span>
                 </div>
                 <div class="stat-card">
                     <i class="fas fa-coins"></i>
@@ -1405,12 +1405,26 @@
                     <span class="stat-label">Classe mensal</span>
                 </div>
             </div>
+
+            <div id="reputation-status-banner" class="notice" style="display:none; margin-top:18px; text-align:left; border: 1px solid var(--danger); color: var(--danger); background: rgba(220,53,69,0.08);"></div>
+
             <div class="xp-progress">
                 <div class="xp-progress-head">
                     <span>XP: <strong id="user-xp">0</strong></span>
                     <span>Próximo nível: <strong id="next-level-xp">100</strong></span>
                 </div>
                 <div class="xp-progress-bar"><span id="xp-progress-fill"></span></div>
+            </div>
+
+            <div class="xp-progress" style="margin-top:14px;">
+                <div class="xp-progress-head">
+                    <span><i class="fas fa-coins"></i> Pagamento mensal estimado</span>
+                    <span id="monthly-payout-estimate">0 UrbanPoints</span>
+                </div>
+                <div class="xp-text" style="text-align:left; margin-top:6px;">
+                    Com base na sua reputação atual (<strong id="reputation-current-inline">50</strong>/100). Creditado automaticamente no início de cada mês, referente ao mês anterior.
+                    Faixas: 25–59 → 0 · 60–69 → 500 · 70–79 → 1000 · 80–89 → 1500 · 90–99 → 2000 · 100 → 3000 UrbanPoints.
+                </div>
             </div>
         </section>
 
@@ -1533,6 +1547,8 @@
             username: null,
             reports: [],
             gamification: null,
+            reputacao: null,
+            punishment: null,
             authMode: 'login',
             pendingAvatar: null
         };
@@ -1647,6 +1663,27 @@
             el('xp-progress-fill').style.width = `${game.xp_progress || 0}%`;
         }
 
+        function updatePunishmentBanner() {
+            const banner = el('reputation-status-banner');
+            const payoutEl = el('monthly-payout-estimate');
+            const repInline = el('reputation-current-inline');
+            if (!banner) return;
+
+            const rep = state.reputacao || {};
+            const repValor = Math.round(Number(rep.valor ?? state.gamification?.reliability_rank ?? 50));
+            if (repInline) repInline.textContent = repValor;
+            if (payoutEl) payoutEl.textContent = `${Number(rep.pontos_mes_estimados || 0).toLocaleString('pt-BR')} UrbanPoints`;
+
+            const punishment = state.punishment || {};
+            if (punishment.blocked) {
+                banner.style.display = 'block';
+                banner.innerHTML = `<i class="fas fa-triangle-exclamation"></i> ${escapeHtml(punishment.message || 'Sua conta está com restrições.')}`;
+            } else {
+                banner.style.display = 'none';
+                banner.innerHTML = '';
+            }
+        }
+
         function renderReports() {
             const container = el('reports-list');
 
@@ -1729,7 +1766,10 @@
                 if (!state.username) {
                     state.reports = [];
                     state.gamification = null;
+                    state.reputacao = null;
+                    state.punishment = null;
                     updateStats();
+                    updatePunishmentBanner();
                     renderReports();
                     return;
                 }
@@ -1747,7 +1787,10 @@
                 const problems = Array.isArray(problemsData) ? problemsData : (problemsData.problems || []);
                 state.reports = problems.filter(report => ids.has(String(report.id)));
                 state.gamification = dashboardData.profile || null;
+                state.reputacao = dashboardData.reputacao || null;
+                state.punishment = dashboardData.punishment || null;
                 updateStats();
+                updatePunishmentBanner();
                 renderReports();
             } catch (error) {
                 console.error(error);

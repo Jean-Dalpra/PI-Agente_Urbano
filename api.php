@@ -68,6 +68,9 @@ function ensureGamificationSchema($pdo)
     if (!columnExists($pdo, 'relatorios', 'invalidated_penalties_applied')) {
         $pdo->exec("ALTER TABLE relatorios ADD COLUMN invalidated_penalties_applied TINYINT(1) NOT NULL DEFAULT 0");
     }
+    if (!columnExists($pdo, 'relatorios', 'verified_reward_applied')) {
+        $pdo->exec("ALTER TABLE relatorios ADD COLUMN verified_reward_applied TINYINT(1) NOT NULL DEFAULT 0");
+    }
     if (!columnExists($pdo, 'comentarios', 'veracidade')) {
         $pdo->exec("ALTER TABLE comentarios ADD COLUMN veracidade INT NOT NULL DEFAULT 50");
     }
@@ -90,6 +93,28 @@ function ensureGamificationSchema($pdo)
         last_activity_at DATETIME NULL,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    if (!columnExists($pdo, 'user_gamification', 'punishment_strikes')) {
+        $pdo->exec("ALTER TABLE user_gamification ADD COLUMN punishment_strikes INT NOT NULL DEFAULT 0");
+    }
+    if (!columnExists($pdo, 'user_gamification', 'blocked_until')) {
+        $pdo->exec("ALTER TABLE user_gamification ADD COLUMN blocked_until DATETIME NULL");
+    }
+    if (!columnExists($pdo, 'user_gamification', 'banned_permanently')) {
+        $pdo->exec("ALTER TABLE user_gamification ADD COLUMN banned_permanently TINYINT(1) NOT NULL DEFAULT 0");
+    }
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS reputation_log (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(120) NOT NULL,
+        delta INT NOT NULL,
+        reason VARCHAR(160) NOT NULL,
+        reference_type VARCHAR(40) NULL,
+        reference_id INT NULL,
+        resulting_rank DECIMAL(5,2) NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_reputation_log_user (username)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS report_validations (
@@ -308,26 +333,164 @@ function addXpAndPoints($pdo, $username, $xp, $points, $reason, $referenceType =
         $stmt = $pdo->prepare("INSERT INTO urbanpoint_ledger (username, amount, reason, reference_type, reference_id) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute([$username, $points, $reason, $referenceType, $referenceId]);
     }
-    recalcUserRank($pdo, $username);
 }
 
 function recalcUserRank($pdo, $username)
 {
     ensureGameProfile($pdo, $username);
-    $stmt = $pdo->prepare("SELECT * FROM user_gamification WHERE username = ?");
+    $stmt = $pdo->prepare("SELECT reliability_rank FROM user_gamification WHERE username = ?");
     $stmt->execute([$username]);
-    $g = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$g)
-        return 50;
-    $total = max(1, (int) $g['validations_total']);
-    $accuracy = ((int) $g['validations_correct']) / $total;
-    $participation = min(20, log(max(1, (int) $g['participation_count']) + 1) * 5);
-    $history = min(15, (int) $g['reports_verified'] * 2 + (int) $g['validations_correct']);
-    $penalty = min(35, (int) $g['suspicious_score'] * 3 + (int) $g['validations_incorrect'] * 1.5 + (int) $g['reports_invalidated'] * 5);
-    $rank = clampInt(35 + ($accuracy * 45) + $participation + $history - $penalty);
-    $stmt = $pdo->prepare("UPDATE user_gamification SET reliability_rank = ? WHERE username = ?");
-    $stmt->execute([$rank, $username]);
-    return $rank;
+    $rank = $stmt->fetchColumn();
+    return $rank !== false ? (float) $rank : 50;
+}
+
+function adjustUserReputation($pdo, $username, $delta, $reason, $referenceType = null, $referenceId = null)
+{
+    if (!$username || $username === 'anonimo')
+        return null;
+
+    ensureGameProfile($pdo, $username);
+
+    $stmt = $pdo->prepare("UPDATE user_gamification SET reliability_rank = GREATEST(0, LEAST(100, reliability_rank + ?)) WHERE username = ?");
+    $stmt->execute([(int) $delta, $username]);
+
+    $stmt = $pdo->prepare("SELECT reliability_rank FROM user_gamification WHERE username = ?");
+    $stmt->execute([$username]);
+    $novoRank = (float) $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("INSERT INTO reputation_log (username, delta, reason, reference_type, reference_id, resulting_rank) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$username, (int) $delta, $reason, $referenceType, $referenceId, $novoRank]);
+
+    checkAndApplyPunishment($pdo, $username, $novoRank);
+
+    return $novoRank;
+}
+
+function checkAndApplyPunishment($pdo, $username, $currentRank)
+{
+    $stmt = $pdo->prepare("SELECT punishment_strikes, blocked_until, banned_permanently FROM user_gamification WHERE username = ?");
+    $stmt->execute([$username]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row)
+        return;
+
+    if ((int) $row['banned_permanently'] === 1)
+        return; 
+
+    if ((float) $currentRank >= 25)
+        return; 
+
+    $strikes = (int) $row['punishment_strikes'];
+    $blockedUntil = $row['blocked_until'];
+    $currentlyBlocked = $blockedUntil && strtotime($blockedUntil) > time();
+
+    if ($currentlyBlocked) {
+        return;
+    }
+
+    if ($strikes === 0) {
+        $stmt = $pdo->prepare("UPDATE user_gamification SET punishment_strikes = 1, blocked_until = DATE_ADD(NOW(), INTERVAL 1 MONTH) WHERE username = ?");
+        $stmt->execute([$username]);
+        logFraudEvent($pdo, $username, 'reputation_block_1st', 5, 'Reputação abaixo de 25 — bloqueio de 1 mês aplicado (1ª vez).');
+    } else {
+        $stmt = $pdo->prepare("UPDATE user_gamification SET punishment_strikes = punishment_strikes + 1, banned_permanently = 1 WHERE username = ?");
+        $stmt->execute([$username]);
+        logFraudEvent($pdo, $username, 'reputation_ban_permanent', 10, 'Reputação abaixo de 25 pela 2ª vez — banimento permanente aplicado.');
+    }
+}
+
+function getUserPunishmentStatus($pdo, $username)
+{
+    $status = ['blocked' => false, 'permanent' => false, 'until' => null, 'message' => null];
+    if (!$username || $username === 'anonimo')
+        return $status;
+
+    $profile = ensureGameProfile($pdo, $username);
+    if (!$profile)
+        return $status;
+
+    if ((int) ($profile['banned_permanently'] ?? 0) === 1) {
+        $status['blocked'] = true;
+        $status['permanent'] = true;
+        $status['message'] = 'Sua conta foi banida permanentemente por reincidência de reputação abaixo de 25. Você só pode visualizar o mapa.';
+        return $status;
+    }
+
+    $until = $profile['blocked_until'] ?? null;
+    if ($until && strtotime($until) > time()) {
+        $status['blocked'] = true;
+        $status['until'] = $until;
+        $status['message'] = 'Sua conta está temporariamente bloqueada até ' . date('d/m/Y', strtotime($until)) . ' devido à baixa reputação (abaixo de 25). Você só pode visualizar o mapa, sem publicar, avaliar, comentar ou apoiar relatórios.';
+        return $status;
+    }
+
+    return $status;
+}
+
+function calcularPontosMensaisPorReputacao($reliabilityRank)
+{
+    $r = (float) $reliabilityRank;
+    if ($r >= 100)
+        return 3000;
+    if ($r >= 90)
+        return 2000;
+    if ($r >= 80)
+        return 1500;
+    if ($r >= 70)
+        return 1000;
+    if ($r >= 60)
+        return 500;
+    return 0;
+}
+
+function processMonthlyReputationPayout($pdo, $username)
+{
+    if (!$username || $username === 'anonimo')
+        return;
+
+    $referenceMonth = (int) date('Ym', strtotime('-1 month'));
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM urbanpoint_ledger WHERE username = ? AND reference_type = 'monthly_reputation' AND reference_id = ?");
+    $stmt->execute([$username, $referenceMonth]);
+    if ((int) $stmt->fetchColumn() > 0)
+        return;
+
+    $profile = ensureGameProfile($pdo, $username);
+    $rank = (float) ($profile['reliability_rank'] ?? 50);
+    $points = calcularPontosMensaisPorReputacao($rank);
+
+    if ($points > 0) {
+        addXpAndPoints($pdo, $username, 0, $points, 'Pagamento mensal por reputação (' . round($rank) . '/100)', 'monthly_reputation', $referenceMonth);
+    } else {
+        $stmt = $pdo->prepare("INSERT INTO urbanpoint_ledger (username, amount, reason, reference_type, reference_id) VALUES (?, 0, ?, 'monthly_reputation', ?)");
+        $stmt->execute([$username, 'Pagamento mensal por reputação: sem pontos (reputação abaixo de 60)', $referenceMonth]);
+    }
+}
+
+function removeInvalidatedReport($pdo, $reportId)
+{
+    try {
+        $stmt = $pdo->prepare("SELECT imagem_url FROM relatorios WHERE id = ?");
+        $stmt->execute([$reportId]);
+        $imagePath = $stmt->fetchColumn();
+
+        $pdo->prepare("DELETE FROM comentarios WHERE report_id = ?")->execute([$reportId]);
+        $pdo->prepare("DELETE FROM votos WHERE report_id = ?")->execute([$reportId]);
+        $pdo->prepare("DELETE FROM report_validations WHERE report_id = ?")->execute([$reportId]);
+        $pdo->prepare("DELETE FROM report_owners WHERE report_id = ?")->execute([$reportId]);
+        $pdo->prepare("DELETE FROM relatorios WHERE id = ?")->execute([$reportId]);
+
+        if ($imagePath) {
+            $relativePath = ltrim($imagePath, '/\\');
+            $fullPath = realpath(__DIR__ . DIRECTORY_SEPARATOR . $relativePath);
+            $uploadReal = realpath(UPLOAD_DIR);
+            if ($fullPath && $uploadReal && strpos($fullPath, $uploadReal) === 0 && file_exists($fullPath)) {
+                @unlink($fullPath);
+            }
+        }
+    } catch (Exception $e) {
+        error_log('Erro ao remover relatório reprovado #' . $reportId . ': ' . $e->getMessage());
+    }
 }
 
 function logFraudEvent($pdo, $username, $type, $severity, $details = '')
@@ -340,7 +503,6 @@ function logFraudEvent($pdo, $username, $type, $severity, $details = '')
         ensureGameProfile($pdo, $username);
         $stmt = $pdo->prepare("UPDATE user_gamification SET suspicious_score = suspicious_score + ? WHERE username = ?");
         $stmt->execute([(int) $severity, $username]);
-        recalcUserRank($pdo, $username);
     }
 }
 
@@ -381,10 +543,9 @@ function runAntifraudChecks($pdo, $username, $kind)
         logFraudEvent($pdo, $username, 'duplicate_account_pattern', 3, 'Mesmo IP associado a muitas contas/eventos recentes.');
     }
 }
-
 function recalcReportVeracity($pdo, $reportId)
 {
-    $stmt = $pdo->prepare("SELECT id, user_id, veracidade, status, invalidated_penalties_applied FROM relatorios WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, user_id, veracidade, status, verified_reward_applied FROM relatorios WHERE id = ?");
     $stmt->execute([$reportId]);
     $report = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$report)
@@ -393,53 +554,35 @@ function recalcReportVeracity($pdo, $reportId)
     $stmt = $pdo->prepare("SELECT COALESCE(SUM(effective_delta),0) FROM report_validations WHERE report_id = ?");
     $stmt->execute([$reportId]);
     $veracity = clampInt(50 + (int) $stmt->fetchColumn());
-    $status = $veracity >= 80 ? 'Verificado' : ($veracity <= 20 ? 'Invalidado' : 'Em análise');
+
+    $author = $report['user_id'] ?? null;
+    $temAutor = $author && $author !== 'anonimo';
+
+    if ($veracity < 25) {
+        if ($temAutor) {
+            adjustUserReputation($pdo, $author, -10, 'Relatório reprovado pela comunidade (reputação < 25)', 'report', $reportId);
+            ensureGameProfile($pdo, $author);
+            $pdo->prepare("UPDATE user_gamification SET reports_invalidated = reports_invalidated + 1 WHERE username = ?")->execute([$author]);
+        }
+        removeInvalidatedReport($pdo, $reportId);
+        return ['removed' => true, 'veracidade' => $veracity, 'status' => 'Invalidado'];
+    }
+
+    $status = $veracity > 75 ? 'Verificado' : 'Em análise';
 
     $stmt = $pdo->prepare("UPDATE relatorios SET veracidade = ?, status = ?, data_atualizacao = NOW() WHERE id = ?");
     $stmt->execute([$veracity, $status, $reportId]);
 
-    $stmt = $pdo->prepare("UPDATE report_validations SET was_correct = CASE
-        WHEN ? = 'Verificado' AND validation_type = 'confirm' THEN 1
-        WHEN ? = 'Invalidado' AND validation_type = 'deny' THEN 1
-        WHEN ? IN ('Verificado','Invalidado') THEN 0
-        ELSE NULL END
-        WHERE report_id = ? AND scored_at IS NULL");
-    $stmt->execute([$status, $status, $status, $reportId]);
-
-    if (in_array($status, ['Verificado', 'Invalidado'], true)) {
-        $stmt = $pdo->prepare("SELECT id, username, was_correct FROM report_validations WHERE report_id = ? AND was_correct IS NOT NULL AND scored_at IS NULL");
-        $stmt->execute([$reportId]);
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            ensureGameProfile($pdo, $row['username']);
-            if ((int) $row['was_correct'] === 1) {
-                $pdo->prepare("UPDATE user_gamification SET validations_correct = validations_correct + 1 WHERE username = ?")->execute([$row['username']]);
-                addXpAndPoints($pdo, $row['username'], 20, 8, 'Validação correta', 'report', $reportId);
-            } else {
-                $pdo->prepare("UPDATE user_gamification SET validations_incorrect = validations_incorrect + 1 WHERE username = ?")->execute([$row['username']]);
-                addXpAndPoints($pdo, $row['username'], -8, -3, 'Validação incorreta', 'report', $reportId);
-            }
-            $pdo->prepare("UPDATE report_validations SET scored_at = NOW() WHERE id = ?")->execute([$row['id']]);
-        }
-    }
-
-    if ($status === 'Invalidado' && (int) $report['invalidated_penalties_applied'] === 0) {
-        $author = $report['user_id'] ?? null;
-        if ($author && $author !== 'anonimo') {
-            ensureGameProfile($pdo, $author);
-            $pdo->prepare("UPDATE user_gamification SET reports_invalidated = reports_invalidated + 1 WHERE username = ?")->execute([$author]);
-            addXpAndPoints($pdo, $author, -25, -12, 'Relatório invalidado', 'report', $reportId);
-        }
-        $pdo->prepare("UPDATE relatorios SET invalidated_penalties_applied = 1 WHERE id = ?")->execute([$reportId]);
-    } elseif ($status === 'Verificado') {
-        $author = $report['user_id'] ?? null;
-        if ($author && $author !== 'anonimo') {
+    if ($status === 'Verificado' && (int) $report['verified_reward_applied'] === 0) {
+        if ($temAutor) {
+            adjustUserReputation($pdo, $author, 5, 'Relatório aprovado pelos moderadores (reputação > 75)', 'report', $reportId);
             ensureGameProfile($pdo, $author);
             $pdo->prepare("UPDATE user_gamification SET reports_verified = reports_verified + 1 WHERE username = ?")->execute([$author]);
-            addXpAndPoints($pdo, $author, 35, 15, 'Relatório verificado', 'report', $reportId);
         }
+        $pdo->prepare("UPDATE relatorios SET verified_reward_applied = 1 WHERE id = ?")->execute([$reportId]);
     }
 
-    return ['veracidade' => $veracity, 'status' => $status];
+    return ['removed' => false, 'veracidade' => $veracity, 'status' => $status];
 }
 
 function recalcCommentVeracity($pdo, $commentId)
@@ -452,21 +595,20 @@ function recalcCommentVeracity($pdo, $commentId)
     return $veracity;
 }
 
-/**
- * addVoteHandler
- * Handler para registrar um 'voto' de apoio a um relatório.
- *
- * Entradas esperadas:
- * - GET id (inteiro): id do relatório.
- * - POST user_name (opcional): nome do usuário, fallback para sessão/anon.
- *
- * Saída:
- * - JSON com 'success' e mensagem, ou 'already_voted' quando apropriado.
- */
 function addVoteHandler($pdo)
 {
     $reportId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
-    $userName = getCurrentUser() ?? ($_POST['user_name'] ?? ('anonimo_' . session_id()));
+    $loggedUser = getCurrentUser();
+    $userName = $loggedUser ?? ($_POST['user_name'] ?? ('anonimo_' . session_id()));
+
+    if ($loggedUser) {
+        $punishment = getUserPunishmentStatus($pdo, $loggedUser);
+        if ($punishment['blocked']) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => $punishment['message'], 'punishment' => $punishment]);
+            return;
+        }
+    }
 
     if (!$reportId) {
         http_response_code(400);
@@ -515,6 +657,13 @@ function addCommentHandler($pdo)
         return;
     }
 
+    $punishment = getUserPunishmentStatus($pdo, $userName);
+    if ($punishment['blocked']) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => $punishment['message'], 'punishment' => $punishment]);
+        return;
+    }
+
     if (!$reportId || empty($commentText)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'ID do relatório e texto do comentário são obrigatórios.']);
@@ -543,6 +692,14 @@ function validateReportHandler($pdo)
         echo json_encode(['success' => false, 'message' => 'Você precisa estar logado para validar.']);
         return;
     }
+
+    $punishment = getUserPunishmentStatus($pdo, $username);
+    if ($punishment['blocked']) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => $punishment['message'], 'punishment' => $punishment]);
+        return;
+    }
+
     $reportId = filter_input(INPUT_POST, 'report_id', FILTER_VALIDATE_INT);
     $type = $_POST['validation_type'] ?? '';
     $comment = trim($_POST['comment_text'] ?? '');
@@ -556,8 +713,7 @@ function validateReportHandler($pdo)
 
     try {
         runAntifraudChecks($pdo, $username, 'validation');
-        $profile = ensureGameProfile($pdo, $username);
-        $weight = getValidationWeight((float) $profile['reliability_rank']);
+        ensureGameProfile($pdo, $username);
         $stmt = $pdo->prepare("SELECT latitude, longitude, user_id FROM relatorios WHERE id = ?");
         $stmt->execute([$reportId]);
         $report = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -572,9 +728,12 @@ function validateReportHandler($pdo)
             echo json_encode(['success' => false, 'message' => 'Você não pode validar o próprio relatório.']);
             return;
         }
-        $distance = ($lat !== false && $lng !== false) ? haversineMeters($report['latitude'], $report['longitude'], $lat, $lng) : null;
-        $geoBonus = ($distance !== null && $distance <= 60) ? 15 : 0;
-        $delta = ($type === 'confirm' ? 1 : -1) * ($weight + $geoBonus);
+        $weight = 1;
+        $geoBonus = 0;
+        $delta = ($type === 'confirm') ? 1 : -1;
+        $distance = ($lat !== false && $lng !== false && $lat !== null && $lng !== null)
+            ? haversineMeters($report['latitude'], $report['longitude'], $lat, $lng)
+            : null;
 
         $stmtExists = $pdo->prepare("SELECT COUNT(*) FROM report_validations WHERE report_id = ? AND username = ?");
         $stmtExists->execute([$reportId, $username]);
@@ -591,8 +750,21 @@ function validateReportHandler($pdo)
         if ($isNewValidation) {
             $pdo->prepare("UPDATE user_gamification SET validations_total = validations_total + 1 WHERE username = ?")->execute([$username]);
         }
-        addXpAndPoints($pdo, $username, 12, 4, 'Validação registrada', 'report', $reportId);
+        addXpAndPoints($pdo, $username, 8, 2, 'Validação registrada', 'report', $reportId);
+
         $result = recalcReportVeracity($pdo, $reportId);
+
+        if ($result && !empty($result['removed'])) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'Sua avaliação foi registrada. A reputação deste relatório caiu abaixo de 25 e ele foi reprovado e removido da plataforma.',
+                'removed' => true,
+                'report_id' => $reportId,
+                'weight' => $weight,
+                'geo_bonus' => $geoBonus
+            ]);
+            return;
+        }
 
         echo json_encode([
             'success' => true,
@@ -616,6 +788,14 @@ function validateCommentHandler($pdo)
         echo json_encode(['success' => false, 'message' => 'Você precisa estar logado para validar comentários.']);
         return;
     }
+
+    $punishment = getUserPunishmentStatus($pdo, $username);
+    if ($punishment['blocked']) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => $punishment['message'], 'punishment' => $punishment]);
+        return;
+    }
+
     $commentId = filter_input(INPUT_POST, 'comment_id', FILTER_VALIDATE_INT);
     $type = $_POST['validation_type'] ?? '';
     if (!$commentId || !in_array($type, ['confirm', 'deny'], true)) {
@@ -649,14 +829,6 @@ function validateCommentHandler($pdo)
     }
 }
 
-/**
- * registerUserHandler
- * Registra um usuário no banco de dados `users`.
- *
- * Observações:
- * - Armazena hash de senha com `password_hash`.
- * - A tabela de usuários é criada automaticamente em `ensureGamificationSchema`.
- */
 
 function registerUserHandler($pdo)
 {
@@ -773,11 +945,6 @@ function getCurrentUser()
     return $_SESSION['username'] ?? null;
 }
 
-/**
- * loadOwner
- * Busca o proprietário (username + data de reivindicação) de um relatório
- * na tabela `report_owners`. Substitui o antigo `report_owners.json`.
- */
 function loadOwner($pdo, $report_id)
 {
     $stmt = $pdo->prepare("SELECT username, claimed_at FROM report_owners WHERE report_id = ?");
@@ -833,21 +1000,7 @@ function getMyReportsHandler($pdo)
 
 function editReportHandler($pdo)
 {
-    /**
-     * editReportHandler
-     * Atualiza campos editáveis de um relatório existente e opcionalmente substitui a imagem.
-     *
-     * Entradas esperadas (POST):
-     * - id (int) - id do relatório a ser editado (obrigatório)
-     * - titulo, descricao, status, prioridade, endereco (opcionais)
-     * - imagem_upload (file) - arquivo enviado multipart/form-data (opcional)
-     *
-     * Regras de segurança:
-     * - Verifica se o usuário autenticado é proprietário do relatório via `userOwnsReport()`.
-     * - Valida extensões de imagem permitidas (jpg, jpeg, png, gif).
-     * - Salva novo arquivo em `uploads/` com nome único e tenta remover a imagem anterior
-     *   somente se estiver dentro do diretório `uploads/` (uso de realpath para segurança).
-     */
+
     $username = getCurrentUser();
     if (!$username) {
         http_response_code(401);
@@ -893,11 +1046,9 @@ function editReportHandler($pdo)
         $sets[] = 'endereco = ?';
         $params[] = $endereco;
     }
-    // Handle image upload for edit (optional)
     $imagem_path = null;
     if (isset($_FILES['imagem_upload']) && is_array($_FILES['imagem_upload']) && isset($_FILES['imagem_upload']['error'])) {
         if ($_FILES['imagem_upload']['error'] === UPLOAD_ERR_NO_FILE) {
-            // No file uploaded - skip image update
         } elseif ($_FILES['imagem_upload']['error'] === UPLOAD_ERR_OK) {
             $file = $_FILES['imagem_upload'];
             $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
@@ -928,7 +1079,6 @@ function editReportHandler($pdo)
 
             $imagem_path = 'uploads/' . $unique_filename;
 
-            // Remove previous image file (if any) for this report, safely
             try {
                 $stmtPrev = $pdo->prepare("SELECT imagem_url FROM relatorios WHERE id = ?");
                 $stmtPrev->execute([$id]);
@@ -941,9 +1091,7 @@ function editReportHandler($pdo)
                         @unlink($prevFull);
                     }
                 }
-            } catch (Exception $e) {
-                // non-fatal: continue
-            }
+            } catch (Exception $e) {}
 
             $sets[] = 'imagem_url = ?';
             $params[] = $imagem_path;
@@ -1070,7 +1218,15 @@ function reportProblem($pdo)
 
     $user_id = getCurrentUser() ?? 'anonimo';
 
-    // Debug simples
+    if ($user_id !== 'anonimo') {
+        $punishment = getUserPunishmentStatus($pdo, $user_id);
+        if ($punishment['blocked']) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => $punishment['message'], 'punishment' => $punishment]);
+            return;
+        }
+    }
+
     error_log("Report: categoria=[" . ($tipo ?? 'NULL') . "] titulo=[" . substr($titulo, 0, 20) . "]");
 
     if ($lat === false || $lng === false || empty($tipo) || empty($descricao) || empty($titulo) || empty($prioridade)) {
@@ -1300,12 +1456,6 @@ function getMonthlyTier($profile)
     return 'Bronze';
 }
 
-/**
- * getMonthlyTierFromPoints
- * Mesma ideia do getMonthlyTier, mas usando pontos ganhos DE
- * VERDADE dentro do mês atual (não o contador monthly_score, que
- * nunca é resetado e por isso não representa "este mês").
- */
 function getMonthlyTierFromPoints($pontos_mes, $reliability_rank)
 {
     if ($pontos_mes >= 250 && $reliability_rank >= 75)
@@ -1315,20 +1465,6 @@ function getMonthlyTierFromPoints($pontos_mes, $reliability_rank)
     return 'Bronze';
 }
 
-/**
- * monthlyRankingHandler
- * Ranking do mês corrente (estilo "liga" do Duolingo), calculado
- * direto das tabelas com timestamp (urbanpoint_ledger, relatorios,
- * report_validations) — não depende de nenhum contador que precise
- * ser resetado manualmente todo mês.
- *
- * Devolve, para cada usuário com alguma atividade no mês atual:
- *   - pontos_mes         (soma de pontos ganhos desde o dia 1)
- *   - relatorios_mes     (relatórios criados desde o dia 1)
- *   - validacoes_mes     (validações corretas desde o dia 1)
- * O front-end decide qual dessas 3 colunas usar pra ordenar,
- * dependendo de qual aba/categoria a pessoa escolher.
- */
 function monthlyRankingHandler($pdo)
 {
     $inicioMes = date('Y-m-01 00:00:00');
@@ -1399,12 +1535,18 @@ function getUserDashboardHandler($pdo)
         echo json_encode(['success' => false, 'message' => 'Autenticação necessária.']);
         return;
     }
+
+    processMonthlyReputationPayout($pdo, $username);
+
     $profile = ensureGameProfile($pdo, $username);
     $level = max(1, (int) $profile['level_num']);
     $currentLevelXp = ($level - 1) * ($level - 1) * 100;
     $nextLevelXp = $level * $level * 100;
     $xp = (int) $profile['xp'];
     $progress = $nextLevelXp > $currentLevelXp ? clampInt((($xp - $currentLevelXp) / ($nextLevelXp - $currentLevelXp)) * 100) : 0;
+    $reputationAtual = (float) $profile['reliability_rank'];
+    $punishment = getUserPunishmentStatus($pdo, $username);
+
     echo json_encode([
         'success' => true,
         'username' => $username,
@@ -1414,7 +1556,7 @@ function getUserDashboardHandler($pdo)
             'xp_progress' => $progress,
             'next_level_xp' => $nextLevelXp,
             'urban_points' => (int) $profile['urban_points'],
-            'reliability_rank' => (float) $profile['reliability_rank'],
+            'reliability_rank' => $reputationAtual,
             'monthly_tier' => getMonthlyTier($profile),
             'participation_count' => (int) $profile['participation_count'],
             'validations_total' => (int) $profile['validations_total'],
@@ -1424,7 +1566,12 @@ function getUserDashboardHandler($pdo)
             'reports_verified' => (int) $profile['reports_verified'],
             'reports_invalidated' => (int) $profile['reports_invalidated'],
             'suspicious_score' => (int) $profile['suspicious_score']
-        ]
+        ],
+        'reputacao' => [
+            'valor' => $reputationAtual,
+            'pontos_mes_estimados' => calcularPontosMensaisPorReputacao($reputationAtual)
+        ],
+        'punishment' => $punishment
     ]);
 }
 
@@ -1574,16 +1721,6 @@ function antifraudSummaryHandler($pdo)
     echo json_encode(['success' => true, 'events' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
 }
 
-/**
- * weeklyCheckinHandler
- * Mostra os 7 dias da semana atual (segunda a domingo) e marca como
- * "feito" apenas o dia em que o usuário REALMENTE criou pelo menos
- * um relatório — nada de check-in decorativo/fake.
- *
- * Se a semana inteira for completa (7/7), concede um bônus único
- * (controlado via urbanpoint_ledger com reference_type='weekly_streak'
- * e reference_id = ano+semana ISO, então nunca é concedido 2x).
- */
 function weeklyCheckinHandler($pdo)
 {
     $username = getCurrentUser();
@@ -1594,7 +1731,7 @@ function weeklyCheckinHandler($pdo)
     }
 
     $hoje = new DateTime('now');
-    $diaSemanaISO = (int) $hoje->format('N'); // 1=segunda ... 7=domingo
+    $diaSemanaISO = (int) $hoje->format('N');
     $segunda = (clone $hoje)->modify('-' . ($diaSemanaISO - 1) . ' days')->setTime(0, 0, 0);
     $hojeStr = $hoje->format('Y-m-d');
     $nomesDias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
@@ -1639,14 +1776,6 @@ function weeklyCheckinHandler($pdo)
     ]);
 }
 
-/**
- * dailyChallengeHandler
- * 3 tarefas do dia: reportar, validar e comentar. Só marca como
- * concluída se a ação realmente aconteceu HOJE (consulta direta nas
- * tabelas com timestamp). Ao completar as 3 no mesmo dia, concede um
- * bônus único (idempotente via reference_type='daily_challenge' +
- * reference_id = data de hoje em formato numérico AAAAMMDD).
- */
 function dailyChallengeHandler($pdo)
 {
     $username = getCurrentUser();
@@ -1795,9 +1924,21 @@ if (basename(__FILE__) === basename($_SERVER['PHP_SELF'])) {
             break;
         case 'current_user':
             $username = getCurrentUser();
-            if ($username)
+            $punishmentStatus = null;
+            $reputationAtual = null;
+            if ($username) {
                 ensureGameProfile($pdo, $username);
-            echo json_encode(['username' => $username]);
+                processMonthlyReputationPayout($pdo, $username);
+                $punishmentStatus = getUserPunishmentStatus($pdo, $username);
+                $stmtRep = $pdo->prepare("SELECT reliability_rank FROM user_gamification WHERE username = ?");
+                $stmtRep->execute([$username]);
+                $reputationAtual = round((float) $stmtRep->fetchColumn(), 1);
+            }
+            echo json_encode([
+                'username' => $username,
+                'reputation' => $reputationAtual,
+                'punishment' => $punishmentStatus
+            ]);
             break;
 
         case 'get_stats':
