@@ -184,7 +184,7 @@ function ensureGamificationSchema($pdo)
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
         username VARCHAR(120) PRIMARY KEY,
-        password_hash VARCHAR(255) NOT NULL,
+        senha VARCHAR(255) NOT NULL,
         email VARCHAR(180) DEFAULT NULL,
         auth_source VARCHAR(50) NOT NULL DEFAULT 'local',
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -262,7 +262,7 @@ function fetchDbUser($pdo, $username)
 {
     if (!$username)
         return null;
-    $stmt = $pdo->prepare("SELECT username, password_hash, email, auth_source FROM users WHERE username = ?");
+    $stmt = $pdo->prepare("SELECT username, senha, email, auth_source FROM users WHERE username = ?");
     $stmt->execute([$username]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
@@ -687,7 +687,7 @@ function registerUserHandler($pdo)
     }
 
     $hash = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $pdo->prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO users (username, senha) VALUES (?, ?)");
     $stmt->execute([$username, $hash]);
     ensureGameProfile($pdo, $username);
     session_regenerate_id(true);
@@ -700,7 +700,7 @@ function loginUserHandler($pdo)
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     $user = fetchDbUser($pdo, $username);
-    if (!$user || !password_verify($password, $user['password_hash'])) {
+    if (!$user || !password_verify($password, $user['senha'])) {
         http_response_code(401);
         echo json_encode(['success' => false, 'message' => 'Usuário ou senha inválidos.']);
         return;
@@ -743,13 +743,13 @@ function changePasswordHandler($pdo)
     }
 
     $user = fetchDbUser($pdo, $username);
-    if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
+    if (!$user || !password_verify($currentPassword, $user['senha'])) {
         http_response_code(401);
         echo json_encode(['success' => false, 'message' => 'Senha atual incorreta.']);
         return;
     }
 
-    $stmt = $pdo->prepare("UPDATE users SET password_hash = ?, updated_at = NOW() WHERE username = ?");
+    $stmt = $pdo->prepare("UPDATE users SET senha = ?, updated_at = NOW() WHERE username = ?");
     $stmt->execute([password_hash($newPassword, PASSWORD_DEFAULT), $username]);
     echo json_encode(['success' => true, 'message' => 'Senha alterada com sucesso.']);
 }

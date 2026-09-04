@@ -4,7 +4,12 @@ require_once 'api.php';
 
 $pdo = connectDB();
 
-$username = "Miguel";
+$username = getCurrentUser();
+
+if (!$username) {
+    header('Location: usuario.html');
+    exit;
+}
 
 $stmt = $pdo->prepare("
     SELECT reliability_rank, urban_points
@@ -16,8 +21,8 @@ $stmt->execute([$username]);
 
 $profile = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$ranking = $profile['reliability_rank'];
-$urbanPoints = $profile['urban_points'];
+$ranking = $profile['reliability_rank'] ?? 50;
+$urbanPoints = $profile['urban_points'] ?? 0;
 
 if ($ranking >= 85) {
     $classe = "Elite";
