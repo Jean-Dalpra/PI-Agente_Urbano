@@ -85,7 +85,6 @@
         }
 
 
-        /* Ícone de alerta em triângulo amarelo com tooltip de categorias */
         .legend-alert-icon {
             position: relative;
             display: inline-flex;
@@ -195,21 +194,9 @@
         }
 
         .leaflet-marker-pane .leaflet-marker-icon {
-            /* Sem "transform" aqui de propósito — é a propriedade que o
-               próprio Leaflet usa pra reposicionar o pin a cada frame
-               durante o flyTo (que já anima manualmente, quadro a
-               quadro). Transicionar ela faria o pin ficar "atrasado"
-               da posição real durante a viagem. Mantemos só
-               opacity/filter, usados pelos estados .dimmed/.highlighted. */
             transition: opacity 0.25s ease, filter 0.2s ease;
             will-change: transform;
         }
-
-        /* Zoom simples (scroll, botões +/-, duplo clique) é diferente
-           do flyTo: o Leaflet faz UM salto de escala só, usando a
-           classe .leaflet-zoom-anim + transição CSS pra suavizar esse
-           salto — por isso, e só nesse caso, o transform PRECISA de
-           transição (senão o pin muda de tamanho de forma brusca). */
         .leaflet-zoom-anim .leaflet-marker-pane .leaflet-marker-icon {
             transition: opacity 0.25s ease, filter 0.2s ease, transform 0.25s cubic-bezier(0, 0, 0.25, 1);
         }
@@ -224,12 +211,6 @@
             z-index: 999;
         }
 
-        /* Evitar "quadrados feios" enquanto um tile ainda não carregou:
-           em vez de transparente (que fica branco/cinza chapado em
-           cima do fundo da página), usa uma cor neutra parecida com
-           o tom de "terra" do próprio OpenStreetMap — assim, mesmo
-           os tiles que ainda não chegaram, disfarçam bem mais.
-           O fade-in também fica um pouco mais longo/suave. */
         .leaflet-container .leaflet-tile {
             background-color: #f2efe9;
             transition: opacity 0.35s ease;
@@ -248,7 +229,6 @@
             background-color: transparent !important;
         }
 
-        /* botão do VLibras sem fundo, ícone no tom azul */
         [vw-access-button] {
             background: transparent !important;
             border-color: transparent !important;
@@ -259,14 +239,11 @@
             border: none !important;
         }
 
-        /* coloração do ícone */
         [vw-access-button] .access-button img,
         [vw-access-button] .access-button svg {
             filter: brightness(0) saturate(100%) invert(31%) sepia(88%) saturate(2384%) hue-rotate(197deg) brightness(95%) contrast(101%);
         }
 
-        /* posiciona o botão do UserWay logo abaixo do VLibras para não colidirem */
-        /* força o UserWay a ficar próximo ao VLibras (meio da tela, levemente abaixo) */
         #userwayAccessibilityIcon,
         #userwayAccessibilityIcon>div,
         .userway_widget,
@@ -285,7 +262,6 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
         }
 
-        /* mantém a logo original (brancos intactos) sem aplicar filtro de cor */
         #userwayAccessibilityIcon img,
         #userwayAccessibilityIcon svg,
         .userway-widget-button img,
@@ -296,7 +272,6 @@
             mix-blend-mode: normal !important;
         }
 
-        /* Tema escuro do mapa: mesmas cores base usadas em index.html */
         body.dark-mode {
             --map-main-bg-color: #0b1220;
             --map-surface: #111827;
@@ -554,26 +529,16 @@
             scrollbar-color: var(--map-primary) #0f172a;
         }
 
-        /* ============================================================
-           MODO 3D — Container Mapbox GL JS
-           ============================================================ */
-
-        /*
-         * #map3d: posicionado absolutamente sobre #map, ocupa exatamente
-         * o mesmo espaço que o mapa Leaflet. Oculto por padrão.
-         * O z-index 2 garante que sobrepõe #map (z-index implícito).
-         */
         #map3d {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            display: none;   /* oculto até o usuário ativar o modo 3D */
+            display: none;   
             z-index: 2;
         }
 
-        /* Botão Modo 3D — estado ativo (modo 3D ligado) */
         #modo-3d-btn.ativo-3d {
             background: var(--map-primary) !important;
             color: #fff !important;
@@ -581,20 +546,17 @@
             font-weight: 700 !important;
         }
 
-        /* Botão Modo 3D — estado carregando */
         #modo-3d-btn.carregando-3d {
             opacity: 0.65;
             cursor: wait !important;
         }
 
-        /* Dark mode: texto escuro sobre fundo primário */
         body.dark-mode #modo-3d-btn.ativo-3d {
             background: var(--map-primary) !important;
             color: #0b1220 !important;
             border-color: var(--map-primary) !important;
         }
 
-        /* Hover no botão ativo */
         #modo-3d-btn.ativo-3d:hover {
             opacity: 0.88;
         }
@@ -1299,6 +1261,46 @@
         </div>
     </div>
 
+    <!-- ═══════════════════════════════════════════════════════════════
+         Aviso de reputação/punição — exibido antes de publicar um novo
+         relatório (a menos que o usuário marque "não mostrar novamente").
+         A aplicação real das regras acontece no servidor (api.php); este
+         modal é apenas o aviso educativo pedido pelo cliente.
+    ═══════════════════════════════════════════════════════════════ -->
+    <div id="reputation-warning-modal" class="modal hidden">
+        <div class="modal-content" style="max-width:540px;">
+            <span class="close-btn" id="reputation-warning-close">&times;</span>
+            <h2><i class="fas fa-shield-halved" style="color:#f59e0b;"></i> Antes de publicar</h2>
+            <div style="margin-top:12px; line-height:1.65; color: var(--dark-text, #343a40);">
+                <p>Todo relatório começa com <strong>50 pontos de reputação</strong> (escala 0–100). A comunidade confirma ou nega o problema relatado:</p>
+                <ul style="margin: 6px 0 12px 20px; padding:0;">
+                    <li>Cada confirmação: <strong>+1</strong></li>
+                    <li>Cada negação: <strong>−1</strong></li>
+                    <li>Reputação abaixo de <strong>25</strong>: o relatório é <strong>reprovado e removido</strong> da plataforma instantaneamente</li>
+                    <li>Reputação acima de <strong>75</strong>: o relatório é <strong>aprovado</strong> pelos moderadores</li>
+                </ul>
+                <p>Isso também afeta a <strong>sua reputação como usuário</strong> (começa em 50):</p>
+                <ul style="margin: 6px 0 12px 20px; padding:0;">
+                    <li>Relatório aprovado pelos moderadores: <strong>+5</strong> de reputação</li>
+                    <li>Relatório reprovado: <strong>−10</strong> de reputação</li>
+                </ul>
+                <p>Se sua reputação de usuário cair abaixo de 25:</p>
+                <ul style="margin: 6px 0 0 20px; padding:0;">
+                    <li><strong>1ª vez:</strong> conta bloqueada por 1 mês (só é possível visualizar o mapa, sem publicar, avaliar, comentar ou apoiar relatórios)</li>
+                    <li><strong>2ª vez:</strong> banimento <strong>permanente</strong></li>
+                </ul>
+            </div>
+            <label style="display:flex; align-items:center; gap:8px; margin-top:18px; font-weight:600; cursor:pointer;">
+                <input type="checkbox" id="reputation-warning-dont-show" style="width:16px; height:16px; margin:0;">
+                Não mostrar este aviso novamente
+            </label>
+            <div class="form-buttons" style="margin-top:18px;">
+                <button type="button" class="cancel-btn" id="reputation-warning-cancel">Cancelar</button>
+                <button type="button" class="submit-btn" id="reputation-warning-continue">Entendi, continuar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- UI message modal (replaces alert()): caixa modal para mensagens informativas -->
     <div id="ui-message-modal" class="modal hidden" aria-hidden="true">
         <div class="modal-content" style="max-width:520px;">
@@ -1561,6 +1563,128 @@
     </script>
 
     <script src="script.js"></script>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         MÓDULO: Gameficação — aviso de reputação + bloqueio de publicação
+         Intercepta o botão "+ Novo Relatório" com capture:true +
+         stopImmediatePropagation (mesmo padrão já usado pelos módulos de
+         Modo 3D / Rotas mais abaixo neste arquivo) para:
+           1. Consultar a reputação/punição do usuário no servidor
+              (fonte da verdade — o bloqueio real acontece em api.php).
+           2. Se a conta estiver bloqueada/banida, mostrar o motivo e
+              impedir a abertura do formulário.
+           3. Caso contrário, mostrar o aviso educativo sobre as regras
+              de reputação (uma vez, a menos que o usuário marque
+              "não mostrar novamente") antes de abrir o formulário.
+    ═══════════════════════════════════════════════════════════════ -->
+    <script>
+    (function () {
+        'use strict';
+
+        var STORAGE_KEY = 'au_hide_reputation_warning';
+
+        var novoRelatorioBtn = document.getElementById('novo-relatorio-btn');
+        var warningModal = document.getElementById('reputation-warning-modal');
+        var warningCheckbox = document.getElementById('reputation-warning-dont-show');
+        var warningContinueBtn = document.getElementById('reputation-warning-continue');
+        var warningCancelBtn = document.getElementById('reputation-warning-cancel');
+        var warningCloseBtn = document.getElementById('reputation-warning-close');
+
+        function naoMostrarNovamente() {
+            try { return localStorage.getItem(STORAGE_KEY) === '1'; } catch (_) { return false; }
+        }
+
+        function abrirAviso() {
+            if (!warningModal) return;
+            warningModal.classList.remove('hidden');
+            warningModal.style.display = 'flex';
+        }
+
+        function fecharAviso() {
+            if (!warningModal) return;
+            warningModal.classList.add('hidden');
+            warningModal.style.display = 'none';
+        }
+
+        function abrirFormularioRelatorio() {
+            if (typeof window.openReportModal === 'function') {
+                window.openReportModal();
+            }
+        }
+
+        function prosseguirComAviso() {
+            if (naoMostrarNovamente()) {
+                abrirFormularioRelatorio();
+            } else {
+                abrirAviso();
+            }
+        }
+
+        function mostrarBloqueio(mensagem) {
+            var texto = mensagem || 'Sua conta está com restrições no momento. Você só pode visualizar o mapa.';
+            if (typeof window.showMessage === 'function') {
+                window.showMessage('Conta com restrição', '<p>' + texto + '</p>');
+            } else {
+                alert(texto);
+            }
+        }
+
+        if (warningContinueBtn) {
+            warningContinueBtn.addEventListener('click', function () {
+                if (warningCheckbox && warningCheckbox.checked) {
+                    try { localStorage.setItem(STORAGE_KEY, '1'); } catch (_) {}
+                }
+                fecharAviso();
+                abrirFormularioRelatorio();
+            });
+        }
+        if (warningCancelBtn) warningCancelBtn.addEventListener('click', fecharAviso);
+        if (warningCloseBtn) warningCloseBtn.addEventListener('click', fecharAviso);
+        if (warningModal) {
+            warningModal.addEventListener('click', function (ev) {
+                if (ev.target === warningModal) fecharAviso();
+            });
+        }
+
+        if (novoRelatorioBtn) {
+            novoRelatorioBtn.addEventListener('click', function (ev) {
+                ev.preventDefault();
+                // Impede que o listener padrão do script.js (que abriria o
+                // formulário direto) também dispare para este clique.
+                ev.stopImmediatePropagation();
+
+                fetch('api.php?action=current_user')
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.punishment && data.punishment.blocked) {
+                            mostrarBloqueio(data.punishment.message);
+                            return;
+                        }
+                        prosseguirComAviso();
+                    })
+                    .catch(function () {
+                        // Falha de rede ao checar: não trava o usuário,
+                        // apenas segue o fluxo normal com o aviso educativo.
+                        prosseguirComAviso();
+                    });
+            }, true); // capture:true — roda antes do listener em script.js
+        }
+
+        // Banner de aviso ao carregar a página, caso a conta já esteja
+        // bloqueada/banida (para o usuário entender antes mesmo de clicar).
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('api.php?action=current_user')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.punishment && data.punishment.blocked && typeof window.showToast === 'function') {
+                        window.showToast('⚠️ ' + (data.punishment.message || 'Sua conta está com restrições.'), 'error', 7000);
+                    }
+                })
+                .catch(function () {});
+        });
+    })();
+    </script>
+
     <script>
         (function initSidebarFallback() {
             const menuToggle = document.getElementById('menu-toggle');

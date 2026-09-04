@@ -1153,8 +1153,6 @@
                     }
                 }
             });
-
-            // Fecha o modal de auth ao clicar fora
             if (authModal) {
                 authModal.addEventListener('click', (e) => {
                     if (e.target === authModal) {
@@ -1330,6 +1328,7 @@
                             <div>
                                 <strong>Veracidade do relatório</strong>
                                 <p style="margin:4px 0 0;color:var(--secondary-color);">Status automático: <span id="auto-status">${problem.status}</span></p>
+                                <p style="margin:4px 0 0;color:var(--secondary-color);font-size:0.85em;">Cada confirmação soma +1, cada negação soma -1. Acima de 75: aprovado pelos moderadores. Abaixo de 25: reprovado e removido da plataforma.</p>
                             </div>
                             <span class="trust-score" id="trust-score">${veracidade}/100</span>
                         </div>
@@ -1450,12 +1449,18 @@
                                 alert(result.message || 'Não foi possível validar.');
                                 return;
                             }
+                            if (result.removed) {
+                                alert(result.message || 'Relatório removido: reputação abaixo de 25.');
+                                window.location.href = 'relatorios.html';
+                                return;
+                            }
+
                             const report = result.report || {};
                             const value = Number(report.veracidade ?? 50);
                             if (trustScore) trustScore.textContent = `${value}/100`;
                             if (trustBarFill) trustBarFill.style.width = `${value}%`;
                             if (autoStatus) autoStatus.textContent = report.status || 'Em análise';
-                            alert(`${result.message} Peso ${result.weight}${result.geo_bonus ? ` + bônus geográfico ${result.geo_bonus}` : ''}.`);
+                            alert(result.message || 'Validação registrada.');
                         })
                         .catch(error => {
                             console.error(error);
