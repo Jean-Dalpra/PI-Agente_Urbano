@@ -1,6 +1,19 @@
 /**
  * assistente.js — Coordenador principal do Assistente IA
  * Agente Urbano · Assistente IA
+ *
+ * Depende de (nesta ordem):
+ *   api.js   → window.AgentUrbanAPI
+ *   chat.js  → window.AgenteUrbanoChat
+ *   ui.js    → window.AgenteUrbanoChatUI
+ *
+ * Responsabilidades:
+ *   - Inicializar todos os módulos em sequência
+ *   - Orquestrar o fluxo completo de envio/recebimento
+ *   - Conectar eventos da UI ao backend de IA
+ *   - Garantir idempotência (inicializado apenas uma vez)
+ *   - Expor API pública para uso externo (window.AgenteUrbano)
+ *   - 
  */
 (function () {
     'use strict';
