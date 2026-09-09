@@ -13,6 +13,7 @@
  *   - Conectar eventos da UI ao backend de IA
  *   - Garantir idempotência (inicializado apenas uma vez)
  *   - Expor API pública para uso externo (window.AgenteUrbano)
+ *   - 
  */
 (function () {
     'use strict';
