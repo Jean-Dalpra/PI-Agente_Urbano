@@ -20,6 +20,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="icon" href="./imagens/urbanoide.png" type="image/png">
@@ -85,6 +86,7 @@
         }
 
 
+<<<<<<< Updated upstream
         .legend-alert-icon {
             position: relative;
             display: inline-flex;
@@ -95,28 +97,76 @@
             left: 25px;
             height: 40px;
         }
+=======
+        /* Ícone de alerta em triângulo amarelo com tooltip de categorias */
+    .legend-alert-icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    width: 40px;
+    left: 25px;
+    height: 40px;
+}
+>>>>>>> Stashed changes
 
-        .legend-alert-triangle {
-            width: 0;
-            height: 0;
-            border-left: 20px solid transparent;
-            border-right: 20px solid transparent;
-            border-bottom: 35px solid #FFC107;
-            position: relative;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-        }
+.legend-alert-triangle {
+    width: 0;
+    height: 0;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-bottom: 35px solid #FFC107;
+    position: relative;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
 
-        .legend-alert-triangle::after {
-            content: '!';
-            position: absolute;
-            top: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 24px;
-            font-weight: bold;
-            color: #000;
-            line-height: 1;
-        }
+.legend-alert-icon.pin-open .legend-alert-triangle {
+    border-bottom-color: #D49A00;
+}
+
+/* LINHA */
+.legend-alert-icon::after {
+    content: '';
+    position: absolute;
+    width: 40px;
+    height: 3px;
+    background: #FFC107;
+    left: 0;
+    bottom: -2px;
+    border-radius: 2px;
+    transform: scaleX(0);
+    transition: transform 0.25s ease;
+}
+
+/* Exclamação */
+.legend-alert-triangle::after {
+    content: '!';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 24px;
+    font-weight: bold;
+    color: #000;
+    line-height: 1;
+}
+
+/* HOVER */
+.legend-alert-icon:hover::after {
+    transform: scaleX(1);
+}
+.legend-alert-icon.pin-open::after {
+    content: '';
+    position: absolute;
+    width: 40px;
+    height: 3px;
+    left: 0;
+    bottom: -2px;
+    border-radius: 2px;
+    background: #D49A00;
+    transform: scaleX(1);
+}
 
         .legend-categories-tooltip {
             display: grid;
@@ -212,8 +262,8 @@
         }
 
         .leaflet-container .leaflet-tile {
-            background-color: #f2efe9;
-            transition: opacity 0.35s ease;
+            background-color: #82c9ee;
+            transition: none;
         }
 
         body.dark-mode .leaflet-container .leaflet-tile {
@@ -252,8 +302,8 @@
             position: fixed !important;
             right: -14px !important;
             left: auto !important;
-            top: auto !important;
-            bottom: calc(50% - 40px) !important;
+            top: calc(50% + 30px) !important;
+            bottom: auto !important;
             transform: none !important;
             background: #007bff !important;
             border: none !important;
@@ -531,12 +581,65 @@
 
         #map3d {
             position: absolute;
+<<<<<<< Updated upstream
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             display: none;   
+=======
+            inset: 0;
+            width: auto;
+            height: auto;
+            display: none;   /* oculto até o usuário ativar o modo 3D */
+>>>>>>> Stashed changes
             z-index: 2;
+            overflow: hidden;
+            box-sizing: border-box;
+            background: #82c9ee;
+        }
+
+        /* Mantém todas as camadas do Mapbox presas ao mesmo retângulo. */
+        #map3d.mapboxgl-map,
+        #map3d .mapboxgl-map,
+        #map3d .mapboxgl-canvas-container {
+            position: absolute !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        #map3d .mapboxgl-canvas {
+            position: absolute !important;
+            inset: 0 !important;
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* O mapa 3D não depende da largura calculada pelo flex layout do
+           main. Isso evita que um espaço lateral do layout vire uma faixa
+           branca ou deixe uma cópia parcial do mapa à direita. */
+        body.map-page #map3d {
+            position: fixed !important;
+            top: 12vh !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            width: auto !important;
+            height: auto !important;
+        }
+
+        @media (max-width: 1024px) {
+            body.map-page #map3d { top: 64px !important; }
+        }
+
+        @media (max-width: 768px) {
+            body.map-page #map3d { top: 60px !important; }
+        }
+
+        @media (max-width: 480px) {
+            body.map-page #map3d { top: 56px !important; }
         }
 
         #modo-3d-btn.ativo-3d {
@@ -838,7 +941,7 @@
 
         .au-route-info-panel {
             position: fixed;
-            bottom: clamp(70px, 10vh, 90px);
+            bottom: clamp(70px, 110vh, 90px);
             left: clamp(10px, 1vw, 20px);
             z-index: 1000;
             background: #fff;
@@ -1231,6 +1334,10 @@
                             <i class="fas fa-upload"></i> Selecionar Arquivo
                         </button>
                     </div>
+                    <div id="edit-image-preview" class="edit-image-preview" hidden>
+                        <img id="edit-image-preview-img" src="" alt="Imagem atual do relatório">
+                        <span>Imagem atual. Selecione outro arquivo para substituir.</span>
+                    </div>
                 </div>
 
                 <label for="endereco">Localização</label>
@@ -1238,8 +1345,11 @@
                     <input type="text" id="endereco" name="endereco" placeholder="Endereço aproximado" required
                         readonly>
                     <button type="button" id="select-on-map-btn" class="secondary-btn"><i
-                            class="fas fa-map-marker-alt"></i> Selecionar no Mapa</button>
+                        class="fas fa-map-marker-alt"></i> Selecionar no Mapa</button>
                 </div>
+                <small id="edit-location-note" class="edit-location-note" hidden>
+                    <i class="fas fa-lock"></i> A localização não pode ser alterada durante a edição.
+                </small>
 
                 <input type="hidden" id="form-latitude" name="latitude">
                 <input type="hidden" id="form-longitude" name="longitude">
@@ -1257,7 +1367,9 @@
         <div class="modal-content large-modal" style="height: 80vh;">
             <span id="close-streetview-btn" class="close-btn">&times;</span>
             <h2>Google Street View</h2>
-            <div id="streetview-pano" style="width:100%; height: calc(100% - 70px); background:#ccc;"></div>
+            <div id="streetview-pano" style="width:100%; height: calc(100% - 70px); background:#ccc;">
+                <div id="streetview-invert-overlay" aria-hidden="true"></div>
+            </div>
         </div>
     </div>
 
@@ -1382,26 +1494,41 @@
     </div>
     <!-- API Do Google Maps -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-    <!-- Google Maps API carregado apenas se houver API key válida -->
+    <!-- API do Google Maps — carregada sempre (com ou sem chave). -->
     <script type="text/javascript">
-        // Verifica se há uma API key antes de carregar Google Maps
-        const googleMapsApiKey = ''; // Deixar vazio se não tiver chave
+        // Se houver chave, ela é usada normalmente. Se estiver vazia, o
+        // script é carregado do mesmo jeito, só que SEM o parâmetro "key" —
+        // o Google ainda serve a API nesse caso (modo não documentado,
+        // "para fins de desenvolvimento"), o que é o que faz o Street View
+        // e os pins geo-ancorados (adicionarMarcadoresNoPanorama, em
+        // script.js) funcionarem de verdade, com marca d'água discreta no
+        // canto do mapa. Isso NÃO é uma garantia contratual do Google — se
+        // um dia eles bloquearem esse acesso sem chave, o app cai sozinho
+        // no modo alternativo (iframe público + pins em faixa, já existente
+        // em mostrarStreetView no script.js).
+        const googleMapsApiKey = ''; // Preencher aqui se/quando tiver uma chave de verdade
+
+        if (typeof window.google === 'undefined') {
+            window.google = { maps: {} }; // stub — evita "google is not defined" antes do script carregar
+        }
+
+        const _gmParams = new URLSearchParams({ libraries: 'places,geometry', callback: 'initMap' });
+        if (googleMapsApiKey) _gmParams.set('key', googleMapsApiKey);
+
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?${_gmParams.toString()}`;
+        script.async = true;
+        script.defer = true;
+        script.onerror = function () {
+            console.warn('[Google Maps] Falha ao carregar a API (com ou sem chave). Street View vai usar o modo alternativo (iframe público sem pins geo-ancorados).');
+        };
+        document.head.appendChild(script);
+
         if (!googleMapsApiKey) {
-            // Sem API key: cria stub mínimo para evitar erros de referência.
-            // NÃO sobrescreve window.initMap — o script.js define e chama initMap()
-            // normalmente via DOMContentLoaded, inicializando o mapa Leaflet.
-            if (typeof window.google === 'undefined') {
-                window.google = { maps: {} };
-            }
-            console.warn('Google Maps API key não configurada. Street View e Autocomplete do Google desabilitados; o mapa Leaflet funciona normalmente.');
-        } else {
-            const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places,geometry&callback=initMap`;
-            script.async = true;
-            script.defer = true;
-            document.head.appendChild(script);
+            console.warn('[Google Maps] Nenhuma API key configurada — carregando a API mesmo assim, no modo sem chave do Google (não-oficial). Se parar de funcionar, configure uma chave real em "googleMapsApiKey".');
         }
     </script>
 
@@ -1497,10 +1624,10 @@
                 const btn = document.querySelector('#userwayAccessibilityIcon, .userway-widget-button, .userway_widget, .userway_accessibility_icon');
                 if (!btn) return false;
                 btn.style.position = 'fixed';
-                btn.style.right = '-10px';
+                btn.style.setProperty('right', '-14px', 'important');
                 btn.style.left = 'auto';
-                btn.style.top = 'auto';
-                btn.style.bottom = 'calc(50% - 160px)';
+                btn.style.setProperty('top', 'calc(50% + 30px)', 'important');
+                btn.style.setProperty('bottom', 'auto', 'important');
                 btn.style.transform = 'none';
                 btn.style.zIndex = '10002';
                 return true;
@@ -1865,8 +1992,8 @@
                         + '<h3>' + (problem.titulo || 'Problema sem título') + '</h3>'
                         + '<div class="rd-badges">'
                             + '<span class="rd-badge status"><i class="fas fa-circle-dot"></i> ' + (problem.status || '—') + '</span>'
-                            + '<span class="rd-badge ' + prioridadeClasse + '"><i class="fas fa-triangle-exclamation"></i> ' + (problem.prioridade || '—') + '</span>'
-                            + '<span class="rd-badge"><i class="fas fa-tag"></i> ' + (problem.tipo || '—') + '</span>'
+                            + '<span class="rd-badge ' + prioridadeClasse + '"><i class="fas fa-triangle-exclamation"></i> ' + (problem.prioridade ? formatarPrioridade(problem.prioridade) : '—') + '</span>'
+                            + '<span class="rd-badge"><i class="fas fa-tag"></i> ' + (problem.tipo ? formatarCategoria(problem.tipo) : '—') + '</span>'
                         + '</div>'
                         + '<div class="rd-row"><i class="fas fa-align-left"></i><span>' + (problem.descricao || 'Sem descrição.') + '</span></div>'
                         + '<div class="rd-row"><i class="fas fa-location-dot"></i><span>' + (problem.endereco || 'Endereço não informado') + '</span></div>'
@@ -1918,7 +2045,7 @@
         // ════════════════════════════════════════════════════════════════
         // 1. TOKEN  ↓↓↓ CONFIGURE AQUI ↓↓↓
         // ════════════════════════════════════════════════════════════════
-        var MAPBOX_ACCESS_TOKEN = '';
+        var MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoiamVhbmRhbHByYSIsImEiOiJjbXIzd3R1Ym4wNXRpMnlwd3U0MWM2djN3In0.oQ2u9Cw8_sYnea_s2kOp8g';
 
         var CONFIG = {
             versaoMapboxGL: '2.15.0',
@@ -1934,6 +2061,8 @@
         try { modoEscuro3D = localStorage.getItem('au_map_dark_mode') === '1'; } catch (e) {}
 
         var SOURCE_ID   = 'au-protocols';
+        var LAYER_CLUSTER = 'au-protocols-cluster';
+        var LAYER_CLUSTER_COUNT = 'au-protocols-cluster-count';
         var LAYER_OUTER = 'au-protocols-outer';
         var LAYER_DOT   = 'au-protocols-dot';
         var LAYER_LABEL = 'au-protocols-label';
@@ -2026,8 +2155,13 @@
         // ════════════════════════════════════════════════════════════════
         function obterPosicao2D() {
             if (typeof map !== 'undefined' && map && map.getCenter) {
-                var c = map.getCenter();
-                return { lat: c.lat, lng: c.lng, zoom: map.getZoom() };
+                try {
+                    var c = map.getCenter();
+                    return { lat: c.lat, lng: c.lng, zoom: map.getZoom() };
+                } catch (e) {
+                    // Mapa 2D ainda sem view definida (ex.: geolocalização
+                    // do usuário ainda não respondeu) — cai no padrão abaixo.
+                }
             }
             return {
                 lat:  typeof DEFAULT_COORDS !== 'undefined' ? DEFAULT_COORDS[0] : -23.5505,
@@ -2146,6 +2280,13 @@
             var container = document.getElementById('map3d');
             if (!container) { console.error('[Modo 3D] #map3d não encontrado.'); return; }
 
+            if (typeof window.ResizeObserver === 'function' && !container._auResizeObserver) {
+                container._auResizeObserver = new window.ResizeObserver(function() {
+                    if (estado.ativo) _redimensionarMapa3D();
+                });
+                container._auResizeObserver.observe(container);
+            }
+
             mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
             var pos = obterPosicao2D();
 
@@ -2153,13 +2294,27 @@
                 container: 'map3d', style: modoEscuro3D ? CONFIG.estiloDark : CONFIG.estilo,
                 center: [pos.lng, pos.lat], zoom: pos.zoom,
                 pitch: CONFIG.pitch, bearing: CONFIG.bearing, antialias: true,
+                projection: { name: 'mercator' },
+                // Mantém o mundo contínuo no zoom global, sem deixar um
+                // intervalo vazio entre a borda de uma cópia e a próxima.
+                renderWorldCopies: true,
+                fadeDuration: 0,
+                maxTileCacheSize: 1000,
+                refreshExpiredTiles: false,
             });
 
             var m = estado.mapbox3d;
+            // O zoom do Mapbox também fica fracionado e mais lento para que
+            // as tiles acompanhem a transição sem saltos bruscos.
+            if (m.scrollZoom) {
+                m.scrollZoom.setWheelZoomRate(1 / 450);
+                m.scrollZoom.setZoomRate(1 / 100);
+            }
             m.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
             m.addControl(new mapboxgl.ScaleControl({ maxWidth: 100, unit: 'metric' }), 'bottom-left');
 
             m.on('load', function() {
+                _redimensionarMapa3D();
                 adicionarPredios3D(m);
                 _configurarLayers(m);
                 _carregarIconesFA(m);
@@ -2173,9 +2328,54 @@
             m.on('click', LAYER_DOT, _onProtocoloClick);
             m.on('mouseenter', LAYER_DOT, function() { m.getCanvas().style.cursor = 'pointer'; });
             m.on('mouseleave', LAYER_DOT, function() { m.getCanvas().style.cursor = ''; });
+            m.on('click', LAYER_CLUSTER, _onClusterClick);
+            m.on('click', LAYER_CLUSTER_COUNT, _onClusterClick);
+            m.on('mouseenter', LAYER_CLUSTER, function() { m.getCanvas().style.cursor = 'pointer'; });
+            m.on('mouseleave', LAYER_CLUSTER, function() { m.getCanvas().style.cursor = ''; });
+            m.on('mouseenter', LAYER_CLUSTER_COUNT, function() { m.getCanvas().style.cursor = 'pointer'; });
+            m.on('mouseleave', LAYER_CLUSTER_COUNT, function() { m.getCanvas().style.cursor = ''; });
             m.on('error', function(e) { console.error('[Modo 3D]', e && e.error ? e.error.message : e); });
 
             estado.inicializado = true;
+        }
+
+        // O canvas do Mapbox pode ser criado enquanto #map3d ainda estava
+        // oculto. Redimensiona depois do layout e novamente no frame seguinte
+        // para evitar faixas brancas ou partes duplicadas do mundo.
+        function _redimensionarMapa3D() {
+            if (!estado.mapbox3d || typeof estado.mapbox3d.resize !== 'function') return;
+
+            var redimensionar = function() {
+                var m = estado.mapbox3d;
+                var container = document.getElementById('map3d');
+                if (!m || !container) return;
+
+                var rect = container.getBoundingClientRect();
+                if (rect.width < 1 || rect.height < 1) return;
+
+                var width = Math.round(rect.width);
+                var height = Math.round(rect.height);
+                var canvas = typeof m.getCanvas === 'function' ? m.getCanvas() : null;
+
+                // Usa pixels reais em vez de deixar o CSS preservar uma
+                // largura antiga calculada enquanto o mapa estava oculto.
+                if (canvas) {
+                    canvas.style.setProperty('left', '0px', 'important');
+                    canvas.style.setProperty('top', '0px', 'important');
+                    canvas.style.setProperty('width', width + 'px', 'important');
+                    canvas.style.setProperty('height', height + 'px', 'important');
+                }
+
+                m.resize();
+            };
+            redimensionar();
+            if (typeof window.requestAnimationFrame === 'function') {
+                window.requestAnimationFrame(function() {
+                    redimensionar();
+                    window.requestAnimationFrame(redimensionar);
+                });
+            }
+            window.setTimeout(redimensionar, 100);
         }
 
         // ════════════════════════════════════════════════════════════════
@@ -2188,15 +2388,79 @@
                 m.addSource(SOURCE_ID, {
                     type: 'geojson',
                     data: { type: 'FeatureCollection', features: [] },
+                    cluster: true,
+                    // Agrupa somente quando o mapa estiver bem afastado.
+                    // A partir do zoom 9, os pins permanecem individuais.
+                    clusterMaxZoom: 8,
+                    // Raio menor evita juntar pins que ainda estão separados
+                    // visualmente no modo 3D.
+                    clusterRadius: 26,
                 });
             }
 
             // Halo externo — cor do status, grande e difuso
+            // Agrupa relatórios próximos para impedir que os pins sejam
+            // desenhados uns sobre os outros no mapa 3D.
+            if (!m.getLayer(LAYER_CLUSTER)) {
+                m.addLayer({
+                    id: LAYER_CLUSTER, type: 'circle', source: SOURCE_ID,
+                    filter: ['has', 'point_count'],
+                    paint: {
+                        'circle-color': [
+                            'step', ['get', 'point_count'],
+                            '#38bdf8', 10,
+                            '#0ea5e9', 25,
+                            '#0284c7', 50,
+                            '#0369a1'
+                        ],
+                        'circle-radius': [
+                            'step', ['get', 'point_count'],
+                            18, 10,
+                            23, 25,
+                            29, 50,
+                            36
+                        ],
+                        'circle-pitch-scale': 'viewport',
+                        'circle-stroke-color': '#ffffff',
+                        'circle-stroke-width': 2,
+                        'circle-opacity': 0.92,
+                    },
+                });
+            }
+
+            if (!m.getLayer(LAYER_CLUSTER_COUNT)) {
+                m.addLayer({
+                    id: LAYER_CLUSTER_COUNT, type: 'symbol', source: SOURCE_ID,
+                    filter: ['has', 'point_count'],
+                    layout: {
+                        'text-field': ['get', 'point_count_abbreviated'],
+                        'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
+                        'text-size': 12,
+                        'text-allow-overlap': true,
+                        'text-ignore-placement': true,
+                        'symbol-z-order': 'source',
+                    },
+                    paint: {
+                        'text-color': '#ffffff',
+                        'text-halo-color': '#075985',
+                        'text-halo-width': 1,
+                    },
+                });
+            }
+
             if (!m.getLayer(LAYER_OUTER)) {
                 m.addLayer({
                     id: LAYER_OUTER, type: 'circle', source: SOURCE_ID,
+                    filter: ['!', ['has', 'point_count']],
+                    layout: {
+                        // Mantém a ordem do halo consistente com o pin e o símbolo.
+                        'circle-sort-key': ['to-number', ['get', 'id']],
+                    },
                     paint: {
                         'circle-radius':  ['interpolate',['linear'],['zoom'],10,8,14,18,18,28],
+                        // No mapa inclinado, mantém o halo em escala de tela
+                        // para ele não crescer artificialmente no primeiro plano.
+                        'circle-pitch-scale': 'viewport',
                         'circle-color':   _matchExpr(STATUS_CORES, 'status', '#9ca3af'),
                         'circle-opacity': 0.22,
                         'circle-blur':    0.8,
@@ -2208,8 +2472,16 @@
             if (!m.getLayer(LAYER_DOT)) {
                 m.addLayer({
                     id: LAYER_DOT, type: 'circle', source: SOURCE_ID,
+                    filter: ['!', ['has', 'point_count']],
+                    layout: {
+                        // O mesmo critério evita que círculos e símbolos de
+                        // relatórios diferentes sejam misturados no 3D.
+                        'circle-sort-key': ['to-number', ['get', 'id']],
+                    },
                     paint: {
                         'circle-radius': ['interpolate',['linear'],['zoom'],10,5,14,10,18,16],
+                        // Mantém o pin com o mesmo tamanho visual dos símbolos.
+                        'circle-pitch-scale': 'viewport',
                         'circle-color':  _matchExpr(TIPO_CORES, 'tipo', '#6b7280'),
                         'circle-stroke-width': ['interpolate',['linear'],['zoom'],10,1.5,14,2.5],
                         'circle-stroke-color': _matchExpr(TIPO_CORES, 'tipo', '#6b7280'),
@@ -2222,13 +2494,21 @@
             if (!m.getLayer(LAYER_LABEL)) {
                 m.addLayer({
                     id: LAYER_LABEL, type: 'symbol', source: SOURCE_ID, minzoom: 0,
+                    filter: ['!', ['has', 'point_count']],
                     layout: {
                         // icon-image aponta para sprites carregados por _carregarIconesFA()
                         // Enquanto os icones nao carregam, a layer fica invisivel (sem erro)
                         'icon-image':            ['concat', 'au-icon-', ['get', 'tipo']],
                         'icon-size':             ['interpolate', ['linear'], ['zoom'], 8, 0.3, 12, 0.6, 15, 0.85, 18, 1.05],
+                        // Ícone e círculo permanecem no mesmo plano visual
+                        // durante o pitch/rotação do mapa.
+                        'icon-pitch-alignment':   'viewport',
+                        'icon-rotation-alignment': 'viewport',
                         'icon-allow-overlap':    true,
                         'icon-ignore-placement': true,
+                        // Os símbolos seguem a mesma ordem dos círculos.
+                        'symbol-z-order':        'source',
+                        'symbol-sort-key':        ['to-number', ['get', 'id']],
                     },
                     paint: { 'icon-opacity': 1 },
                 });
@@ -2244,8 +2524,13 @@
                     + 'border:1px solid rgba(255,255,255,0.08);'
                     + 'border-radius:12px;'
                     + 'box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 0 1px rgba(0,200,255,.08);'
+                    + 'overflow-wrap:anywhere;word-break:break-word;'
                     + 'padding:14px 16px;}'
                     + '.au-popup-3d .mapboxgl-popup-tip{border-top-color:#0f172a;}'
+                    + '.au-popup-3d .report-details-btn,.au-popup-3d .report-details-btn:visited{'
+                    + 'display:flex;align-items:center;justify-content:center;gap:6px;'
+                    + 'color:#fff!important;opacity:1!important;text-decoration:none;}'
+                    + '.au-popup-3d .report-details-btn:hover{color:#fff!important;background:#0284c7!important;}'
                     + '.au-popup-3d .mapboxgl-popup-close-button{'
                     + 'color:#64748b;font-size:18px;right:8px;top:6px;'
                     + 'background:transparent;border:none;cursor:pointer;}'
@@ -2411,6 +2696,24 @@
         // ════════════════════════════════════════════════════════════════
         // 9. POPUP NATIVO AO CLICAR NUM PROTOCOLO
         // ════════════════════════════════════════════════════════════════
+        function _onClusterClick(e) {
+            if (!e.features || !e.features.length || !estado.mapbox3d) return;
+
+            var feature = e.features[0];
+            var clusterId = feature.properties && feature.properties.cluster_id;
+            var source = estado.mapbox3d.getSource(SOURCE_ID);
+            if (clusterId === undefined || !source || !source.getClusterExpansionZoom) return;
+
+            source.getClusterExpansionZoom(clusterId, function (err, zoom) {
+                if (err) return;
+                estado.mapbox3d.easeTo({
+                    center: feature.geometry.coordinates,
+                    zoom: Math.min(zoom, 19),
+                    duration: 550,
+                });
+            });
+        }
+
         function _onProtocoloClick(e) {
             e.preventDefault();
             if (!e.features || !e.features.length) return;
@@ -2452,21 +2755,29 @@
             var imgHtml = props.imagem_url
                 ? '<img src="'+_esc(props.imagem_url)+'" style="width:100%;border-radius:8px;margin-top:8px;max-height:140px;object-fit:cover;" alt="">'
                 : '';
+            var detailsUrl = 'detalhes-relatorio.html?id=' + encodeURIComponent(String(props.id));
+            var detailsHtml = '<a class="report-details-btn" href="' + _esc(detailsUrl) + '" '
+                + 'style="display:flex;align-items:center;justify-content:center;gap:6px;'
+                + 'width:100%;box-sizing:border-box;margin-top:10px;padding:8px 10px;'
+                + 'border-radius:7px;background:#0ea5e9;color:#fff;text-decoration:none;'
+                + 'font-size:12px;font-weight:700;">'
+                + '<i class="fas fa-arrow-up-right-from-square"></i> Ver detalhes do relatório</a>';
 
             var html =
-                '<div style="font-family:Poppins,system-ui,sans-serif;font-size:13px;line-height:1.55;min-width:220px;max-width:280px;color:#e2e8f0;">'
+                '<div style="font-family:Poppins,system-ui,sans-serif;font-size:13px;line-height:1.55;min-width:220px;max-width:280px;width:100%;box-sizing:border-box;overflow-wrap:anywhere;word-break:break-word;color:#e2e8f0;">'
               + '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;">'
               +   '<span style="font-size:20px;flex-shrink:0;">'+(TIPO_EMOJI[tipo]||'📍')+'</span>'
               +   '<strong style="font-size:14px;color:#f1f5f9;line-height:1.3;">'+_esc(props.titulo)+'</strong>'
               + '</div>'
               + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">'
-              +   '<span style="background:'+corT+'22;color:'+corT+';border:1px solid '+corT+'55;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">'+_esc(props.tipo)+'</span>'
+              +   '<span style="background:'+corT+'22;color:'+corT+';border:1px solid '+corT+'55;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">'+_esc(formatarCategoria(props.tipo))+'</span>'
               +   '<span style="background:'+corS+'22;color:'+corS+';border:1px solid '+corS+'55;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">'+_esc(props.status)+'</span>'
-              + (props.prioridade ? '<span style="background:#ffffff11;color:#94a3b8;border:1px solid #ffffff18;padding:2px 8px;border-radius:999px;font-size:11px;">'+_esc(props.prioridade)+'</span>' : '')
+              + (props.prioridade ? '<span style="background:#ffffff11;color:#94a3b8;border:1px solid #ffffff18;padding:2px 8px;border-radius:999px;font-size:11px;">'+_esc(formatarPrioridade(props.prioridade))+'</span>' : '')
               + '</div>'
-              + (props.descricao ? '<p style="margin:0 0 7px;color:#94a3b8;font-size:12px;">'+_esc(props.descricao)+'</p>' : '')
+              + (props.descricao ? '<p style="margin:0 0 7px;color:#94a3b8;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;">'+_esc(props.descricao)+'</p>' : '')
               + (props.endereco  ? '<div style="font-size:11px;color:#64748b;margin-bottom:4px;">📍 '+_esc(props.endereco)+'</div>' : '')
               + imgHtml
+              + detailsHtml
               + '</div>';
 
             estado._popupAtivo = new mapboxgl.Popup({
@@ -2607,19 +2918,41 @@
         function _iniciarLocalizacao3D() {
             var btn = document.getElementById('recenter-btn');
             if (!btn || btn._au3dListener) return;
-            btn._au3dListener = function() {
+            btn._au3dListener = function(event) {
                 if (!estado.ativo || !estado.mapbox3d) return;
+                event.preventDefault();
+                event.stopImmediatePropagation();
                 if (!navigator.geolocation) {
                     if (typeof showToast === 'function') showToast('⚠️ Geolocalização não disponível.','warning',3000);
                     return;
                 }
+                var cachedCoords = typeof window.auGetCachedUserCoords === 'function'
+                    ? window.auGetCachedUserCoords()
+                    : null;
+                if (cachedCoords) {
+                    estado.mapbox3d.stop();
+                    estado.mapbox3d.flyTo({
+                        center:[cachedCoords[1],cachedCoords[0]], zoom:16,
+                        pitch:CONFIG.pitch, bearing:CONFIG.bearing, duration:350, essential:true,
+                    });
+                    _atualizarMarcadorLocalizacao(cachedCoords[0], cachedCoords[1]);
+                    if (typeof window.auRequestUserLocation === 'function') {
+                        window.auRequestUserLocation(function(pos) {
+                            if (typeof window.auCacheUserCoords === 'function') {
+                                window.auCacheUserCoords([pos.coords.latitude, pos.coords.longitude]);
+                            }
+                        }, function() {});
+                    }
+                    return;
+                }
+
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                 btn.disabled  = true;
                 navigator.geolocation.getCurrentPosition(
                     function(pos) {
                         estado.mapbox3d.flyTo({
                             center:[pos.coords.longitude,pos.coords.latitude], zoom:16,
-                            pitch:CONFIG.pitch, bearing:CONFIG.bearing, duration:1400, essential:true,
+                            pitch:CONFIG.pitch, bearing:CONFIG.bearing, duration:350, essential:true,
                         });
                         _atualizarMarcadorLocalizacao(pos.coords.latitude, pos.coords.longitude);
                         btn.innerHTML = '<i class="fas fa-location-crosshairs"></i>';
@@ -2630,10 +2963,10 @@
                         btn.innerHTML = '<i class="fas fa-location-crosshairs"></i>';
                         btn.disabled  = false;
                     },
-                    { enableHighAccuracy:true, timeout:8000 }
+                    { enableHighAccuracy:false, timeout:3000, maximumAge:300000 }
                 );
             };
-            btn.addEventListener('click', btn._au3dListener);
+            btn.addEventListener('click', btn._au3dListener, true);
         }
 
         function _atualizarMarcadorLocalizacao(lat, lng) {
@@ -2657,7 +2990,7 @@
         function _removerLocalizacao3D() {
             var btn = document.getElementById('recenter-btn');
             if (btn && btn._au3dListener) {
-                btn.removeEventListener('click',btn._au3dListener); btn._au3dListener=null;
+                btn.removeEventListener('click',btn._au3dListener, true); btn._au3dListener=null;
                 btn.innerHTML='<i class="fas fa-location-crosshairs"></i>'; btn.disabled=false;
             }
         }
@@ -2741,6 +3074,18 @@
 
         // ── FILTROS ──────────────────────────────────────────────────────
 
+        function _filtroPontos3D(expr) {
+            var semCluster = ['!', ['has', 'point_count']];
+            return expr ? ['all', semCluster, expr] : semCluster;
+        }
+
+        function _filtroClusters3D(expr) {
+            var cluster = ['has', 'point_count'];
+            // Um cluster não carrega tipo/status únicos. Quando há filtro,
+            // escondê-lo evita exibir uma contagem que não corresponde ao filtro.
+            return expr ? ['all', cluster, expr] : cluster;
+        }
+
         function _aplicarFiltro3D() {
             if (!estado.mapbox3d) return;
             var catEl    = document.getElementById('filter-category');
@@ -2757,8 +3102,14 @@
                 expr = ['==', ['get','status'], status];
             }
 
+            var filtroPontos = _filtroPontos3D(expr);
+            var filtroClusters = _filtroClusters3D(expr);
+
             [LAYER_OUTER, LAYER_DOT, LAYER_LABEL].forEach(function(id) {
-                if (estado.mapbox3d.getLayer(id)) estado.mapbox3d.setFilter(id, expr);
+                if (estado.mapbox3d.getLayer(id)) estado.mapbox3d.setFilter(id, filtroPontos);
+            });
+            [LAYER_CLUSTER, LAYER_CLUSTER_COUNT].forEach(function(id) {
+                if (estado.mapbox3d.getLayer(id)) estado.mapbox3d.setFilter(id, filtroClusters);
             });
         }
 
@@ -2775,7 +3126,11 @@
                     if (!estado.ativo) return;
                     [LAYER_OUTER, LAYER_DOT, LAYER_LABEL].forEach(function(id) {
                         if (estado.mapbox3d && estado.mapbox3d.getLayer(id))
-                            estado.mapbox3d.setFilter(id, null);
+                            estado.mapbox3d.setFilter(id, _filtroPontos3D(null));
+                    });
+                    [LAYER_CLUSTER, LAYER_CLUSTER_COUNT].forEach(function(id) {
+                        if (estado.mapbox3d && estado.mapbox3d.getLayer(id))
+                            estado.mapbox3d.setFilter(id, _filtroClusters3D(null));
                     });
                 };
                 clearBtn.addEventListener('click', clearBtn._au3dFiltro);
@@ -2785,7 +3140,11 @@
         function _removerFiltros3D() {
             [LAYER_OUTER, LAYER_DOT, LAYER_LABEL].forEach(function(id) {
                 if (estado.mapbox3d && estado.mapbox3d.getLayer(id))
-                    estado.mapbox3d.setFilter(id, null);
+                    estado.mapbox3d.setFilter(id, _filtroPontos3D(null));
+            });
+            [LAYER_CLUSTER, LAYER_CLUSTER_COUNT].forEach(function(id) {
+                if (estado.mapbox3d && estado.mapbox3d.getLayer(id))
+                    estado.mapbox3d.setFilter(id, _filtroClusters3D(null));
             });
             ['apply-filter-btn','clear-filter-btn'].forEach(function(btnId) {
                 var b = document.getElementById(btnId);
@@ -2866,13 +3225,21 @@
             });
         }
 
-        function ativarModo3D() {
+        function _prepararVisibilidadeMapa3D() {
             var mapEl   = document.getElementById('map');
             var map3dEl = document.getElementById('map3d');
             if (mapEl)   mapEl.style.display  = 'none';
             if (map3dEl) map3dEl.style.display = 'block';
-            if (estado.mapbox3d) estado.mapbox3d.resize();
+        }
+
+        function ativarModo3D() {
+            _prepararVisibilidadeMapa3D();
+            if (estado.mapbox3d && typeof estado.mapbox3d.setRenderWorldCopies === 'function') {
+                estado.mapbox3d.setRenderWorldCopies(true);
+            }
+            _redimensionarMapa3D();
             sincronizarMapa2DPara3D();
+            window.setTimeout(_redimensionarMapa3D, 250);
             _interceptarNavegacaoLeaflet();
             _iniciarStreetView3D();
             _iniciarLocalizacao3D();
@@ -2925,8 +3292,11 @@
                     if (btn3D) { btn3D.innerHTML='⏳ Carregando...'; btn3D.disabled=true; btn3D.classList.add('carregando-3d'); }
                     carregarMapboxGL()
                         .then(function() {
-                            estado.carregando = false;
-                            if (!estado.inicializado) inicializarMapa3D();
+                        estado.carregando = false;
+                            if (!estado.inicializado) {
+                                _prepararVisibilidadeMapa3D();
+                                inicializarMapa3D();
+                            }
                             ativarModo3D();
                         })
                         .catch(function(err) {
@@ -2935,13 +3305,20 @@
                             if (typeof showToast === 'function') showToast('❌ Erro ao carregar o modo 3D.','error',4500);
                         });
                 } else {
-                    if (!estado.inicializado) inicializarMapa3D();
+                    if (!estado.inicializado) {
+                        _prepararVisibilidadeMapa3D();
+                        inicializarMapa3D();
+                    }
                     ativarModo3D();
                 }
             } else {
                 desativarModo3D();
             }
         }
+
+        window.addEventListener('resize', function() {
+            if (estado.ativo) _redimensionarMapa3D();
+        });
 
         function _esc(s) {
             return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -3021,7 +3398,7 @@
 
         var ROUTE_SOURCE_ID = 'au-route';
         var ROUTE_LAYER_ID  = 'au-route-line';
-        var ROUTE_MAPBOX_ACCESS_TOKEN = '';
+        var ROUTE_MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoiamVhbmRhbHByYSIsImEiOiJjbXIzd3R1Ym4wNXRpMnlwd3U0MWM2djN3In0.oQ2u9Cw8_sYnea_s2kOp8g';
 
         var estado = {
             ativo: false,
@@ -3383,7 +3760,10 @@
         'use strict';
 
         var HEAT_LAYER_ID_3D = 'au-heatmap';
-        var PONTO_LAYERS_3D = ['au-protocols-outer', 'au-protocols-dot', 'au-protocols-label'];
+        var PONTO_LAYERS_3D = [
+            'au-protocols-cluster', 'au-protocols-cluster-count',
+            'au-protocols-outer', 'au-protocols-dot', 'au-protocols-label'
+        ];
 
         // Peso por prioridade — baixa/média/alta/urgente, nessa ordem.
         // O piso foi levantado (0.4 em vez de 0.25): como os relatórios
@@ -3535,6 +3915,9 @@
                     id: HEAT_LAYER_ID_3D,
                     type: 'heatmap',
                     source: 'au-protocols',
+                    // O calor usa os relatórios individuais, não os pontos
+                    // agregados criados para evitar sobreposição visual.
+                    filter: ['!', ['has', 'point_count']],
                     paint: {
                         // Peso por ponto, de acordo com a prioridade do
                         // relatório — mesmos valores usados no 2D.

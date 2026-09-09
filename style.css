@@ -999,6 +999,9 @@ body .header-nav .new-report-btn {
 
 .map-container {
     flex: 1 1 0;
+    align-self: stretch;
+    width: 100%;
+    min-width: 0;
     min-height: 0;
     position: relative;
     z-index: 1;
@@ -1010,6 +1013,22 @@ body .header-nav .new-report-btn {
     width: 100%;
 }
 
+/* Fundo exibido somente enquanto uma tile termina de carregar. Mantém a
+   transição neutra em vez de mostrar os quadrados pretos do navegador. */
+#map .leaflet-tile-pane {
+    background: #e5edf3;
+}
+
+/* Deixa o zoom fracionado acompanhar o carregamento das tiles sem o salto
+   visual padrão de 250 ms do Leaflet. */
+#map .leaflet-zoom-anim .leaflet-zoom-animated {
+    transition: transform 0.25s cubic-bezier(0, 0, 0.25, 1) !important;
+}
+
+body.dark-mode #map .leaflet-tile-pane {
+    background: #0b1220;
+}
+
 #legend-container {
     position: absolute;
     bottom: 20px;
@@ -1019,6 +1038,19 @@ body .header-nav .new-report-btn {
     padding: 10px;
     border-radius: 5px;
     box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+#legend-container:hover {
+    position: absolute;
+    bottom: 20px;
+    right: 15px;
+    z-index: 1000;
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 1px 5px rgba(219, 0, 0, 0.4);
     font-size: 0.9rem;
     line-height: 1.5;
 }
@@ -1132,6 +1164,78 @@ body .header-nav .new-report-btn {
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
 }
 
+/* Agrupamento dos relatórios no mapa 2D */
+.au-marker-cluster {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 0 !important;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    background: #0ea5e9;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+    color: #ffffff;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    line-height: 1;
+    position: relative;
+    text-align: center;
+}
+
+.au-marker-cluster span {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    height: auto;
+    margin: 0;
+    color: inherit;
+    line-height: 1;
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.au-marker-cluster-small {
+    background: #0ea5e9;
+    font-size: 12px;
+}
+
+.au-marker-cluster-medium {
+    background: #0284c7;
+    border-width: 2px;
+    font-size: 13px;
+}
+
+.au-marker-cluster-large {
+    background: #1d4ed8;
+    border-width: 3px;
+    font-size: 14px;
+}
+
+/* A espiral abre e fecha como um único conjunto: os pins e as linhas usam
+   a mesma duração para não deixarem elementos para trás. */
+#map .leaflet-cluster-anim .leaflet-marker-icon,
+#map .leaflet-cluster-anim .leaflet-marker-shadow {
+    transition: transform 0.3s ease-out, opacity 0.3s ease-in !important;
+}
+
+#map path.leaflet-cluster-spider-leg,
+#map path.au-spider-leg {
+    /* O plugin desenha/recolhe a linha alterando o dashoffset. */
+    -webkit-transition: -webkit-stroke-dashoffset 0.3s ease-out,
+        -webkit-stroke-opacity 0.3s ease-in !important;
+    -moz-transition: -moz-stroke-dashoffset 0.3s ease-out,
+        -moz-stroke-opacity 0.3s ease-in !important;
+    -o-transition: -o-stroke-dashoffset 0.3s ease-out,
+        -o-stroke-opacity 0.3s ease-in !important;
+    transition: stroke-dashoffset 0.3s ease-out,
+        stroke-opacity 0.3s ease-in !important;
+    will-change: stroke-dashoffset, stroke-opacity;
+}
+
 .leaflet-popup-content-wrapper {
     max-width: 250px !important;
 }
@@ -1147,6 +1251,14 @@ body .header-nav .new-report-btn {
     max-height: 200px;
     overflow-y: auto;
     padding-right: 5px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.info-window p {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .info-window h4 {
@@ -1160,9 +1272,81 @@ body .header-nav .new-report-btn {
     font-weight: 600;
 }
 
+.edit-image-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--light-bg);
+    color: var(--secondary-color);
+    font-size: 0.78rem;
+}
+
+.edit-image-preview[hidden],
+.edit-location-note[hidden] {
+    display: none !important;
+}
+
+.edit-image-preview img {
+    width: 72px;
+    height: 52px;
+    flex: 0 0 72px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.edit-location-note {
+    display: block;
+    margin-top: 6px;
+    color: var(--secondary-color);
+    font-size: 0.78rem;
+}
+
+.edit-location-note i {
+    color: var(--primary-color);
+    margin-right: 4px;
+}
+
+#select-on-map-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .info-window img {
     max-width: 100%;
     height: auto;
+}
+
+.info-window .report-details-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    background: #0ea5e9;
+    color: #fff !important;
+    opacity: 1 !important;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.info-window .report-details-btn:hover {
+    background: #0284c7;
+    color: #fff !important;
+    transform: translateY(-1px);
+}
+
+.info-window .report-details-btn:visited {
+    color: #fff !important;
 }
 
 /*
@@ -1194,6 +1378,40 @@ body .header-nav .new-report-btn {
 .modal.hidden {
     opacity: 0;
     pointer-events: none;
+}
+
+/* Negativo visual somente dentro do retângulo do panorama Street View. */
+#streetview-pano {
+    position: relative;
+    overflow: hidden;
+}
+
+#streetview-invert-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    background: #fff;
+    mix-blend-mode: difference;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.18s ease, visibility 0s linear 0.18s;
+}
+
+#streetview-modal:not(.hidden) #streetview-invert-overlay {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+}
+
+/* Fallback para navegadores sem suporte ao modo de mesclagem. */
+@supports not (mix-blend-mode: difference) {
+    #streetview-invert-overlay {
+        background: transparent;
+        mix-blend-mode: normal;
+        -webkit-backdrop-filter: invert(1);
+        backdrop-filter: invert(1);
+    }
 }
 
 /*

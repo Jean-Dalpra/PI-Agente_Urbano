@@ -29,10 +29,177 @@ let allProblemsData = [];
 let ownedReportIds = [];
 let isMapInitialized = false;
 let isAutocompleteInitialized = false;
+let editingReport = null;
+
+// O plugin anima os pins com `transform`, enquanto as pernas da espiral são
+// elementos SVG. Durante a transição, mantemos a ponta de cada perna presa à
+// posição visual atual do pin para que os dois movimentos sejam sincronizados.
+let spiderLegAnimationFrame = null;
+let spiderLegAnimationUntil = 0;
+
+function sincronizarPernasDaEspiral(duracao = 360) {
+    if (!map || !problemsLayerGroup || typeof requestAnimationFrame !== 'function') {
+        return;
+    }
+
+    const agora = typeof performance !== 'undefined' && performance.now
+        ? performance.now()
+        : Date.now();
+    spiderLegAnimationUntil = Math.max(spiderLegAnimationUntil, agora + duracao);
+
+    if (spiderLegAnimationFrame !== null) {
+        return;
+    }
+
+    const atualizar = timestamp => {
+        spiderLegAnimationFrame = null;
+
+        if (!map || !problemsLayerGroup) {
+            return;
+        }
+
+        const mapElement = map.getContainer();
+        const mapRect = mapElement.getBoundingClientRect();
+        let encontrouPerna = false;
+        const markers = typeof problemsLayerGroup.getLayers === 'function'
+            ? problemsLayerGroup.getLayers()
+            : [];
+
+        markers.forEach(marker => {
+            const leg = marker && marker._spiderLeg;
+            if (!leg || !marker._icon || typeof leg.setLatLngs !== 'function') {
+                return;
+            }
+
+            const legLatLngs = typeof leg.getLatLngs === 'function'
+                ? leg.getLatLngs()
+                : null;
+            if (!legLatLngs || !legLatLngs[0]) {
+                return;
+            }
+
+            encontrouPerna = true;
+            const iconRect = marker._icon.getBoundingClientRect();
+            const iconAnchor = marker.options && marker.options.icon &&
+                marker.options.icon.options && marker.options.icon.options.iconAnchor;
+            const anchorX = iconAnchor
+                ? (iconAnchor.x !== undefined ? iconAnchor.x : iconAnchor[0])
+                : iconRect.width / 2;
+            const anchorY = iconAnchor
+                ? (iconAnchor.y !== undefined ? iconAnchor.y : iconAnchor[1])
+                : iconRect.height / 2;
+            const iconCenter = L.point(
+                iconRect.left - mapRect.left + anchorX,
+                iconRect.top - mapRect.top + anchorY
+            );
+            const visualLatLng = map.containerPointToLatLng(iconCenter);
+
+            // Mantém a origem no centro e acompanha a posição visual atual
+            // do pin, inclusive enquanto o transform CSS ainda está rodando.
+            leg.setLatLngs([legLatLngs[0], visualLatLng]);
+            if (leg._path) {
+                leg._path.style.transition = 'none';
+                leg._path.style.strokeDasharray = 'none';
+                leg._path.style.strokeDashoffset = '0';
+                leg._path.style.strokeOpacity = '0.7';
+            }
+        });
+
+        const tempoAtual = typeof performance !== 'undefined' && performance.now
+            ? performance.now()
+            : Date.now();
+        if (encontrouPerna && tempoAtual < spiderLegAnimationUntil) {
+            spiderLegAnimationFrame = requestAnimationFrame(atualizar);
+        }
+    };
+
+    spiderLegAnimationFrame = requestAnimationFrame(atualizar);
+}
 
 // cached coordenadas do usuário para usar em recenter rápido
 let userCoords = null;
+let userLocationMarker = null;
+let pendingUserLocationRequest = null;
+const USER_LOCATION_CACHE_KEY = 'au-last-user-coordinates';
+const FAST_GEOLOCATION_OPTIONS = {
+    enableHighAccuracy: false,
+    timeout: 3000,
+    maximumAge: 300000
+};
 
+function isValidUserCoords(coords) {
+    return Array.isArray(coords) && coords.length === 2 &&
+        Number.isFinite(Number(coords[0])) && Number.isFinite(Number(coords[1]));
+}
+
+function cacheUserCoords(coords) {
+    if (!isValidUserCoords(coords)) return null;
+
+    userCoords = [Number(coords[0]), Number(coords[1])];
+    try {
+        localStorage.setItem(USER_LOCATION_CACHE_KEY, JSON.stringify(userCoords));
+    } catch (error) {
+        // O armazenamento pode estar bloqueado; o cache em memória continua válido.
+    }
+    return userCoords;
+}
+
+function getCachedUserCoords() {
+    if (isValidUserCoords(userCoords)) return userCoords.slice();
+
+    try {
+        const savedCoords = JSON.parse(localStorage.getItem(USER_LOCATION_CACHE_KEY));
+        if (isValidUserCoords(savedCoords)) {
+            userCoords = [Number(savedCoords[0]), Number(savedCoords[1])];
+            return userCoords.slice();
+        }
+    } catch (error) {
+        // Ignora cache ausente ou inválido.
+    }
+
+    return null;
+}
+
+// Compartilha o cache e a requisição entre os modos 2D (Leaflet) e 3D (Mapbox).
+window.auGetCachedUserCoords = getCachedUserCoords;
+window.auCacheUserCoords = coords => cacheUserCoords(coords);
+
+function requestUserLocation(onSuccess, onError) {
+    if (!navigator.geolocation) {
+        if (typeof onError === 'function') onError(new Error('Geolocalização indisponível.'));
+        return;
+    }
+
+    if (pendingUserLocationRequest) {
+        pendingUserLocationRequest.success.push(onSuccess);
+        pendingUserLocationRequest.error.push(onError);
+        return;
+    }
+
+    pendingUserLocationRequest = { success: [onSuccess], error: [onError] };
+    navigator.geolocation.getCurrentPosition(
+        position => {
+            const callbacks = pendingUserLocationRequest ? pendingUserLocationRequest.success : [];
+            pendingUserLocationRequest = null;
+            callbacks.forEach(callback => {
+                if (typeof callback === 'function') callback(position);
+            });
+        },
+        error => {
+            const callbacks = pendingUserLocationRequest ? pendingUserLocationRequest.error : [];
+            pendingUserLocationRequest = null;
+            callbacks.forEach(callback => {
+                if (typeof callback === 'function') callback(error);
+            });
+        },
+        FAST_GEOLOCATION_OPTIONS
+    );
+}
+
+window.auRequestUserLocation = requestUserLocation;
+
+// URLs de tiles que já foram solicitadas em background. Isso prepara os dois
+// níveis de zoom vizinhos sem criar uma segunda camada visível sobre o mapa.
 const STREET_VIEW_RADIUS = 200;
 const PIN_PATH = 'M 12,2 C 8.13,2 5,5.13 5,9 c 0,5.25 7,13 7,13 s 7,-7.75 7,-13 c 0,-3.87 -3.13,-7 -7,-7 z';
 const svModal = document.getElementById('streetview-modal');
@@ -458,6 +625,77 @@ const problemIcons = {
 const DEFAULT_COORDS = [-23.5505, -46.6333];
 const INITIAL_ZOOM = 12;
 
+/**
+ * formatarPrioridade
+ * A prioridade é gravada no banco a partir do value="" do <select> do
+ * formulário (baixa/media/alta/urgente — minúsculo, sem acento, de
+ * propósito, como chave). Isso é ótimo pra armazenar, mas nunca deveria
+ * ir direto pra tela. Esta função sempre devolve o rótulo correto,
+ * acentuado, não importa como o valor esteja gravado (maiúsculo,
+ * minúsculo, com ou sem acento).
+ */
+function formatarPrioridade(valor) {
+    const mapa = { baixa: 'Baixa', media: 'Média', alta: 'Alta', urgente: 'Urgente' };
+    const chave = String(valor || '').trim().toLowerCase();
+    return mapa[chave] || (valor ? String(valor) : 'Baixa');
+}
+
+/**
+ * formatarCategoria
+ * O tipo/categoria também é gravado como chave (agua-esgoto,
+ * meteorologico, ma-gestao...) — não como o rótulo pronto pra leitura.
+ * Converte pra exibição, com acentuação correta.
+ */
+const CATEGORIA_LABELS = {
+    'iluminacao': 'Iluminação',
+    'asfalto': 'Asfalto',
+    'limpeza': 'Limpeza',
+    'agua-esgoto': 'Água/Esgoto',
+    'transporte': 'Transporte',
+    'assistencial': 'Assistencial',
+    'meteorologico': 'Meteorológico',
+    'mobilidade': 'Mobilidade',
+    'saude': 'Saúde',
+    'seguranca': 'Segurança',
+    'acessibilidade': 'Acessibilidade',
+    'eletricidade': 'Eletricidade',
+    'meio-ambiente': 'Meio Ambiente',
+    'estrutura': 'Estrutura',
+    'drenagem': 'Drenagem',
+    'obras': 'Obras',
+    'ciclismo': 'Ciclismo',
+    'ma-gestao': 'Má Gestão',
+    'outros': 'Outros'
+};
+function formatarCategoria(tipo) {
+    const chave = String(tipo || '').trim().toLowerCase();
+    return CATEGORIA_LABELS[chave] || (tipo ? String(tipo) : 'Outros');
+}
+
+/**
+ * mostrarCarregandoMapa / esconderCarregandoMapa
+ * Overlay simples exibido sobre o #map enquanto o navegador ainda não
+ * respondeu a pedido de geolocalização. Sem isso, como o mapa não é mais
+ * centralizado em São Paulo de cara (ver initMap), a pessoa veria uma área
+ * cinza/vazia por 1-2 segundos até a localização real chegar.
+ */
+function mostrarCarregandoMapa(mapElement) {
+    if (!mapElement || document.getElementById('map-loading-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'map-loading-overlay';
+    overlay.style.cssText = 'position:absolute; inset:0; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; background:#eef2f5; color:#495057; font-family:inherit;';
+    overlay.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:28px; color:#0ea5e9;"></i><span style="font-size:0.9rem;">Localizando você...</span>';
+    if (getComputedStyle(mapElement).position === 'static') {
+        mapElement.style.position = 'relative';
+    }
+    mapElement.appendChild(overlay);
+}
+
+function esconderCarregandoMapa() {
+    const overlay = document.getElementById('map-loading-overlay');
+    if (overlay) overlay.remove();
+}
+
 
 /**
  * initMap
@@ -497,36 +735,67 @@ function initMap() {
     // mapa, fora do lugar real).
     var LIMITES_MUNDO = L.latLngBounds(L.latLng(-89.9, -180), L.latLng(89.9, 180));
 
+    mostrarCarregandoMapa(mapElement);
+
     
-    // inicialização normal do mapa; animações de zoom/fade ativadas para evitar bugs
+    // inicialização normal do mapa — SEM centralizar em São Paulo aqui.
+    // O mapa só ganha um "view" (centro/zoom) depois que sabemos a
+    // localização real do usuário (ou, no pior caso, no fallback dentro
+    // de locateUserAndCenterMap). Isso evita o mapa "piscar" primeiro em
+    // São Paulo e só depois pular pro lugar certo.
     map = L.map(mapElement, {
         zoomAnimation: true,
         markerZoomAnimation: true,
-        fadeAnimation: true,
+        // Evita que a tile antiga desapareça antes da nova terminar de
+        // carregar, o que criava os quadrados escuros durante o zoom.
+        fadeAnimation: false,
         inertia: true,
         attributionControl: false,
+        // Volta ao zoom por etapas, com resposta rápida e previsível.
+        zoomSnap: 1,
+        zoomDelta: 1,
         wheelDebounceTime: 16,
         wheelPxPerZoomLevel: 80,
+        // Mantém a camada de tiles atual visível durante a animação; as
+        // tiles do novo zoom entram somente quando o zoom termina.
+        zoomAnimationThreshold: 4,
         maxBounds: LIMITES_MUNDO,
         maxBoundsViscosity: 1.0, // "parede dura" — não deixa nem arrastar um pouco pra fora
-        worldCopyJump: false,
+        // Mantém o mapa contínuo quando a viewport ultrapassa uma cópia
+        // horizontal do mundo no zoom mais afastado.
+        worldCopyJump: true,
         minZoom: 2,
-        maxZoom: 22
-    }).setView(DEFAULT_COORDS, INITIAL_ZOOM);
+        maxZoom: 22,
+        // As linhas da espiral precisam de SVG para animar o dashoffset.
+        renderer: L.svg()
+    });
+
+    // A linha é adicionada antes de o plugin terminar de posicionar o pin;
+    // começar a sincronização no layeradd captura toda a abertura da espiral.
+    map.on('layeradd', event => {
+        const className = event.layer && event.layer.options
+            ? String(event.layer.options.className || '')
+            : '';
+        if (className.includes('au-spider-leg')) {
+            sincronizarPernasDaEspiral(380);
+        }
+    });
 
     const fastTileOpts = {
         maxZoom: 22,
         maxNativeZoom: 19,  
         attributionControl: false,      // os servidores de tile só têm imagem de verdade até aqui — acima disso, o Leaflet amplia (upscale) o último nível disponível
-        keepBuffer: 10,           // mantém um anel bem maior de tiles ao redor
+        keepBuffer: 5,            // buffer suficiente sem manter tiles demais
         unloadInvisibleTiles: false, // não descarta tiles fora da tela (menos “cinza”, mais memória)
         updateWhenIdle: false,    // continua baixando enquanto arrasta
-        updateWhenZooming: true,  // pré-carrega durante zoom/fly
-        updateInterval: 50,       // agenda updates de forma mais agressiva
+        updateWhenZooming: false, // evita recarregar tiles a cada frame do zoom
+        updateInterval: 100,      // reduz trabalho durante arraste/zoom
         crossOrigin: true,
         attribution: '',
-        noWrap: true,             // não repete o mapa nas laterais
-        detectRetina: true        // em tela de alta densidade (celular), pede automaticamente
+        // Repete as tiles horizontalmente para não deixar uma coluna branca
+        // quando a viewport fica maior que 360 graus no zoom global.
+        noWrap: false,
+        detectRetina: false       // reduz pela metade o peso das tiles carregadas
                                    // o tile @2x quando o provedor suportar — sem isso, o
                                    // navegador só amplia o tile normal e fica borrado
     };
@@ -545,9 +814,8 @@ function initMap() {
             ...fastTileOpts,
             attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         })
-        : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        : L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             ...fastTileOpts,
-            subdomains: ['a', 'b', 'c'],
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }); // sem token disponível — volta pro OSM puro como reserva
 
@@ -581,7 +849,60 @@ function initMap() {
 
     (modoMapaEscuro ? streetDarkLayer : streetLayer).addTo(map);
 
-    problemsLayerGroup = L.layerGroup().addTo(map);
+    // Apenas nos zooms mais afastados, agrupa relatórios próximos em um
+    // único marcador. A partir do zoom 11, os pins voltam a ser individuais.
+    if (typeof L.markerClusterGroup === 'function') {
+        problemsLayerGroup = L.markerClusterGroup({
+            maxClusterRadius: 40,
+            disableClusteringAtZoom: 11,
+            zoomToBoundsOnClick: true,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false,
+            // Usa a animação nativa do plugin para abrir e recolher a
+            // espiral junto com as linhas que ligam os relatórios.
+            animate: true,
+            spiderLegPolylineOptions: {
+                weight: 1.5,
+                color: '#6b7280',
+                opacity: 0.7,
+                // Classe própria para a transição do elemento SVG da linha.
+                className: 'au-spider-leg'
+            },
+            iconCreateFunction: cluster => {
+                const count = cluster.getChildCount();
+                const tone = count >= 50 ? 'large' : count >= 10 ? 'medium' : 'small';
+                const size = count >= 50 ? 50 : count >= 10 ? 44 : 38;
+
+                return L.divIcon({
+                    html: `<span>${count}</span>`,
+                    className: `au-marker-cluster au-marker-cluster-${tone}`,
+                    iconSize: L.point(size, size),
+                    iconAnchor: L.point(size / 2, size / 2),
+                    bgPos: L.point(0, 0),
+                    // A cor é aplicada inline para acompanhar o tamanho do grupo.
+                    popupAnchor: L.point(0, -21)
+                });
+            }
+        }).addTo(map);
+
+        // Marca os pins que estão temporariamente abertos pela espiral.
+        // O clique nesses pins usa reposicionamento imediato, sem uma nova
+        // animação que faria os marcadores sumirem durante o flyTo.
+        problemsLayerGroup.on('spiderfied', event => {
+            (event.markers || []).forEach(marker => { marker._auSpiderfied = true; });
+        });
+        problemsLayerGroup.on('unspiderfied', event => {
+            (event.markers || []).forEach(marker => { marker._auSpiderfied = false; });
+        });
+
+        // Também cobre o fechamento provocado por zoom ou clique fora da
+        // bolha, quando as linhas já existem e não ocorre um novo layeradd.
+        map.on('zoomstart', () => sincronizarPernasDaEspiral(380));
+        map.on('click', () => sincronizarPernasDaEspiral(380));
+    } else {
+        // Fallback caso o CDN do plugin não esteja disponível.
+        problemsLayerGroup = L.layerGroup().addTo(map);
+    }
 
     // pedir coordenadas iniciais em background para cache
     locateUserAndCenterMap(map, { animate: false });
@@ -742,7 +1063,7 @@ function adicionarMarcadoresNoPanorama(panoLocation) {
             const infoWindowContent = `
                 <div class="info-window-google" style="font-family: Arial, sans-serif; max-width: 250px; color: #333; font-size: 14px; padding: 5px;">
                     <h4 style="margin:0 0 5px 0; font-weight: bold; font-size: 16px;">${problem.titulo || 'Problema sem título'}</h4>
-                    <p style="margin:0; line-height: 1.4;">Tipo: ${problem.tipo}</p>
+                    <p style="margin:0; line-height: 1.4;">Tipo: ${formatarCategoria(problem.tipo)}</p>
                     <p style="margin:0; line-height: 1.4;">Status: <strong style="color: ${problemColors[problem.status.toLowerCase().replace(' ', '_')] || '#333'};">${problem.status}</strong></p>
                     <p style="margin:5px 0; font-size: 11px; color: #666; border-bottom: 1px solid #eee; padding-bottom: 5px;">Distância: ${distance.toFixed(0)} metros</p>
                     
@@ -753,7 +1074,7 @@ function adicionarMarcadoresNoPanorama(panoLocation) {
                     <p style="margin:0; font-size: 13px;">Endereço: ${problem.endereco || 'N/A'}</p>
                     
                     <p style="margin: 10px 0 5px 0; font-weight: bold;">Prioridade:</p>
-                    <p style="margin:0; font-size: 13px;">${problem.prioridade || 'N/A'}</p>
+                    <p style="margin:0; font-size: 13px;">${problem.prioridade ? formatarPrioridade(problem.prioridade) : 'N/A'}</p>
                     
                     ${imageHtml}
                     ${actionsHtml}
@@ -774,6 +1095,125 @@ function adicionarMarcadoresNoPanorama(panoLocation) {
 }
 
 /**
+ * distanciaMetros
+ * Distância em linha reta (fórmula de Haversine) entre dois pontos, em
+ * metros — substitui google.maps.geometry.spherical.computeDistanceBetween
+ * para o caminho SEM chave do Google (fallback).
+ */
+function distanciaMetros(lat1, lng1, lat2, lng2) {
+    const R = 6371000; // raio médio da Terra, em metros
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/**
+ * Garante a camada de inversão dentro do retângulo do panorama.
+ * O fallback substitui o innerHTML do container e a API do Google pode
+ * reconstruir seus filhos; por isso a camada é recriada quando necessário.
+ */
+function garantirStreetViewInvertOverlay() {
+    if (!svPanoDiv) return;
+
+    let overlay = svPanoDiv.querySelector('#streetview-invert-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'streetview-invert-overlay';
+        overlay.setAttribute('aria-hidden', 'true');
+        svPanoDiv.appendChild(overlay);
+    }
+}
+
+/**
+ * renderizarPinsFallbackStreetView
+ * Desenha, por cima do iframe público do Street View (o caminho usado
+ * quando NÃO há chave da API do Google), os pins dos reports próximos —
+ * sem depender de nenhuma biblioteca do Google. A posição de cada pin não
+ * acompanha o ângulo/direção da foto 360° (isso só é possível com a API JS
+ * do Google), então eles ficam numa faixa fixa na parte de baixo do modal,
+ * ordenados por distância — mais uma "lista de proximidade visual" do que
+ * pins ancorados na cena 3D.
+ * @param {{lat:number,lng:number}} centro Ponto usado como referência de distância/recentralização
+ */
+function renderizarPinsFallbackStreetView(centro) {
+    const overlayAntigo = document.getElementById('sv-fallback-pins');
+    if (overlayAntigo) overlayAntigo.remove();
+
+    if (!svPanoDiv || !Array.isArray(allProblemsData)) return;
+
+    // Garante que o overlay (position:absolute) se ancore no próprio
+    // #streetview-pano, e não no .modal-content (ancestral) — senão o
+    // padding do modal desalinha a faixa de pins.
+    if (getComputedStyle(svPanoDiv).position === 'static') {
+        svPanoDiv.style.position = 'relative';
+    }
+
+    const proximos = allProblemsData
+        .map((problem) => {
+            const lat = parseFloat(problem.latitude);
+            const lng = parseFloat(problem.longitude);
+            if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+            const distancia = distanciaMetros(centro.lat, centro.lng, lat, lng);
+            return distancia <= STREET_VIEW_RADIUS ? { problem, lat, lng, distancia } : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.distancia - b.distancia);
+
+    const overlay = document.createElement('div');
+    overlay.id = 'sv-fallback-pins';
+    overlay.style.cssText = 'position:absolute; left:0; right:0; bottom:0; z-index:5; display:flex; flex-direction:column; gap:6px; padding:10px 12px; pointer-events:none;';
+
+    const badge = document.createElement('div');
+    badge.style.cssText = 'align-self:flex-start; background:rgba(0,0,0,0.65); color:#fff; font-size:12px; padding:4px 10px; border-radius:999px; pointer-events:none;';
+    badge.textContent = proximos.length
+        ? `${proximos.length} relatório(s) num raio de ${STREET_VIEW_RADIUS}m`
+        : 'Nenhum relatório num raio de ' + STREET_VIEW_RADIUS + 'm';
+    overlay.appendChild(badge);
+
+    if (proximos.length) {
+        const trilha = document.createElement('div');
+        trilha.style.cssText = 'display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; pointer-events:auto;';
+
+        proximos.forEach(({ problem, lat, lng, distancia }) => {
+            const normalizedTipo = (problem.tipo || '').toLowerCase();
+            const cor = problemColors[normalizedTipo] || problemColors['outros'];
+
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.style.cssText = `flex:0 0 auto; display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.95); border:2px solid ${cor}; border-radius:999px; padding:5px 12px 5px 6px; cursor:pointer; font-size:12px; color:#212529; white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,0.35);`;
+            chip.innerHTML = `<span style="width:10px; height:10px; border-radius:50%; background:${cor}; display:inline-block;"></span>
+                <strong style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${(problem.titulo || 'Sem título')}</strong>
+                <span style="opacity:0.65;">${distancia.toFixed(0)}m</span>`;
+
+            chip.addEventListener('click', () => {
+                const imageHtml = problem.imagem_url
+                    ? `<img src="${problem.imagem_url}" alt="Imagem do problema" style="max-width:100%; height:auto; margin-top:10px; border-radius:8px;">`
+                    : '';
+                if (typeof showMessage === 'function') {
+                    showMessage(problem.titulo || 'Relatório', `
+                        <p style="margin:0 0 6px;">Tipo: ${problem.tipo ? formatarCategoria(problem.tipo) : 'N/A'}</p>
+                        <p style="margin:0 0 6px;">Status: <strong>${problem.status || 'N/A'}</strong></p>
+                        <p style="margin:0 0 6px; opacity:0.7; font-size:12px;">Distância: ${distancia.toFixed(0)} metros</p>
+                        <p style="margin:10px 0 4px; font-weight:bold;">Descrição:</p>
+                        <p style="margin:0;">${problem.descricao || 'N/A'}</p>
+                        ${imageHtml}
+                    `);
+                }
+            });
+
+            trilha.appendChild(chip);
+        });
+
+        overlay.appendChild(trilha);
+    }
+
+    svPanoDiv.appendChild(overlay);
+}
+
+/**
  * Inicializa e exibe o modal do Google Street View
  * @param {object} latlng - Objeto no formato { lat: number, lng: number }
  */
@@ -782,14 +1222,18 @@ function mostrarStreetView(latlng) {
 
     if (!hasGoogleSV) {
         // Fallback sem API key: abre o Street View via URL pública do Google Maps (não exige key)
+        // e desenha por cima os pins dos reports próximos (calculados sem
+        // depender de nenhuma biblioteca do Google — ver renderizarPinsFallbackStreetView).
         if (!svModal || !svPanoDiv) return;
         limparMarcadoresStreetView();
         svPanoDiv.innerHTML = `<iframe
-            style="width:100%;height:100%;border:0;"
+            style="width:100%;height:100%;border:0; filter:brightness(0.8) saturate(0.9) contrast(1.05);"
             loading="lazy"
             allowfullscreen
             src="https://www.google.com/maps?q=&layer=c&cbll=${latlng.lat},${latlng.lng}&cbp=11,0,0,0,0&output=svembed">
         </iframe>`;
+        renderizarPinsFallbackStreetView(latlng);
+        garantirStreetViewInvertOverlay();
         svModal.classList.remove('hidden');
         if (photonSearchContainer) photonSearchContainer.style.display = 'none';
         return;
@@ -818,6 +1262,8 @@ function mostrarStreetView(latlng) {
         panControl: true,
         enableCloseButton: false
     });
+
+    garantirStreetViewInvertOverlay();
 
     panorama.addListener('pano_changed', () => {
         const panoLocation = panorama.getPosition();
@@ -867,7 +1313,7 @@ function locateUserAndCenterMap(map, options = {}) {
 
       const perform = (lat, lng) => {
           // atualizar cache
-          userCoords = [lat, lng];
+          cacheUserCoords([lat, lng]);
 
           const setUserMarker = () => {
             const userLocationIcon = L.divIcon({
@@ -878,18 +1324,20 @@ function locateUserAndCenterMap(map, options = {}) {
                 popupAnchor: [0, -20]
             });
 
-            L.marker([lat, lng], { icon: userLocationIcon }).addTo(map)
+            if (userLocationMarker && map.hasLayer(userLocationMarker)) {
+                map.removeLayer(userLocationMarker);
+            }
+
+            userLocationMarker = L.marker([lat, lng], { icon: userLocationIcon }).addTo(map)
                 .bindPopup("Você está aqui!")
                 .openPopup();
         };
 
         if (animate) {
             // remover eventuais marcadores anteriores com ícone de cruz
-              map.eachLayer(layer => {
-                  if (layer.options && layer.options.icon && layer.options.icon.options.html.includes('fa-crosshairs')) {
-                      map.removeLayer(layer);
-                  }
-              });
+              if (userLocationMarker && map.hasLayer(userLocationMarker)) {
+                  map.removeLayer(userLocationMarker);
+              }
               // garantir que animações anteriores sejam interrompidas
               map.stop();
 
@@ -899,13 +1347,14 @@ function locateUserAndCenterMap(map, options = {}) {
               // projeto "Comércio no Mapa"), fica mais suave e os
               // pins não "balançam" tanto durante a viagem.
               const animationOpts = {
-                  duration: 0.6,
+                  duration: 0.3,
                   animate: true
               };
 
               // desabilita botão para evitar múltiplos disparos
-              if (recenterBtn) recenterBtn.disabled = true;
+              if (recenterBtn) recenterBtn.disabled = false;
 
+              setUserMarker();
               map.flyTo([lat, lng], targetZoom, animationOpts);
 
               map.once('moveend', () => {
@@ -916,35 +1365,35 @@ function locateUserAndCenterMap(map, options = {}) {
               map.setView([lat, lng], 15);
               setUserMarker();
           }
+          esconderCarregandoMapa();
       };
 
     if (providedCoords) {
         // utiliza coordenadas já disponíveis sem esperar geolocalização
         perform(providedCoords[0], providedCoords[1]);
         // também pede nova localização em segundo plano para atualizar cache
-        if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(pos => {
-                userCoords = [pos.coords.latitude, pos.coords.longitude];
-            }, () => { }, { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 });
-        }
+        requestUserLocation(pos => {
+            cacheUserCoords([pos.coords.latitude, pos.coords.longitude]);
+        }, () => { });
     } else if ('geolocation' in navigator) {
         console.log("Geolocalização suportada. Tentando obter a localização...");
 
-        navigator.geolocation.getCurrentPosition(
+        requestUserLocation(
             (position) => {
                 perform(position.coords.latitude, position.coords.longitude);
             },
             (error) => {
                 console.warn(`Erro de Geolocalização (${error.code}): ${error.message}. Usando local padrão.`);
+                // Sem permissão/sinal: só agora cai pro local padrão (São
+                // Paulo), como último recurso.
+                map.setView(DEFAULT_COORDS, INITIAL_ZOOM);
+                esconderCarregandoMapa();
             },
-            {
-                enableHighAccuracy: true,
-                timeout: 7000,
-                maximumAge: 0
-            }
         );
     } else {
         console.log("Geolocalização não é suportada por este navegador. Usando local padrão.");
+        map.setView(DEFAULT_COORDS, INITIAL_ZOOM);
+        esconderCarregandoMapa();
     }
 }
 
@@ -1095,24 +1544,43 @@ function applyFilters() {
     // ── Editar / excluir relatório — reutilizado tanto pelo popup
     //    padrão quanto pela sidebar de detalhes (mapa.html).
     window.abrirEdicaoRelatorio = function (problem) {
-        createFormModal('Editar Relatório', [
-            { name: 'titulo', label: 'Título', value: problem.titulo || '' },
-            { name: 'descricao', label: 'Descrição', type: 'textarea', value: problem.descricao || '' },
-            { name: 'imagem_upload', label: 'Imagem (opcional)', type: 'file', preview: problem.imagem_url || '' }
-        ], (values, { close, files }) => {
-            const formData = new FormData();
-            formData.append('id', problem.id);
-            formData.append('titulo', values.titulo || '');
-            formData.append('descricao', values.descricao || '');
-            if (files && files.imagem_upload) {
-                formData.append('imagem_upload', files.imagem_upload);
-            }
+        if (!reportModal || !reportForm) return;
 
-            fetch('api.php?action=edit_report', { method: 'POST', body: formData })
-                .then(r => r.json())
-                .then(resp => { showToast(resp.message || 'Atualizado', resp.success ? 'success' : 'error'); loadProblems(); close(); })
-                .catch(err => { console.error(err); showMessage('Erro', '<p>Erro ao editar o relatório.</p>'); });
-        });
+        editingReport = problem;
+        reportForm.reset();
+
+        const tituloInput = document.getElementById('titulo');
+        const descricaoInput = document.getElementById('descricao');
+        const tipoInput = document.getElementById('tipo');
+        const prioridadeInput = document.getElementById('prioridade');
+        const statusInput = document.getElementById('status');
+
+        if (tituloInput) tituloInput.value = problem.titulo || '';
+        if (descricaoInput) descricaoInput.value = problem.descricao || '';
+        if (tipoInput) tipoInput.value = problem.tipo || 'outros';
+        if (prioridadeInput) prioridadeInput.value = String(problem.prioridade || 'baixa').toLowerCase();
+        if (statusInput) statusInput.value = problem.status || 'Pendente';
+
+        // A localização é mantida apenas como referência visual durante a edição.
+        if (formLatitude) formLatitude.value = problem.latitude || '';
+        if (formLongitude) formLongitude.value = problem.longitude || '';
+        if (enderecoInput) {
+            enderecoInput.value = problem.endereco ||
+                (problem.latitude && problem.longitude
+                    ? `Coordenadas: ${problem.latitude}, ${problem.longitude}`
+                    : 'Localização não informada');
+        }
+
+        if (fileNameDisplay) {
+            fileNameDisplay.value = problem.imagem_url
+                ? 'Imagem atual (selecione outro arquivo para substituir)'
+                : 'Nenhum arquivo selecionado';
+        }
+        setEditImagePreview(problem.imagem_url || '');
+        setReportModalEditMode(true);
+        toggleMapSelectionMode(false);
+        reportModal.classList.remove('hidden');
+        if (photonSearchContainer) photonSearchContainer.style.display = 'none';
     };
 
     window.excluirRelatorio = function (id) {
@@ -1154,13 +1622,49 @@ function applyFilters() {
         // mesmo ajuste de flyTo usado no projeto "Comércio no Mapa":
         // duration curto (0.6s) e easing padrão do Leaflet (sem
         // forçar easeLinearity), fica mais suave e o pin não balança.
-        marker.on('click', function () {
-            map.stop();
+        marker.on('click', function (event) {
+            // O plugin move temporariamente o marcador para a posição da
+            // espiral. O _preSpiderfyLatlng é a posição original do relatório.
+            const isSpiderfied = Boolean(
+                this._auSpiderfied || this._spiderLeg || this._preSpiderfyLatlng
+            );
+            const targetLatLng = isSpiderfied && this._preSpiderfyLatlng
+                ? this._preSpiderfyLatlng
+                : [problem.latitude, problem.longitude];
             const targetZoom = Math.max(map.getZoom(), 15);
-            map.flyTo([problem.latitude, problem.longitude], targetZoom, {
-                duration: 0.6,
-                animate: true
-            });
+
+            // Evita que o clique continue subindo até o mapa e altere o centro.
+            if (event && event.originalEvent) {
+                L.DomEvent.stopPropagation(event.originalEvent);
+            }
+
+            map.stop();
+
+            const centerOnReport = () => {
+                map.stop();
+                map.flyTo(targetLatLng, targetZoom, {
+                    duration: 0.75,
+                    animate: true
+                });
+            };
+
+            if (isSpiderfied && problemsLayerGroup &&
+                typeof problemsLayerGroup.unspiderfy === 'function') {
+                // Primeiro desfaz a espiral; depois inicia o voo no ciclo
+                // seguinte para a animação de saída não sobrescrever o centro.
+                sincronizarPernasDaEspiral(380);
+                problemsLayerGroup.unspiderfy();
+                if (typeof window.requestAnimationFrame === 'function') {
+                    window.requestAnimationFrame(centerOnReport);
+                } else {
+                    window.setTimeout(centerOnReport, 0);
+                }
+            } else {
+                map.flyTo(targetLatLng, targetZoom, {
+                    duration: 0.6,
+                    animate: true
+                });
+            }
         });
 
         // ── Modo de exibição ao clicar no pin: "popup" (padrão) ou
@@ -1184,16 +1688,23 @@ function applyFilters() {
                     <button class="del-btn" data-id="${problem.id}" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Excluir</button>
                 </div>` : '';
 
+            const detailsUrl = `detalhes-relatorio.html?id=${encodeURIComponent(String(problem.id))}`;
+            const detailsHtml = `
+                <a class="report-details-btn" href="${detailsUrl}">
+                    <i class="fas fa-arrow-up-right-from-square"></i> Ver detalhes do relatório
+                </a>`;
+
             const infoWindowContent = `
                 <div class="info-window">
                     <h4>${problem.titulo || 'Problema sem título'}</h4>
-                    <p>Tipo: ${problem.tipo}</p>
+                    <p>Tipo: ${formatarCategoria(problem.tipo)}</p>
                     <p>Descrição: ${problem.descricao}</p>
                     <p>Endereço: ${problem.endereco || 'Não informado'}</p>
                     <p>Status: <strong>${problem.status}</strong></p>
-                    <p>Prioridade: ${problem.prioridade}</p>
+                    <p>Prioridade: ${formatarPrioridade(problem.prioridade)}</p>
                     ${imageHtml}
                     ${actionsHtml}
+                    ${detailsHtml}
                 </div>
             `;
 
@@ -1236,12 +1747,54 @@ function closeFilterSidebar() {
     }
 }
 
+function setReportModalEditMode(isEditing) {
+    if (!reportModal) return;
+
+    const title = reportModal.querySelector('h2');
+    const submitButton = reportModal.querySelector('.create-report-btn');
+    const locationNote = document.getElementById('edit-location-note');
+
+    if (title) title.textContent = isEditing ? 'Editar Relatório' : 'Reportar Problema';
+    if (submitButton) submitButton.textContent = isEditing ? 'Salvar Alterações' : 'Criar Relatório';
+    if (locationNote) locationNote.hidden = !isEditing;
+
+    if (selectOnMapBtn) {
+        selectOnMapBtn.disabled = isEditing;
+        selectOnMapBtn.setAttribute('aria-disabled', String(isEditing));
+        selectOnMapBtn.title = isEditing
+            ? 'A localização não pode ser alterada durante a edição'
+            : 'Selecionar no mapa';
+    }
+}
+
+function setEditImagePreview(imageUrl) {
+    const preview = document.getElementById('edit-image-preview');
+    const previewImage = document.getElementById('edit-image-preview-img');
+    const previewText = preview ? preview.querySelector('span') : null;
+    if (!preview || !previewImage) return;
+
+    if (imageUrl) {
+        previewImage.src = imageUrl;
+        if (previewText) previewText.textContent = 'Imagem atual. Selecione outro arquivo para substituir.';
+        preview.hidden = false;
+    } else {
+        previewImage.removeAttribute('src');
+        if (previewText) previewText.textContent = 'Imagem atual. Selecione outro arquivo para substituir.';
+        preview.hidden = true;
+    }
+}
+
 function openReportModal() {
+    editingReport = null;
+    if (reportForm) reportForm.reset();
+    if (fileNameDisplay) fileNameDisplay.value = '';
+    setEditImagePreview('');
+    setReportModalEditMode(false);
     if (reportModal) reportModal.classList.remove('hidden');
     if (photonSearchContainer) photonSearchContainer.style.display = 'none';
 }
-
 function closeReportModal() {
+    editingReport = null;
     if (reportModal) reportModal.classList.add('hidden');
     toggleMapSelectionMode(false);
     try { map.off('click', handleMapSelection); } catch (e) { }
@@ -1251,6 +1804,9 @@ function closeReportModal() {
     }
     if (photonSearchContainer) photonSearchContainer.style.display = '';
     if (reportForm) reportForm.reset();
+    if (fileNameDisplay) fileNameDisplay.value = '';
+    setEditImagePreview('');
+    setReportModalEditMode(false);
 }
 
 function toggleMapSelectionMode(enable) {
@@ -1310,6 +1866,35 @@ selectOnMapBtn.addEventListener('click', (e) => {
 
 reportForm.addEventListener('submit', function (e) {
     e.preventDefault();
+
+    if (editingReport) {
+        const editFormData = new FormData(this);
+        editFormData.delete('latitude');
+        editFormData.delete('longitude');
+        editFormData.delete('endereco');
+        editFormData.append('id', editingReport.id);
+
+        fetch('api.php?action=edit_report', {
+            method: 'POST',
+            body: editFormData
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (!result.success) {
+                    showMessage('Erro ao editar relatório', `<p>${result.message || 'Ocorreu um erro.'}</p>`);
+                    return;
+                }
+
+                showToast(result.message || 'Relatório atualizado com sucesso!', 'success', 3000);
+                closeReportModal();
+                loadProblems();
+            })
+            .catch(error => {
+                console.error('Erro ao editar relatório:', error);
+                showMessage('Erro ao editar relatório', '<p>Não foi possível salvar as alterações.</p>');
+            });
+        return;
+    }
 
     const lat = formLatitude.value;
     const lng = formLongitude.value;
@@ -1404,21 +1989,28 @@ if (uploadBtnStyled && imagemUploadInput) {
             const fileName = this.files.length > 0 ? this.files[0].name : "Nenhum arquivo selecionado";
             fileNameDisplay.value = fileName;
         }
+
+        if (editingReport && this.files && this.files[0]) {
+            const editPreview = document.getElementById('edit-image-preview');
+            const editPreviewImage = document.getElementById('edit-image-preview-img');
+            const editPreviewText = editPreview ? editPreview.querySelector('span') : null;
+            if (editPreview && editPreviewImage) {
+                editPreviewImage.src = URL.createObjectURL(this.files[0]);
+                editPreview.hidden = false;
+                if (editPreviewText) editPreviewText.textContent = 'Nova imagem selecionada para substituir a atual.';
+            }
+        }
     });
 }
 
 if (recenterBtn) {
     recenterBtn.addEventListener('click', () => {
         // remove marcadores anteriores de localização
-        map.eachLayer(layer => {
-            if (layer.options && layer.options.icon && layer.options.icon.options.html.includes('fa-crosshairs')) {
-                map.removeLayer(layer);
-            }
-        });
+        const cachedCoords = getCachedUserCoords();
 
         // se tivermos coordenadas em cache, anima imediatamente
-        if (userCoords) {
-            locateUserAndCenterMap(map, { animate: true, coords: userCoords });
+        if (cachedCoords) {
+            locateUserAndCenterMap(map, { animate: true, coords: cachedCoords });
         } else {
             locateUserAndCenterMap(map, { animate: true });
         }

@@ -21,18 +21,18 @@
        Resolvidos uma vez na inicialização (initUI)
     =========================================================== */
     var _el = {
-        fab:        null,  // #ai-fab
-        window:     null,  // #ai-chat-window
-        messages:   null,  // .ai-messages-area
-        input:      null,  // #ai-input
-        sendBtn:    null,  // #ai-send-btn
-        typingRow:  null,  // #ai-typing-row
-        badge:      null,  // .ai-fab-badge
-        suggestions:null,  // #ai-suggestions
-        welcome:    null,  // .ai-welcome
-        btnClose:   null,  // #ai-btn-close
-        btnMin:     null,  // #ai-btn-minimize
-        btnClear:   null,  // #ai-btn-clear
+        fab:         null,  // #ai-fab
+        window:      null,  // #ai-chat-window
+        messages:    null,  // .ai-messages-area
+        input:       null,  // #ai-input
+        sendBtn:     null,  // #ai-send-btn
+        typingRow:   null,  // #ai-typing-row
+        badge:       null,  // .ai-fab-badge
+        suggestions: null,  // #ai-suggestions
+        welcome:     null,  // .ai-welcome
+        btnClose:    null,  // #ai-btn-close
+        btnMin:      null,  // #ai-btn-minimize
+        btnClear:    null,  // #ai-btn-clear
     };
 
     var _isOpen     = false;
@@ -61,6 +61,9 @@
         _el.btnClose    = document.getElementById('ai-btn-close');
         _el.btnMin      = document.getElementById('ai-btn-minimize');
         _el.btnClear    = document.getElementById('ai-btn-clear');
+
+        // Garantir que o indicador de digitação inicie oculto após resolver os elementos do DOM
+        ocultarDigitando();
 
         if (!_el.fab || !_el.window || !_el.messages || !_el.input) {
             console.error('[UI] Elementos do assistente não encontrados. Verifique o HTML.');
@@ -257,15 +260,21 @@
        INDICADOR "DIGITANDO..."
     =========================================================== */
 
-    /** Exibe o indicador de que a IA está processando */
+  /** Exibe o indicador de que a IA está processando */
     function mostrarDigitando() {
-        if (_el.typingRow) _el.typingRow.removeAttribute('hidden');
+        if (_el.typingRow) {
+            _el.typingRow.removeAttribute('hidden');
+            _el.typingRow.style.display = 'flex'; // Força a exibição quando a IA digita
+        }
         scrollParaBaixo(true);
     }
 
     /** Oculta o indicador de digitação */
     function ocultarDigitando() {
-        if (_el.typingRow) _el.typingRow.setAttribute('hidden', '');
+        if (_el.typingRow) {
+            _el.typingRow.setAttribute('hidden', '');
+            _el.typingRow.style.display = 'none'; // Garante que fique escondido
+        }
     }
 
     /* ===========================================================
@@ -278,7 +287,7 @@
      * @param {boolean} mostrar
      */
     function mostrarBoasVindas(mostrar) {
-        if (_el.welcome)    _el.welcome.style.display    = mostrar ? '' : 'none';
+        if (_el.welcome)     _el.welcome.style.display    = mostrar ? '' : 'none';
         if (_el.suggestions) _el.suggestions.style.display = mostrar ? '' : 'none';
     }
 
@@ -424,15 +433,7 @@
     =========================================================== */
 
     function _svgAI() {
-        return '<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">'
-            + '<circle cx="10" cy="10" r="7" stroke="white" stroke-width="1.4"/>'
-            + '<circle cx="7.5" cy="8.5" r="1.2" fill="white"/>'
-            + '<circle cx="12.5" cy="8.5" r="1.2" fill="white"/>'
-            + '<path d="M7 12.5 Q10 14.5 13 12.5" stroke="white" stroke-width="1.2" '
-            + 'stroke-linecap="round" fill="none"/>'
-            + '<path d="M10 3 V1 M10 19 V17 M3 10 H1 M19 10 H17" stroke="white" '
-            + 'stroke-width="1" stroke-linecap="round" opacity="0.5"/>'
-            + '</svg>';
+        return '<img style="width: 90%; height: 90%; object-fit: cover;" src="imagens/urbanoidcircle.png" alt="Avatar do Assistente IA">';
     }
 
     function _svgUser() {

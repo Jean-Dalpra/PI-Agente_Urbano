@@ -203,7 +203,7 @@
             background: white;
             border-radius: 8px;
             padding: 25px;
-            max-width: 400px;
+            max-width: 600px;
             width: 90%;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
         }
@@ -371,6 +371,161 @@
 
         .reset-filters-btn:hover {
             background-color: #5a6268;
+        }
+
+        /* Barra e botão de exportação */
+        .export-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+
+        .export-btn {
+            padding: 10px 18px;
+            background-color: #198754;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .export-btn:hover {
+            background-color: #146c43;
+        }
+
+        /* Modal de exportação — opções de formato.
+           Observação: essas regras vivem dentro de .filter-group (reaproveita
+           o modal de filtros), então usamos seletores ".filter-group .export-*"
+           para ficarem mais específicos que ".filter-group input"/".filter-group
+           label" já existentes — senão aquelas regras genéricas (largura 100%,
+           label em bloco) vazam pra cá e desalinham tudo. */
+        .filter-group .export-format-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .filter-group .export-format-option {
+            flex: 1 1 140px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-bottom: 0;
+        }
+
+        .filter-group .export-format-option input[type="radio"] {
+            width: auto;
+            height: auto;
+            padding: 0;
+            border: none;
+            border-radius: 0;
+            margin: 0;
+            flex: 0 0 auto;
+        }
+
+        .filter-group .export-format-option:has(input:checked) {
+            border-color: var(--primary-color);
+            background-color: rgba(0, 123, 255, 0.08);
+        }
+
+        .filter-group .export-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .filter-group .export-group-header label {
+            margin-bottom: 0;
+        }
+
+        .export-select-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .export-select-actions button {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 2px 0;
+            text-decoration: underline;
+        }
+
+        .filter-group .export-checkbox-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 16px;
+            max-height: 210px;
+            overflow-y: auto;
+            padding: 10px 12px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            /* scrollbar mais discreta (não brigar visualmente com a do modal) */
+            scrollbar-width: thin;
+        }
+
+        .filter-group .export-checkbox-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .filter-group .export-checkbox-grid::-webkit-scrollbar-thumb {
+            background-color: #ced4da;
+            border-radius: 3px;
+        }
+
+        .filter-group .export-checkbox-grid label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 400;
+            font-size: 0.88rem;
+            color: var(--dark-text);
+            cursor: pointer;
+            margin-bottom: 0;
+            padding: 4px 0;
+        }
+
+        .filter-group .export-checkbox-grid input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            padding: 0;
+            border: none;
+            border-radius: 0;
+            margin: 0;
+            flex: 0 0 auto;
+            accent-color: var(--primary-color);
+        }
+
+        .export-count-preview {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin: 10px 0 0;
+        }
+
+        body.dark-mode.dashboard-page .export-format-option,
+        body.dark-mode.dashboard-page .export-checkbox-grid {
+            border-color: #495057;
+        }
+
+        body.dark-mode.dashboard-page .export-count-preview {
+            color: #adb5bd;
         }
 
         /* Modal de filtros */
@@ -929,6 +1084,17 @@
         </section>
 
         <!--
+            Barra de exportação — fica acima da barra de filtros.
+            Abre um modal onde dá pra escolher formato (JSON, CSV, PDF) e
+            filtrar por categoria/tipo e situação o que vai ser exportado.
+        -->
+        <div class="export-bar">
+            <button id="export-btn" class="export-btn">
+                <i class="fas fa-download"></i> Exportar Relatórios
+            </button>
+        </div>
+
+        <!--
             Barra de pesquisa e filtros
             - Input de busca por título/descrição
             - Botão de filtro para abrir modal com opções de categoria, data e status
@@ -1012,6 +1178,67 @@
                 <div class="filter-modal-actions">
                     <button id="cancel-filters-btn" class="cancel-filters-btn">Cancelar</button>
                     <button id="apply-filters-btn" class="apply-filters-btn">Aplicar Filtros</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de exportação -->
+        <div id="export-modal" class="filter-modal">
+            <div class="filter-modal-content">
+                <div class="filter-modal-header">
+                    <h3>Exportar Relatórios</h3>
+                    <button class="filter-modal-close" id="export-modal-close">&times;</button>
+                </div>
+
+                <div class="filter-group">
+                    <label>Formato do arquivo</label>
+                    <div class="export-format-options">
+                        <label class="export-format-option">
+                            <input type="radio" name="export-format" value="json" checked>
+                            <span><i class="fas fa-file-code"></i> JSON</span>
+                        </label>
+                        <label class="export-format-option">
+                            <input type="radio" name="export-format" value="csv">
+                            <span><i class="fas fa-file-csv"></i> CSV (Excel/Planilhas)</span>
+                        </label>
+                        <label class="export-format-option">
+                            <input type="radio" name="export-format" value="pdf">
+                            <span><i class="fas fa-file-pdf"></i> PDF (imprimir)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div class="export-group-header">
+                        <label>Categorias / Tipos</label>
+                        <div class="export-select-actions">
+                            <button type="button" data-select-all="export-category-checks">Marcar todas</button>
+                            <button type="button" data-select-none="export-category-checks">Desmarcar todas</button>
+                        </div>
+                    </div>
+                    <div id="export-category-checks" class="export-checkbox-grid">
+                        <!-- preenchido via JS a partir da mesma lista de categorias do filtro -->
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div class="export-group-header">
+                        <label>Situação</label>
+                        <div class="export-select-actions">
+                            <button type="button" data-select-all="export-status-checks">Marcar todas</button>
+                            <button type="button" data-select-none="export-status-checks">Desmarcar todas</button>
+                        </div>
+                    </div>
+                    <div id="export-status-checks" class="export-checkbox-grid">
+                        <!-- preenchido via JS -->
+                    </div>
+                </div>
+
+                <p id="export-count-preview" class="export-count-preview">0 relatório(s) serão exportados.</p>
+
+                <div class="filter-modal-actions">
+                    <button id="cancel-export-btn" class="cancel-filters-btn">Cancelar</button>
+                    <button id="confirm-export-btn" class="apply-filters-btn"><i class="fas fa-download"></i> Exportar</button>
                 </div>
             </div>
         </div>
@@ -1156,7 +1383,7 @@
 
                 const statusTag = `<span class="tag tag-status-${problem.status.replace(/\s/g, '-') || 'outros'}">${problem.status}</span>`;
     
-                const priorityTag = `<span class="tag tag-prioridade-${problem.prioridade.toLowerCase() || 'baixa'}">${problem.prioridade || 'Baixa'}</span>`;
+                const priorityTag = `<span class="tag tag-prioridade-${(problem.prioridade || 'baixa').toLowerCase()}">${formatarPrioridade(problem.prioridade)}</span>`;
 
                 const reportDetailsUrl = `detalhes-relatorio.html?id=${problem.id || '0'}`;
 
@@ -1184,7 +1411,7 @@
                     </span>
                     <span>
                         <i class="fas fa-tag"></i> 
-                        ${problem.tipo || 'Outros'}
+                        ${formatarCategoria(problem.tipo)}
                     </span>
                     <span class="truth-pill">
                         <i class="fas fa-shield-halved"></i>
@@ -1209,6 +1436,59 @@
          * Estado global para armazenar todos os relatórios e filtros aplicados
          */
         let allReports = [];
+
+        /**
+         * formatarPrioridade
+         * A prioridade é gravada no banco a partir do value="" do <select>
+         * do formulário de report (baixa/media/alta/urgente — minúsculo,
+         * sem acento, de propósito, como chave). Nunca deveria ir direto
+         * pra tela assim. Esta função sempre devolve o rótulo correto,
+         * acentuado, não importa como o valor esteja gravado.
+         */
+        function formatarPrioridade(valor) {
+            const mapa = { baixa: 'Baixa', media: 'Média', alta: 'Alta', urgente: 'Urgente' };
+            const chave = String(valor || '').trim().toLowerCase();
+            return mapa[chave] || (valor ? String(valor) : 'Baixa');
+        }
+
+        // Fonte única dos rótulos de categoria/tipo — usada tanto para
+        // exibir o "tipo" nos cards de report (formatarCategoria) quanto
+        // nos checkboxes do modal de exportação.
+        const EXPORT_CATEGORIES = [
+            { value: 'iluminacao', label: 'Iluminação' },
+            { value: 'asfalto', label: 'Asfalto' },
+            { value: 'limpeza', label: 'Limpeza' },
+            { value: 'agua-esgoto', label: 'Água/Esgoto' },
+            { value: 'transporte', label: 'Transporte' },
+            { value: 'assistencial', label: 'Assistencial' },
+            { value: 'meteorologico', label: 'Meteorológico' },
+            { value: 'mobilidade', label: 'Mobilidade' },
+            { value: 'saude', label: 'Saúde' },
+            { value: 'seguranca', label: 'Segurança' },
+            { value: 'acessibilidade', label: 'Acessibilidade' },
+            { value: 'eletricidade', label: 'Eletricidade' },
+            { value: 'meio-ambiente', label: 'Meio Ambiente' },
+            { value: 'estrutura', label: 'Estrutura' },
+            { value: 'drenagem', label: 'Drenagem' },
+            { value: 'obras', label: 'Obras' },
+            { value: 'ciclismo', label: 'Ciclismo' },
+            { value: 'ma-gestao', label: 'Má Gestão' },
+            { value: 'outros', label: 'Outros' }
+        ];
+
+        /**
+         * formatarCategoria
+         * O tipo/categoria é gravado no banco como chave (agua-esgoto,
+         * meteorologico, ma-gestao...), não como o rótulo pronto pra
+         * leitura. Esta função converte pra exibição, com acentuação
+         * correta — não importa a caixa (maiúscula/minúscula) gravada.
+         */
+        function formatarCategoria(tipo) {
+            const chave = String(tipo || '').trim().toLowerCase();
+            const found = EXPORT_CATEGORIES.find(c => c.value === chave);
+            return found ? found.label : (tipo ? String(tipo) : 'Outros');
+        }
+
         let currentFilters = {
             search: '',
             category: '',
@@ -1357,6 +1637,257 @@
             };
             updateFilterInputs();
             applyFiltersAndRender();
+        }
+
+        /**
+         * ============================================================
+         * EXPORTAÇÃO DE RELATÓRIOS (JSON / CSV / PDF)
+         * ============================================================
+         * Independente dos filtros da listagem principal — o usuário
+         * escolhe, dentro do próprio modal, quais categorias/tipos e quais
+         * situações quer levar, e sempre parte da lista completa
+         * (allReports), não da lista já filtrada na tela.
+         */
+
+        const EXPORT_STATUSES = [
+            'Pendente', 'Em Análise', 'Em Andamento', 'Resolvido', 'Verificado', 'Invalidado'
+        ];
+
+        /**
+         * Preenche as grades de checkbox de categoria/situação do modal de
+         * exportação. Todas começam marcadas (exportar tudo por padrão).
+         */
+        function popularChecksExportacao() {
+            const catContainer = document.getElementById('export-category-checks');
+            const statusContainer = document.getElementById('export-status-checks');
+            if (!catContainer || !statusContainer) return;
+
+            catContainer.innerHTML = EXPORT_CATEGORIES.map(cat => `
+                <label>
+                    <input type="checkbox" class="export-cat-check" value="${cat.value}" checked>
+                    ${cat.label}
+                </label>
+            `).join('');
+
+            statusContainer.innerHTML = EXPORT_STATUSES.map(status => `
+                <label>
+                    <input type="checkbox" class="export-status-check" value="${status}" checked>
+                    ${status}
+                </label>
+            `).join('');
+        }
+
+        /**
+         * Retorna os relatórios (de allReports, a lista completa) que batem
+         * com as categorias e situações marcadas no modal de exportação.
+         */
+        function getReportsSelecionadosParaExportar() {
+            const categoriasMarcadas = Array.from(document.querySelectorAll('.export-cat-check:checked')).map(el => el.value);
+            const statusMarcados = Array.from(document.querySelectorAll('.export-status-check:checked')).map(el => el.value);
+
+            return allReports.filter(problem => {
+                const tipo = (problem.tipo || 'outros').toLowerCase();
+                const matchesCategoria = categoriasMarcadas.includes(tipo);
+                const matchesStatus = statusMarcados.includes(problem.status);
+                return matchesCategoria && matchesStatus;
+            });
+        }
+
+        /**
+         * Atualiza o texto "X relatório(s) serão exportados." em tempo real
+         * conforme os checkboxes do modal mudam.
+         */
+        function atualizarContagemExportacao() {
+            const el = document.getElementById('export-count-preview');
+            if (!el) return;
+            const total = getReportsSelecionadosParaExportar().length;
+            el.textContent = `${total} relatório(s) serão exportados.`;
+        }
+
+        /**
+         * Dispara o download de um arquivo gerado no navegador (sem passar
+         * pelo servidor) a partir de um Blob.
+         */
+        function baixarComoArquivo(conteudo, nomeArquivo, mimeType) {
+            const blob = new Blob([conteudo], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nomeArquivo;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        function nomeArquivoExportacao(extensao) {
+            const hoje = new Date().toISOString().slice(0, 10);
+            return `agente-urbano-relatorios-${hoje}.${extensao}`;
+        }
+
+        function exportarComoJSON(reports) {
+            const conteudo = JSON.stringify(reports, null, 2);
+            baixarComoArquivo(conteudo, nomeArquivoExportacao('json'), 'application/json;charset=utf-8;');
+        }
+
+        /**
+         * Escapa um valor para uma célula CSV (RFC 4180): envolve em aspas
+         * quando o valor contém vírgula, aspas ou quebra de linha, e
+         * duplica aspas internas.
+         */
+        function escaparCelulaCSV(valor) {
+            const str = (valor === null || valor === undefined) ? '' : String(valor);
+            if (/[",\n\r]/.test(str)) {
+                return '"' + str.replace(/"/g, '""') + '"';
+            }
+            return str;
+        }
+
+        function exportarComoCSV(reports) {
+            const colunas = [
+                'id', 'titulo', 'descricao', 'tipo', 'status', 'prioridade',
+                'endereco', 'latitude', 'longitude', 'data_criacao',
+                'data_atualizacao', 'veracidade', 'user_id'
+            ];
+            const linhas = [colunas.join(',')];
+            reports.forEach(r => {
+                linhas.push(colunas.map(col => escaparCelulaCSV(r[col])).join(','));
+            });
+            // BOM no início para o Excel abrir acentuação (UTF-8) corretamente
+            const conteudo = '\uFEFF' + linhas.join('\r\n');
+            baixarComoArquivo(conteudo, nomeArquivoExportacao('csv'), 'text/csv;charset=utf-8;');
+        }
+
+        /**
+         * "Exportação em PDF" sem nenhuma biblioteca extra: monta uma
+         * página HTML simples numa nova aba e abre o diálogo de impressão
+         * do navegador — a pessoa escolhe "Salvar como PDF" no destino.
+         */
+        function exportarComoPDF(reports) {
+            const linhas = reports.map(r => `
+                <tr>
+                    <td>${r.id ?? ''}</td>
+                    <td>${(r.titulo ?? '').replace(/</g, '&lt;')}</td>
+                    <td>${formatarCategoria(r.tipo).replace(/</g, '&lt;')}</td>
+                    <td>${(r.status ?? '').replace(/</g, '&lt;')}</td>
+                    <td>${formatarPrioridade(r.prioridade).replace(/</g, '&lt;')}</td>
+                    <td>${(r.endereco ?? '').replace(/</g, '&lt;')}</td>
+                    <td>${formatBrazilianDate(r.data_criacao)}</td>
+                </tr>
+            `).join('');
+
+            const html = `
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Relatórios - Agente Urbano</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; color: #212529; }
+                        h1 { font-size: 1.3rem; margin-bottom: 4px; }
+                        p.meta { color: #6c757d; margin-top: 0; margin-bottom: 16px; font-size: 0.85rem; }
+                        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+                        th, td { border: 1px solid #ced4da; padding: 6px 8px; text-align: left; }
+                        th { background: #f1f3f5; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Agente Urbano — Relatórios Exportados</h1>
+                    <p class="meta">${reports.length} relatório(s) — gerado em ${new Date().toLocaleString('pt-BR')}</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Título</th><th>Categoria</th><th>Situação</th>
+                                <th>Prioridade</th><th>Endereço</th><th>Criado em</th>
+                            </tr>
+                        </thead>
+                        <tbody>${linhas}</tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+
+            const janela = window.open('', '_blank');
+            if (!janela) {
+                alert('Não foi possível abrir a janela de impressão. Verifique se o navegador bloqueou pop-ups.');
+                return;
+            }
+            janela.document.write(html);
+            janela.document.close();
+            janela.focus();
+            // Pequeno atraso pra garantir que o conteúdo renderizou antes de imprimir
+            setTimeout(() => janela.print(), 300);
+        }
+
+        /**
+         * Inicializa o modal de exportação: preenche checkboxes, abre/fecha
+         * o modal, liga os botões de marcar/desmarcar tudo, atualiza a
+         * contagem em tempo real e dispara a exportação no formato
+         * escolhido.
+         */
+        function initExportModal() {
+            popularChecksExportacao();
+
+            const exportBtn = document.getElementById('export-btn');
+            const exportModal = document.getElementById('export-modal');
+            const exportModalClose = document.getElementById('export-modal-close');
+            const cancelExportBtn = document.getElementById('cancel-export-btn');
+            const confirmExportBtn = document.getElementById('confirm-export-btn');
+
+            if (exportBtn && exportModal) {
+                exportBtn.addEventListener('click', () => {
+                    atualizarContagemExportacao();
+                    exportModal.classList.add('open');
+                });
+            }
+
+            const fecharExportModal = () => exportModal && exportModal.classList.remove('open');
+            if (exportModalClose) exportModalClose.addEventListener('click', fecharExportModal);
+            if (cancelExportBtn) cancelExportBtn.addEventListener('click', fecharExportModal);
+            if (exportModal) {
+                exportModal.addEventListener('click', (e) => {
+                    if (e.target === exportModal) fecharExportModal();
+                });
+            }
+
+            // Marcar todas / Desmarcar todas
+            document.querySelectorAll('[data-select-all]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const container = document.getElementById(btn.getAttribute('data-select-all'));
+                    if (!container) return;
+                    container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+                    atualizarContagemExportacao();
+                });
+            });
+            document.querySelectorAll('[data-select-none]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const container = document.getElementById(btn.getAttribute('data-select-none'));
+                    if (!container) return;
+                    container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    atualizarContagemExportacao();
+                });
+            });
+
+            // Contagem em tempo real ao (des)marcar categorias/situações
+            const catContainer = document.getElementById('export-category-checks');
+            const statusContainer = document.getElementById('export-status-checks');
+            if (catContainer) catContainer.addEventListener('change', atualizarContagemExportacao);
+            if (statusContainer) statusContainer.addEventListener('change', atualizarContagemExportacao);
+
+            if (confirmExportBtn) {
+                confirmExportBtn.addEventListener('click', () => {
+                    const reports = getReportsSelecionadosParaExportar();
+                    if (reports.length === 0) {
+                        alert('Nenhum relatório corresponde às categorias/situações selecionadas.');
+                        return;
+                    }
+                    const formato = document.querySelector('input[name="export-format"]:checked')?.value || 'json';
+                    if (formato === 'json') exportarComoJSON(reports);
+                    else if (formato === 'csv') exportarComoCSV(reports);
+                    else if (formato === 'pdf') exportarComoPDF(reports);
+                    fecharExportModal();
+                });
+            }
         }
 
         /**
@@ -1892,6 +2423,7 @@
             initSidebarMenu();
             initAuth();
             initSearchAndFilters();
+            initExportModal();
             fetchReports(); 
         });
     </script>

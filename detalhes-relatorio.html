@@ -149,7 +149,7 @@
             color: #721c24;
         }
 
-        .tag-status-Em-Analise,
+        .tag-status-Em-Análise,
         .tag-status-Em-Andamento {
             background-color: #fff3cd;
             color: #856404;
@@ -160,22 +160,32 @@
             color: #155724;
         }
 
-        .tag-prioridade-Baixa {
+        .tag-status-Verificado {
+            background-color: #d1f5e0;
+            color: #14532d;
+        }
+
+        .tag-status-Invalidado {
             background-color: #e2e3e5;
             color: #383d41;
         }
 
-        .tag-prioridade-Media {
+        .tag-prioridade-baixa {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+
+        .tag-prioridade-media {
             background-color: #cce5ff;
             color: #004085;
         }
 
-        .tag-prioridade-Alta {
+        .tag-prioridade-alta {
             background-color: #f8d7da;
             color: #721c24;
         }
 
-        .tag-prioridade-Urgente {
+        .tag-prioridade-urgente {
             background-color: #f5c6cb;
             color: #721c24;
             border: 1px solid #f5c6cb;
@@ -1277,10 +1287,56 @@
             }
         }
 
+        /**
+         * formatarPrioridade
+         * A prioridade é gravada no banco a partir do value="" do <select>
+         * do formulário de report (baixa/media/alta/urgente — minúsculo,
+         * sem acento, de propósito, como chave). Nunca deveria ir direto
+         * pra tela assim. Esta função sempre devolve o rótulo correto,
+         * acentuado, não importa como o valor esteja gravado.
+         */
+        function formatarPrioridade(valor) {
+            const mapa = { baixa: 'Baixa', media: 'Média', alta: 'Alta', urgente: 'Urgente' };
+            const chave = String(valor || '').trim().toLowerCase();
+            return mapa[chave] || (valor ? String(valor) : 'Baixa');
+        }
+
+        /**
+         * formatarCategoria
+         * O tipo/categoria também é gravado como chave (agua-esgoto,
+         * meteorologico, ma-gestao...) — não como o rótulo pronto pra
+         * leitura. Converte pra exibição, com acentuação correta.
+         */
+        const CATEGORIA_LABELS = {
+            'iluminacao': 'Iluminação',
+            'asfalto': 'Asfalto',
+            'limpeza': 'Limpeza',
+            'agua-esgoto': 'Água/Esgoto',
+            'transporte': 'Transporte',
+            'assistencial': 'Assistencial',
+            'meteorologico': 'Meteorológico',
+            'mobilidade': 'Mobilidade',
+            'saude': 'Saúde',
+            'seguranca': 'Segurança',
+            'acessibilidade': 'Acessibilidade',
+            'eletricidade': 'Eletricidade',
+            'meio-ambiente': 'Meio Ambiente',
+            'estrutura': 'Estrutura',
+            'drenagem': 'Drenagem',
+            'obras': 'Obras',
+            'ciclismo': 'Ciclismo',
+            'ma-gestao': 'Má Gestão',
+            'outros': 'Outros'
+        };
+        function formatarCategoria(tipo) {
+            const chave = String(tipo || '').trim().toLowerCase();
+            return CATEGORIA_LABELS[chave] || (tipo ? String(tipo) : 'Outros');
+        }
+
         function renderDetails(problem) {
 
-            const statusTag = `<span class="tag tag-status-${problem.status.replace(/\s/g, '-') || 'outros'}">${problem.status}</span>`;
-            const priorityTag = `<span class="tag tag-prioridade-${problem.prioridade || 'Baixa'}">${problem.prioridade || 'Baixa'}</span>`;
+            const statusTag = `<span class="tag tag-status-${(problem.status || 'outros').replace(/\s/g, '-')}">${problem.status}</span>`;
+            const priorityTag = `<span class="tag tag-prioridade-${(problem.prioridade || 'baixa').toLowerCase()}">${formatarPrioridade(problem.prioridade)}</span>`;
             const veracidade = Number(problem.veracidade ?? 50);
 
             const actualComments = problem.comentarios || [];
@@ -1360,7 +1416,7 @@
                     <div class="info-section">
                         <h3><i class="fas fa-calendar-alt"></i> Datas e Tipo</h3>
                         <div class="info-item">
-                            <strong>Tipo/Categoria:</strong> <span>${problem.tipo || 'Outros'}</span>
+                            <strong>Tipo/Categoria:</strong> <span>${formatarCategoria(problem.tipo)}</span>
                         </div>
                         <div class="info-item">
                             <strong>Data de Criação:</strong> <span>${formatBrazilianDate(problem.data_criacao)}</span>

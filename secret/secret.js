@@ -1905,6 +1905,144 @@ if (p.vortex) {
 // ═══════════════════════════════════════════════════════════════════
 //  INPUT
 // ═══════════════════════════════════════════════════════════════════
+const secretRoot = document.getElementById("root");
+const mobileControls = document.getElementById("mobile-controls");
+
+function fitSecretBattlefield() {
+  if (!secretRoot) return;
+
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+  if (!isMobile) {
+    secretRoot.style.position = "";
+    secretRoot.style.top = "";
+    secretRoot.style.left = "";
+    secretRoot.style.transform = "";
+    secretRoot.style.transformOrigin = "";
+    return;
+  }
+
+  // Reserva espaço para os controles sem cortar a caixa de diálogo.
+  const controlsSpace = mobileControls ? 84 : 12;
+  const baseHeight = Math.max(secretRoot.scrollHeight, 1);
+  const availableWidth = Math.max(window.innerWidth - 12, 240);
+  const availableHeight = Math.max(window.innerHeight - controlsSpace - 12, 220);
+  const scale = Math.max(0.35, Math.min(
+    1,
+    availableWidth / 600,
+    availableHeight / baseHeight
+  ));
+  const visualHeight = baseHeight * scale;
+  const centeredTop = Math.max(6, (availableHeight - visualHeight) / 2);
+
+  secretRoot.style.position = "absolute";
+  secretRoot.style.top = `${centeredTop}px`;
+  secretRoot.style.left = `${Math.max(0, (window.innerWidth - 600 * scale) / 2)}px`;
+  secretRoot.style.transformOrigin = "top left";
+  secretRoot.style.transform = `scale(${scale})`;
+}
+
+window.addEventListener("resize", fitSecretBattlefield, { passive: true });
+window.addEventListener("orientationchange", fitSecretBattlefield, { passive: true });
+requestAnimationFrame(fitSecretBattlefield);
+
+if (mobileControls) {
+  const joystick = document.getElementById("mobile-joystick");
+  const joystickKnob = document.getElementById("mobile-joystick-knob");
+  const mobileAction = mobileControls.querySelector('[data-key="z"]');
+  const movementKeys = ["arrowup", "arrowdown", "arrowleft", "arrowright"];
+  let joystickPointerId = null;
+
+  function clearJoystickKeys() {
+    movementKeys.forEach(key => { keys[key] = false; });
+  }
+
+  function resetJoystick() {
+    joystickPointerId = null;
+    clearJoystickKeys();
+    if (joystickKnob) joystickKnob.style.transform = "translate(-50%, -50%)";
+    if (joystick) joystick.classList.remove("is-pressed");
+  }
+
+  function updateJoystick(event) {
+    if (!joystick || !joystickKnob) return;
+
+    const rect = joystick.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    let dx = event.clientX - centerX;
+    let dy = event.clientY - centerY;
+    const maxDistance = (rect.width - joystickKnob.offsetWidth) / 2;
+    const distance = Math.hypot(dx, dy) || 1;
+
+    if (distance > maxDistance) {
+      dx = dx / distance * maxDistance;
+      dy = dy / distance * maxDistance;
+    }
+
+    joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+    const threshold = Math.max(10, maxDistance * 0.24);
+    clearJoystickKeys();
+    if (Math.abs(dx) >= threshold) keys[dx < 0 ? "arrowleft" : "arrowright"] = true;
+    if (Math.abs(dy) >= threshold) keys[dy < 0 ? "arrowup" : "arrowdown"] = true;
+  }
+
+  if (joystick) {
+    joystick.addEventListener("pointerdown", event => {
+      event.preventDefault();
+      joystickPointerId = event.pointerId;
+      joystick.classList.add("is-pressed");
+      if (joystick.setPointerCapture) {
+        try { joystick.setPointerCapture(event.pointerId); } catch (e) { }
+      }
+      updateJoystick(event);
+    }, { passive: false });
+
+    joystick.addEventListener("pointermove", event => {
+      if (event.pointerId !== joystickPointerId) return;
+      event.preventDefault();
+      updateJoystick(event);
+    }, { passive: false });
+
+    ["pointerup", "pointercancel", "lostpointercapture"].forEach(type => {
+      joystick.addEventListener(type, event => {
+        if (joystickPointerId !== null && event.pointerId !== undefined &&
+            event.pointerId !== joystickPointerId && type !== "lostpointercapture") return;
+        resetJoystick();
+      }, { passive: false });
+    });
+  }
+
+  if (mobileAction) {
+    const pressAction = event => {
+      event.preventDefault();
+      keys.z = true;
+      mobileAction.classList.add("is-pressed");
+      if (mobileAction.setPointerCapture && event.pointerId !== undefined) {
+        try { mobileAction.setPointerCapture(event.pointerId); } catch (e) { }
+      }
+    };
+    const releaseAction = event => {
+      if (event) event.preventDefault();
+      // Garante que um toque curto ainda seja percebido pelo game loop.
+      keys.z = true;
+      window.setTimeout(() => { keys.z = false; }, 120);
+      mobileAction.classList.remove("is-pressed");
+    };
+
+    mobileAction.addEventListener("pointerdown", pressAction, { passive: false });
+    mobileAction.addEventListener("pointerup", releaseAction, { passive: false });
+    mobileAction.addEventListener("pointercancel", releaseAction, { passive: false });
+    mobileAction.addEventListener("lostpointercapture", releaseAction, { passive: false });
+  }
+
+  window.addEventListener("blur", () => {
+    resetJoystick();
+    keys.z = false;
+    if (mobileAction) mobileAction.classList.remove("is-pressed");
+  });
+}
+
 document.addEventListener("keydown", e => { keys[e.key.toLowerCase()] = true; e.preventDefault(); });
 document.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
 document.addEventListener("keydown", e => { if (e.key.toLowerCase() === "r" && gameOver) location.reload(); });

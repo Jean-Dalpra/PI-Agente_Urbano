@@ -236,34 +236,52 @@ function ensureGamificationSchema($pdo)
         INDEX idx_redemptions_user (username)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    // Corrige acentuação de recompensas já semeadas em bancos existentes
+    // (renomeia o título antigo pro título certo, uma única vez — depois
+    // que o título já estiver corrigido, essas linhas não fazem nada).
+    $pdo->exec("UPDATE rewards SET title = 'Benefício mobilidade' WHERE title = 'Beneficio mobilidade'");
+    $pdo->exec("UPDATE rewards SET title = 'Selo Cidadão Ouro' WHERE title = 'Selo Cidadao Ouro'");
+    $pdo->exec("UPDATE rewards SET title = 'Frete grátis urbano' WHERE title = 'Frete gratis urbano'");
+    $pdo->exec("UPDATE rewards SET title = 'Vale café cidadão' WHERE title = 'Vale cafe cidadao'");
+    $pdo->exec("UPDATE rewards SET title = 'Suporte técnico prioritário' WHERE title = 'Suporte tecnico prioritario'");
+    // Descrições não são usadas como chave de busca em nenhum lugar, então
+    // dá pra corrigir a acentuação delas direto, sem risco de duplicar.
+    $pdo->exec("UPDATE rewards SET description = 'Código único para desconto em comércio parceiro cadastrado.' WHERE title = 'Cupom parceiro local' AND description = 'Codigo unico para desconto em comercio parceiro cadastrado.'");
+    $pdo->exec("UPDATE rewards SET description = 'Crédito simbólico para campanhas de mobilidade urbana.' WHERE title = 'Benefício mobilidade' AND description = 'Credito simbolico para campanhas de mobilidade urbana.'");
+    $pdo->exec("UPDATE rewards SET description = 'Selo público de destaque mensal no leaderboard.' WHERE title = 'Selo Cidadão Ouro' AND description = 'Selo publico de destaque mensal no leaderboard.'");
+    $pdo->exec("UPDATE rewards SET description = 'Entrega sem custo em compras elegíveis de parceiros do bairro.' WHERE title = 'Frete grátis urbano' AND description = 'Entrega sem custo em compras elegiveis de parceiros do bairro.'");
+    $pdo->exec("UPDATE rewards SET description = 'Voucher para alimentação em cafeteria parceira após boas contribuições.' WHERE title = 'Vale café cidadão' AND description = 'Voucher para alimentacao em cafeteria parceira apos boas contribuicoes.'");
+    $pdo->exec("UPDATE rewards SET description = 'Ecobag e squeeze para usuários engajados em zeladoria urbana.' WHERE title = 'Kit eco urbano' AND description = 'Ecobag e squeeze para usuarios engajados em zeladoria urbana.'");
+    $pdo->exec("UPDATE rewards SET description = 'Atendimento prioritário para configurar alertas e preferências da plataforma.' WHERE title = 'Suporte técnico prioritário' AND description = 'Atendimento prioritario para configurar alertas e preferencias da plataforma.'");
+
     $pdo->exec("INSERT INTO rewards (title, description, cost_points, reward_type, category, partner, image_url, estimated_value, inventory)
-        SELECT 'Cupom parceiro local', 'Codigo unico para desconto em comercio parceiro cadastrado.', 120, 'cupom', 'cupons', 'Comercio Local', 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=900&q=80', 10, 100
+        SELECT 'Cupom parceiro local', 'Código único para desconto em comércio parceiro cadastrado.', 120, 'cupom', 'cupons', 'Comercio Local', 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=900&q=80', 10, 100
         WHERE NOT EXISTS (SELECT 1 FROM rewards WHERE title = 'Cupom parceiro local')");
     $pdo->exec("INSERT INTO rewards (title, description, cost_points, reward_type, category, partner, image_url, estimated_value, inventory)
-        SELECT 'Beneficio mobilidade', 'Credito simbolico para campanhas de mobilidade urbana.', 220, 'beneficio', 'servicos', 'Mobilidade Parceira', 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=900&q=80', 18, 50
-        WHERE NOT EXISTS (SELECT 1 FROM rewards WHERE title = 'Beneficio mobilidade')");
+        SELECT 'Benefício mobilidade', 'Crédito simbólico para campanhas de mobilidade urbana.', 220, 'beneficio', 'servicos', 'Mobilidade Parceira', 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=900&q=80', 18, 50
+        WHERE NOT EXISTS (SELECT 1 FROM rewards WHERE title = 'Benefício mobilidade')");
     $pdo->exec("INSERT INTO rewards (title, description, cost_points, reward_type, category, partner, image_url, estimated_value, inventory)
-        SELECT 'Selo Cidadao Ouro', 'Selo publico de destaque mensal no leaderboard.', 350, 'selo', 'servicos', 'Agente Urbano', 'https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?auto=format&fit=crop&w=900&q=80', 0, 25
-        WHERE NOT EXISTS (SELECT 1 FROM rewards WHERE title = 'Selo Cidadao Ouro')");
+        SELECT 'Selo Cidadão Ouro', 'Selo público de destaque mensal no leaderboard.', 350, 'selo', 'servicos', 'Agente Urbano', 'https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?auto=format&fit=crop&w=900&q=80', 0, 25
+        WHERE NOT EXISTS (SELECT 1 FROM rewards WHERE title = 'Selo Cidadão Ouro')");
     $pdo->exec("INSERT INTO rewards (title, description, cost_points, reward_type, category, partner, image_url, estimated_value, inventory)
-        SELECT 'Frete gratis urbano', 'Entrega sem custo em compras elegiveis de parceiros do bairro.', 80, 'cupom', 'cupons', 'Loja Bairro+', 'https://images.unsplash.com/photo-1580674285054-bed31e145f59?auto=format&fit=crop&w=900&q=80', 12, 80
-        WHERE NOT EXISTS (SELECT 1 FROM rewards WHERE title = 'Frete gratis urbano')");
+        SELECT 'Frete grátis urbano', 'Entrega sem custo em compras elegíveis de parceiros do bairro.', 80, 'cupom', 'cupons', 'Loja Bairro+', 'https://images.unsplash.com/photo-1580674285054-bed31e145f59?auto=format&fit=crop&w=900&q=80', 12, 80
+        WHERE NOT EXISTS (SELECT 1 FROM rewards WHERE title = 'Frete grátis urbano')");
     $pdo->exec("INSERT INTO rewards (title, description, cost_points, reward_type, category, partner, image_url, estimated_value, inventory)
-        SELECT 'Vale cafe cidadao', 'Voucher para alimentacao em cafeteria parceira apos boas contribuicoes.', 160, 'voucher', 'alimentacao', 'Cafe Central', 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=80', 20, 60
-        WHERE NOT EXISTS (SELECT 1 FROM rewards WHERE title = 'Vale cafe cidadao')");
+        SELECT 'Vale café cidadão', 'Voucher para alimentação em cafeteria parceira após boas contribuições.', 160, 'voucher', 'alimentacao', 'Cafe Central', 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=80', 20, 60
+        WHERE NOT EXISTS (SELECT 1 FROM rewards WHERE title = 'Vale café cidadão')");
     $pdo->exec("INSERT INTO rewards (title, description, cost_points, reward_type, category, partner, image_url, estimated_value, inventory)
-        SELECT 'Kit eco urbano', 'Ecobag e squeeze para usuarios engajados em zeladoria urbana.', 500, 'produto', 'produtos', 'Verde Urbano', 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=900&q=80', 45, 30
+        SELECT 'Kit eco urbano', 'Ecobag e squeeze para usuários engajados em zeladoria urbana.', 500, 'produto', 'produtos', 'Verde Urbano', 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=900&q=80', 45, 30
         WHERE NOT EXISTS (SELECT 1 FROM rewards WHERE title = 'Kit eco urbano')");
     $pdo->exec("INSERT INTO rewards (title, description, cost_points, reward_type, category, partner, image_url, estimated_value, inventory)
         SELECT 'Camiseta Agente Urbano', 'Camiseta exclusiva para quem ajuda a melhorar a cidade.', 650, 'produto', 'vestuario', 'Agente Urbano', 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80', 55, 25
         WHERE NOT EXISTS (SELECT 1 FROM rewards WHERE title = 'Camiseta Agente Urbano')");
     $pdo->exec("INSERT INTO rewards (title, description, cost_points, reward_type, category, partner, image_url, estimated_value, inventory)
-        SELECT 'Suporte tecnico prioritario', 'Atendimento prioritario para configurar alertas e preferencias da plataforma.', 250, 'servico', 'tecnologia', 'Agente Urbano Labs', 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80', 30, 40
-        WHERE NOT EXISTS (SELECT 1 FROM rewards WHERE title = 'Suporte tecnico prioritario')");
+        SELECT 'Suporte técnico prioritário', 'Atendimento prioritário para configurar alertas e preferências da plataforma.', 250, 'servico', 'tecnologia', 'Agente Urbano Labs', 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80', 30, 40
+        WHERE NOT EXISTS (SELECT 1 FROM rewards WHERE title = 'Suporte técnico prioritário')");
 
     $pdo->exec("UPDATE rewards SET category = 'cupons', partner = 'Comercio Local', image_url = COALESCE(image_url, 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=900&q=80'), estimated_value = IF(estimated_value = 0, 10, estimated_value) WHERE title = 'Cupom parceiro local'");
-    $pdo->exec("UPDATE rewards SET category = 'servicos', partner = 'Mobilidade Parceira', image_url = COALESCE(image_url, 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=900&q=80'), estimated_value = IF(estimated_value = 0, 18, estimated_value) WHERE title = 'Beneficio mobilidade'");
-    $pdo->exec("UPDATE rewards SET category = 'servicos', partner = 'Agente Urbano', image_url = COALESCE(image_url, 'https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?auto=format&fit=crop&w=900&q=80') WHERE title = 'Selo Cidadao Ouro'");
+    $pdo->exec("UPDATE rewards SET category = 'servicos', partner = 'Mobilidade Parceira', image_url = COALESCE(image_url, 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=900&q=80'), estimated_value = IF(estimated_value = 0, 18, estimated_value) WHERE title = 'Benefício mobilidade'");
+    $pdo->exec("UPDATE rewards SET category = 'servicos', partner = 'Agente Urbano', image_url = COALESCE(image_url, 'https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?auto=format&fit=crop&w=900&q=80') WHERE title = 'Selo Cidadão Ouro'");
 
 }
 
@@ -1000,7 +1018,25 @@ function getMyReportsHandler($pdo)
 
 function editReportHandler($pdo)
 {
+<<<<<<< Updated upstream
 
+=======
+    /**
+     * editReportHandler
+     * Atualiza campos editáveis de um relatório existente e opcionalmente substitui a imagem.
+     *
+     * Entradas esperadas (POST):
+     * - id (int) - id do relatório a ser editado (obrigatório)
+     * - titulo, descricao, categoria, status, prioridade (opcionais)
+     * - imagem_upload (file) - arquivo enviado multipart/form-data (opcional)
+     *
+     * Regras de segurança:
+     * - Verifica se o usuário autenticado é proprietário do relatório via `userOwnsReport()`.
+     * - Valida extensões de imagem permitidas (jpg, jpeg, png, gif).
+     * - Salva novo arquivo em `uploads/` com nome único e tenta remover a imagem anterior
+     *   somente se estiver dentro do diretório `uploads/` (uso de realpath para segurança).
+     */
+>>>>>>> Stashed changes
     $username = getCurrentUser();
     if (!$username) {
         http_response_code(401);
@@ -1021,9 +1057,9 @@ function editReportHandler($pdo)
     // Campos editáveis
     $titulo = $_POST['titulo'] ?? null;
     $descricao = $_POST['descricao'] ?? null;
+    $tipo = $_POST['categoria'] ?? ($_POST['tipo'] ?? null);
     $status = $_POST['status'] ?? null;
     $prioridade = $_POST['prioridade'] ?? null;
-    $endereco = $_POST['endereco'] ?? null;
     $params = [];
     $sets = [];
     if ($titulo !== null) {
@@ -1034,6 +1070,10 @@ function editReportHandler($pdo)
         $sets[] = 'descricao = ?';
         $params[] = $descricao;
     }
+    if ($tipo !== null) {
+        $sets[] = 'tipo = ?';
+        $params[] = $tipo;
+    }
     if ($status !== null) {
         $sets[] = 'status = ?';
         $params[] = $status;
@@ -1042,10 +1082,14 @@ function editReportHandler($pdo)
         $sets[] = 'prioridade = ?';
         $params[] = $prioridade;
     }
+<<<<<<< Updated upstream
     if ($endereco !== null) {
         $sets[] = 'endereco = ?';
         $params[] = $endereco;
     }
+=======
+    // Handle image upload for edit (optional)
+>>>>>>> Stashed changes
     $imagem_path = null;
     if (isset($_FILES['imagem_upload']) && is_array($_FILES['imagem_upload']) && isset($_FILES['imagem_upload']['error'])) {
         if ($_FILES['imagem_upload']['error'] === UPLOAD_ERR_NO_FILE) {

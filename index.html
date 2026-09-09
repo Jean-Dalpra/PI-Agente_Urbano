@@ -66,7 +66,6 @@
             padding-top: var(--header-height);
             min-height: 100vh;
             position: relative;
-            overflow-x: hidden;
             width: 100%;
             background-image:
                 radial-gradient(circle at 10% 20%, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
@@ -87,7 +86,8 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             position: fixed;
             top: 0;
-            width: 100%;
+            left: 0;
+            right: 0;
             z-index: 1000;
             backdrop-filter: none;
             -webkit-backdrop-filter: none;
@@ -1395,7 +1395,7 @@
         }
 
         .footer-logo-section .logo-text:hover {
-            font-size: 4.9rem;
+            font-size: 4.2rem;
             font-weight: 800;
             color: #ffffff;
             transition: 1s;
@@ -1983,7 +1983,40 @@
 </head>
 
 <body>
+<style>
+    /* Corrige o contêiner do VLibras sem afetar a janela do avatar */
+    div[vw].enabled {
+        top: 45% !important;
+        right: 0px !important;
+        transform: translateY(-50%) !important;
+    }
 
+    /* Estiliza e força o botão do VLibras a encostar perfeitamente na borda */
+    div[vw] .vw-access-button {
+        right: 0 !important;
+        border-radius: 8px 0 0 8px !important;
+    }
+
+    /* Posiciona o UserWay alinhado e exatamente abaixo do botão do VLibras */
+    #userwayAccessibilityIcon,
+    body .uai,
+    div[id*="userway"] {
+        position: fixed !important;
+        top: calc(45% + 35px) !important;
+        right: 0px !important;
+        left: auto !important;
+        transform: none !important;
+        z-index: 99997 !important;
+    }
+
+    #userwayAccessibilityIcon iframe,
+    #userwayAccessibilityIcon button,
+    body .uai-btn {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+</style>
     <div vw class="enabled"
         style="left: initial; right: 0px; top: 50%; bottom: initial; transform: translateY(calc(-50% - 10px));">
         <div vw-access-button class="active"></div>
@@ -1992,6 +2025,116 @@
         </div>
     </div>
     <script class="widgetdeacessibilidade" src="https://cdn.userway.org/widget.js" data-account="lqELz1dV9X"></script>
+    <style id="userway-mobile-position">
+        /* Restaura a posição padrão do botão sem redimensionar o contêiner do widget. */
+        @media (max-width: 1024px) {
+            html body #userwayAccessibilityIcon,
+            html body .uai {
+                position: fixed !important;
+                top: auto !important;
+                right: 20px !important;
+                bottom: 90px !important;
+                left: auto !important;
+                transform: none !important;
+                z-index: 99998 !important;
+                display: flex !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                width: 48px !important;
+                min-width: 48px !important;
+                height: 48px !important;
+                min-height: 48px !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            html body .uwy {
+                position: fixed !important;
+                top: auto !important;
+                right: 20px !important;
+                bottom: 90px !important;
+                left: auto !important;
+                transform: none !important;
+                z-index: 99998 !important;
+            }
+
+            html body .uwy .userway_buttons_wrapper {
+                position: fixed !important;
+                top: auto !important;
+                right: 20px !important;
+                bottom: 90px !important;
+                left: auto !important;
+                transform: none !important;
+                width: max-content !important;
+                height: auto !important;
+                z-index: 99998 !important;
+            }
+        }
+    </style>
+    <script>
+        (function () {
+            const mobileUserWayQuery = window.matchMedia('(max-width: 1024px)');
+
+            function restoreMobileUserWayPosition() {
+                if (!mobileUserWayQuery.matches) return;
+
+                const userWayButtons = document.querySelectorAll('#userwayAccessibilityIcon, .uai');
+                if (!userWayButtons.length) return;
+
+                userWayButtons.forEach(button => {
+                    button.style.setProperty('position', 'fixed', 'important');
+                    button.style.setProperty('top', 'auto', 'important');
+                    button.style.setProperty('right', '20px', 'important');
+                    button.style.setProperty('bottom', '90px', 'important');
+                    button.style.setProperty('left', 'auto', 'important');
+                    button.style.setProperty('transform', 'none', 'important');
+                    button.style.setProperty('z-index', '99998', 'important');
+                    button.style.setProperty('display', 'flex', 'important');
+                    button.style.setProperty('visibility', 'visible', 'important');
+                    button.style.setProperty('opacity', '1', 'important');
+                    button.style.setProperty('pointer-events', 'auto', 'important');
+                    button.style.setProperty('width', '48px', 'important');
+                    button.style.setProperty('min-width', '48px', 'important');
+                    button.style.setProperty('height', '48px', 'important');
+                    button.style.setProperty('min-height', '48px', 'important');
+                });
+
+                document.querySelectorAll('.userway_buttons_wrapper').forEach(wrapper => {
+                    wrapper.style.setProperty('position', 'fixed', 'important');
+                    wrapper.style.setProperty('top', 'auto', 'important');
+                    wrapper.style.setProperty('right', '20px', 'important');
+                    wrapper.style.setProperty('bottom', '90px', 'important');
+                    wrapper.style.setProperty('left', 'auto', 'important');
+                    wrapper.style.setProperty('transform', 'none', 'important');
+                    wrapper.style.setProperty('width', 'max-content', 'important');
+                    wrapper.style.setProperty('height', 'auto', 'important');
+                    wrapper.style.setProperty('z-index', '99998', 'important');
+                });
+
+                const userWayWrapper = document.querySelector('.uwy');
+                if (userWayWrapper) {
+                    userWayWrapper.style.setProperty('position', 'fixed', 'important');
+                    userWayWrapper.style.setProperty('top', 'auto', 'important');
+                    userWayWrapper.style.setProperty('right', '20px', 'important');
+                    userWayWrapper.style.setProperty('bottom', '90px', 'important');
+                    userWayWrapper.style.setProperty('left', 'auto', 'important');
+                    userWayWrapper.style.setProperty('transform', 'none', 'important');
+                    userWayWrapper.style.setProperty('z-index', '99998', 'important');
+                }
+            }
+
+            restoreMobileUserWayPosition();
+            window.setTimeout(restoreMobileUserWayPosition, 100);
+            window.setTimeout(restoreMobileUserWayPosition, 700);
+            mobileUserWayQuery.addEventListener('change', restoreMobileUserWayPosition);
+
+            if (document.body && typeof MutationObserver !== 'undefined') {
+                const userWayObserver = new MutationObserver(restoreMobileUserWayPosition);
+                userWayObserver.observe(document.body, { childList: true, subtree: true });
+            }
+        })();
+    </script>
     <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
     <script>
         new window.VLibras.Widget('https://vlibras.gov.br/app');
@@ -2472,21 +2615,31 @@
                 <div class="footer-links footer-section">
                     <h3>Institucional</h3>
                     <ul>
-                        <li><a href="#">Sobre nós</a></li>
-                        <li><a href="#">Transparência</a></li>
-                        <li><a href="#">Status</a></li>
-                        <li><a href="#">Termos e privacidade</a></li>
-                        <li><a href="#">Ajuda</a></li>
-                        <li><a href="#">Blog</a></li>
+                        <li><a href="sobre-nos.html">Sobre nós</a></li>
+                        <li><a href="transparencia.html">Transparência</a></li>
+                        <li><a href="status.html">Status</a></li>
+                        <li><a href="termos-privacidade.html">Termos e privacidade</a></li>
+                        <li><a href="ajuda.html">Ajuda</a></li>
+                        <li><a href="blog.html">Blog</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-links footer-section">
+                    <h3>Equipe</h3>
+                    <ul>
+                        <li><a target="_blank" rel="noopener noreferrer" href="https://github.com/Jean-Dalpra">Jean Dalpra</a></li>
+                        <li><a target="_blank" rel="noopener noreferrer" href="https://github.com/GUI-BK">Guilherme Bechte</a></li>
+                        <li><a target="_blank" rel="noopener noreferrer" href="https://github.com/ManuelGonzalezSantos">Manuel Gonzales</a></li>
+                        <li><a target="_blank" rel="noopener noreferrer" href="https://github.com/OtavioRohr77">Otavio Rohr</a></li>
                     </ul>
                 </div>
 
                 <div class="footer-links footer-section">
                     <h3>Soluções e Parcerias</h3>
                     <ul>
-                        <li><a href="#">Prefeituras e Governos</a></li>
-                        <li><a href="#">Empresas</a></li>
-                        <li><a href="#">Universidades e Pesquisadores</a></li>
+                        <li><a href="prefeituras-governos.html">Prefeituras e Governos</a></li>
+                        <li><a href="empresas.html">Empresas</a></li>
+                        <li><a href="universidades-pesquisadores.html">Universidades e Pesquisadores</a></li>
                     </ul>
                 </div>
             </div>
@@ -3099,21 +3252,7 @@
 
     <!-- ── Botão flutuante (FAB) ────────────────────────────────────── -->
     <button id="ai-fab" aria-label="Abrir assistente de IA" aria-expanded="false" title="Assistente IA">
-        <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <!-- Círculo externo -->
-            <circle cx="14" cy="14" r="11" stroke="currentColor" stroke-width="1.4" opacity="0.4" />
-            <!-- Corpo do robô -->
-            <rect x="8" y="10" width="12" height="9" rx="3" stroke="currentColor" stroke-width="1.4" />
-            <!-- Olhos -->
-            <circle cx="11.5" cy="14" r="1.3" fill="currentColor" />
-            <circle cx="16.5" cy="14" r="1.3" fill="currentColor" />
-            <!-- Antena -->
-            <line x1="14" y1="10" x2="14" y2="7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-            <circle cx="14" cy="6" r="1.2" fill="currentColor" />
-            <!-- Sorriso -->
-            <path d="M11 17 Q14 18.8 17 17" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"
-                fill="none" />
-        </svg>
+        <img style="width:80%; height: 80%; object-fit: cover;" src="imagens/urbanoidcircle.png" alt="Avatar do Assistente IA">
         <!-- Badge de mensagens não lidas -->
         <span id="ai-fab-badge" class="ai-fab-badge hidden" aria-hidden="true">1</span>
     </button>
@@ -3125,19 +3264,11 @@
         <div class="ai-chat-header">
             <div class="ai-chat-header-info">
                 <div class="ai-chat-avatar" aria-hidden="true">
-                    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="4" y="7" width="12" height="8" rx="2.5" stroke="white" stroke-width="1.3" />
-                        <circle cx="7.8" cy="11" r="1.1" fill="white" />
-                        <circle cx="12.2" cy="11" r="1.1" fill="white" />
-                        <line x1="10" y1="7" x2="10" y2="5" stroke="white" stroke-width="1.3" stroke-linecap="round" />
-                        <circle cx="10" cy="4.2" r="0.9" fill="white" />
-                        <path d="M7.8 13.5 Q10 14.8 12.2 13.5" stroke="white" stroke-width="1" stroke-linecap="round"
-                            fill="none" />
-                    </svg>
+                    <img style="width: 100%; height: 100%; object-fit: cover;" src="imagens/urbanoidcircle.png" alt="Avatar do Assistente IA">
                 </div>
                 <div>
                     <div class="ai-chat-title">Assistente IA</div>
-                    <div class="ai-chat-subtitle">Agente Urbano · Online</div>
+                    <div class="ai-chat-subtitle">Agente</div>
                 </div>
             </div>
             <div class="ai-chat-header-actions">
@@ -3165,7 +3296,9 @@
 
             <!-- Boas-vindas (oculto quando há histórico) -->
             <div class="ai-welcome">
-                <div class="ai-welcome-icon" aria-hidden="true">🏙️</div>
+                <div class="ai-welcome-icon" aria-hidden="true">
+                    <img style="width: 100%; height: 100%; object-fit: cover;" src="imagens/urbanoide.png" alt="Avatar do Assistente IA">
+                </div>
                 <h3>Olá! Sou o Assistente IA</h3>
                 <p>Como posso ajudar você hoje?</p>
             </div>
@@ -3181,24 +3314,19 @@
             </div>
         </div>
 
-        <!-- Indicador "digitando..." -->
-        <div class="ai-typing-row" id="ai-typing-row" hidden aria-live="polite" aria-label="Assistente está digitando">
-            <div class="ai-msg-icon" aria-hidden="true">
-                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="10" cy="10" r="7" stroke="white" stroke-width="1.4" />
-                    <circle cx="7.5" cy="8.5" r="1.2" fill="white" />
-                    <circle cx="12.5" cy="8.5" r="1.2" fill="white" />
-                    <path d="M7 12.5 Q10 14.5 13 12.5" stroke="white" stroke-width="1.2" stroke-linecap="round"
-                        fill="none" />
-                </svg>
-            </div>
-            <div class="ai-typing-bubble">
-                <span style="font-size:11px;margin-right:4px">Digitando</span>
-                <div class="ai-typing-dots" aria-hidden="true">
-                    <span></span><span></span><span></span>
-                </div>
-            </div>
+       <!-- Localize no index.html e adicione 'hidden': -->
+<!-- Correção: adicionando style="display: none;" para garantir ocultação imediata pelo browser -->
+<div class="ai-typing-row" id="ai-typing-row" hidden style="display: none;" aria-live="polite" aria-label="Assistente está digitando">
+    <div class="ai-msg-icon" aria-hidden="true">
+        <img style="height: 100%; width: 100%; object-fit: cover;" src="imagens/urbanoidcircle.png" alt="">
+    </div>
+    <div class="ai-typing-bubble">
+        <span style="font-size:11px;margin-right:4px">Digitando</span>
+        <div class="ai-typing-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
         </div>
+    </div>
+</div>
 
         <!-- Área de entrada -->
         <div class="ai-input-area">
