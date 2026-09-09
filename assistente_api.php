@@ -1,8 +1,9 @@
 <?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
+
 // Chave da OpenRouter fornecida
-define('OPENROUTER_API_KEY', '');
+define('OPENROUTER_API_KEY', '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');
 
 // Mesmas credenciais/config usadas em api.php — o assistente lê do mesmo banco.
 define('DB_HOST', 'localhost');

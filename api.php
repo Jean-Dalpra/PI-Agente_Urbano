@@ -393,10 +393,10 @@ function checkAndApplyPunishment($pdo, $username, $currentRank)
         return;
 
     if ((int) $row['banned_permanently'] === 1)
-        return; 
+        return;
 
     if ((float) $currentRank >= 25)
-        return; 
+        return;
 
     $strikes = (int) $row['punishment_strikes'];
     $blockedUntil = $row['blocked_until'];
@@ -1018,9 +1018,6 @@ function getMyReportsHandler($pdo)
 
 function editReportHandler($pdo)
 {
-<<<<<<< Updated upstream
-
-=======
     /**
      * editReportHandler
      * Atualiza campos editáveis de um relatório existente e opcionalmente substitui a imagem.
@@ -1036,7 +1033,6 @@ function editReportHandler($pdo)
      * - Salva novo arquivo em `uploads/` com nome único e tenta remover a imagem anterior
      *   somente se estiver dentro do diretório `uploads/` (uso de realpath para segurança).
      */
->>>>>>> Stashed changes
     $username = getCurrentUser();
     if (!$username) {
         http_response_code(401);
@@ -1060,6 +1056,7 @@ function editReportHandler($pdo)
     $tipo = $_POST['categoria'] ?? ($_POST['tipo'] ?? null);
     $status = $_POST['status'] ?? null;
     $prioridade = $_POST['prioridade'] ?? null;
+    $endereco = $_POST['endereco'] ?? null;
     $params = [];
     $sets = [];
     if ($titulo !== null) {
@@ -1082,14 +1079,11 @@ function editReportHandler($pdo)
         $sets[] = 'prioridade = ?';
         $params[] = $prioridade;
     }
-<<<<<<< Updated upstream
     if ($endereco !== null) {
         $sets[] = 'endereco = ?';
         $params[] = $endereco;
     }
-=======
     // Handle image upload for edit (optional)
->>>>>>> Stashed changes
     $imagem_path = null;
     if (isset($_FILES['imagem_upload']) && is_array($_FILES['imagem_upload']) && isset($_FILES['imagem_upload']['error'])) {
         if ($_FILES['imagem_upload']['error'] === UPLOAD_ERR_NO_FILE) {
@@ -1135,7 +1129,8 @@ function editReportHandler($pdo)
                         @unlink($prevFull);
                     }
                 }
-            } catch (Exception $e) {}
+            } catch (Exception $e) {
+            }
 
             $sets[] = 'imagem_url = ?';
             $params[] = $imagem_path;
