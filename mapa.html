@@ -86,37 +86,29 @@
         }
 
 
-<<<<<<< Updated upstream
-        .legend-alert-icon {
+        #legend-container .legend-alert-icon {
             position: relative;
-            display: inline-flex;
+            display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             width: 40px;
-            left: 25px;
             height: 40px;
+            margin: 4px auto 0;
+            left: auto;
+            z-index: 2;
         }
-=======
         /* Ícone de alerta em triângulo amarelo com tooltip de categorias */
-    .legend-alert-icon {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    width: 40px;
-    left: 25px;
-    height: 40px;
-}
->>>>>>> Stashed changes
 
-.legend-alert-triangle {
+#legend-container .legend-alert-triangle {
+    display: block;
     width: 0;
     height: 0;
-    border-left: 20px solid transparent;
-    border-right: 20px solid transparent;
-    border-bottom: 35px solid #FFC107;
+    border-style: solid;
+    border-width: 0 20px 35px;
+    border-color: transparent transparent #FFC107;
+    border-radius: 0;
+    background: transparent;
     position: relative;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
@@ -581,18 +573,10 @@
 
         #map3d {
             position: absolute;
-<<<<<<< Updated upstream
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: none;   
-=======
             inset: 0;
             width: auto;
             height: auto;
             display: none;   /* oculto até o usuário ativar o modo 3D */
->>>>>>> Stashed changes
             z-index: 2;
             overflow: hidden;
             box-sizing: border-box;
@@ -2045,7 +2029,7 @@
         // ════════════════════════════════════════════════════════════════
         // 1. TOKEN  ↓↓↓ CONFIGURE AQUI ↓↓↓
         // ════════════════════════════════════════════════════════════════
-        var MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoiamVhbmRhbHByYSIsImEiOiJjbXIzd3R1Ym4wNXRpMnlwd3U0MWM2djN3In0.oQ2u9Cw8_sYnea_s2kOp8g';
+        var MAPBOX_ACCESS_TOKEN = '';
 
         var CONFIG = {
             versaoMapboxGL: '2.15.0',

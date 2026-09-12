@@ -1,4 +1,6 @@
 /* api.js */
+const OPENROUTER_API_KEY = '';
+
 window.AgentUrbanAPI = {
     getConfig: function () {
         return { provedor: 'OpenRouter (Proxy PHP)' };
@@ -7,11 +9,13 @@ window.AgentUrbanAPI = {
         // Envia o histórico completo para a API PHP local
         const response = await fetch('assistente_api.php', {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                messages: historico || [{ role: 'user', content: mensagem }]
+                messages: historico || [{ role: 'user', content: mensagem }],
+                apiKey: OPENROUTER_API_KEY
             })
         });
 

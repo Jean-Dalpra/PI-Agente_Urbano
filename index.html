@@ -1983,40 +1983,39 @@
 </head>
 
 <body>
-<style>
-    /* Corrige o contêiner do VLibras sem afetar a janela do avatar */
-    div[vw].enabled {
-        top: 45% !important;
-        right: 0px !important;
-        transform: translateY(-50%) !important;
-    }
+    <style>
+        /* Corrige o contêiner do VLibras sem afetar a janela do avatar */
+        div[vw].enabled {
+            top: 45% !important;
+            right: 0px !important;
+            transform: translateY(-50%) !important;
+        }
 
-    /* Estiliza e força o botão do VLibras a encostar perfeitamente na borda */
-    div[vw] .vw-access-button {
-        right: 0 !important;
-        border-radius: 8px 0 0 8px !important;
-    }
+        /* Estiliza e força o botão do VLibras a encostar perfeitamente na borda */
+        div[vw] .vw-access-button {
+            right: 0 !important;
+            border-radius: 8px 0 0 8px !important;
+        }
 
-    /* Posiciona o UserWay alinhado e exatamente abaixo do botão do VLibras */
-    #userwayAccessibilityIcon,
-    body .uai,
-    div[id*="userway"] {
-        position: fixed !important;
-        top: calc(45% + 35px) !important;
-        right: 0px !important;
-        left: auto !important;
-        transform: none !important;
-        z-index: 99997 !important;
-    }
+        /* Posiciona o UserWay alinhado e exatamente abaixo do botão do VLibras */
+        #userwayAccessibilityIcon,
+        body .uai,
+        div[id*="userway"] {
+            position: fixed !important;
+            top: calc(45% + 35px) !important;
+            right: 0px !important;
+            left: auto !important;
+            transform: none !important;
+            z-index: 99997 !important;
+        }
 
-    #userwayAccessibilityIcon iframe,
-    #userwayAccessibilityIcon button,
-    body .uai-btn {
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-</style>
+        #userwayAccessibilityIcon iframe,
+        #userwayAccessibilityIcon button,
+        body .uai-btn {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    </style>
     <div vw class="enabled"
         style="left: initial; right: 0px; top: 50%; bottom: initial; transform: translateY(calc(-50% - 10px));">
         <div vw-access-button class="active"></div>
@@ -2028,6 +2027,7 @@
     <style id="userway-mobile-position">
         /* Restaura a posição padrão do botão sem redimensionar o contêiner do widget. */
         @media (max-width: 1024px) {
+
             html body #userwayAccessibilityIcon,
             html body .uai {
                 position: fixed !important;
@@ -2627,10 +2627,14 @@
                 <div class="footer-links footer-section">
                     <h3>Equipe</h3>
                     <ul>
-                        <li><a target="_blank" rel="noopener noreferrer" href="https://github.com/Jean-Dalpra">Jean Dalpra</a></li>
-                        <li><a target="_blank" rel="noopener noreferrer" href="https://github.com/GUI-BK">Guilherme Bechte</a></li>
-                        <li><a target="_blank" rel="noopener noreferrer" href="https://github.com/ManuelGonzalezSantos">Manuel Gonzales</a></li>
-                        <li><a target="_blank" rel="noopener noreferrer" href="https://github.com/OtavioRohr77">Otavio Rohr</a></li>
+                        <li><a target="_blank" rel="noopener noreferrer" href="https://github.com/Jean-Dalpra">Jean
+                                Dalpra</a></li>
+                        <li><a target="_blank" rel="noopener noreferrer" href="https://github.com/GUI-BK">Guilherme
+                                Bechte</a></li>
+                        <li><a target="_blank" rel="noopener noreferrer"
+                                href="https://github.com/ManuelGonzalezSantos">Manuel Gonzales</a></li>
+                        <li><a target="_blank" rel="noopener noreferrer" href="https://github.com/OtavioRohr77">Otavio
+                                Rohr</a></li>
                     </ul>
                 </div>
 
@@ -3252,7 +3256,8 @@
 
     <!-- ── Botão flutuante (FAB) ────────────────────────────────────── -->
     <button id="ai-fab" aria-label="Abrir assistente de IA" aria-expanded="false" title="Assistente IA">
-        <img style="width:80%; height: 80%; object-fit: cover;" src="imagens/urbanoidcircle.png" alt="Avatar do Assistente IA">
+        <img style="width:80%; height: 80%; object-fit: cover;" src="imagens/urbanoidcircle.png"
+            alt="Avatar do Assistente IA">
         <!-- Badge de mensagens não lidas -->
         <span id="ai-fab-badge" class="ai-fab-badge hidden" aria-hidden="true">1</span>
     </button>
@@ -3264,7 +3269,8 @@
         <div class="ai-chat-header">
             <div class="ai-chat-header-info">
                 <div class="ai-chat-avatar" aria-hidden="true">
-                    <img style="width: 100%; height: 100%; object-fit: cover;" src="imagens/urbanoidcircle.png" alt="Avatar do Assistente IA">
+                    <img style="width: 100%; height: 100%; object-fit: cover;" src="imagens/urbanoidcircle.png"
+                        alt="Avatar do Assistente IA">
                 </div>
                 <div>
                     <div class="ai-chat-title">Assistente IA</div>
@@ -3297,7 +3303,8 @@
             <!-- Boas-vindas (oculto quando há histórico) -->
             <div class="ai-welcome">
                 <div class="ai-welcome-icon" aria-hidden="true">
-                    <img style="width: 100%; height: 100%; object-fit: cover;" src="imagens/urbanoide.png" alt="Avatar do Assistente IA">
+                    <img style="width: 100%; height: 100%; object-fit: cover;" src="imagens/urbanoide.png"
+                        alt="Avatar do Assistente IA">
                 </div>
                 <h3>Olá! Sou o Assistente IA</h3>
                 <p>Como posso ajudar você hoje?</p>
@@ -3314,19 +3321,20 @@
             </div>
         </div>
 
-       <!-- Localize no index.html e adicione 'hidden': -->
-<!-- Correção: adicionando style="display: none;" para garantir ocultação imediata pelo browser -->
-<div class="ai-typing-row" id="ai-typing-row" hidden style="display: none;" aria-live="polite" aria-label="Assistente está digitando">
-    <div class="ai-msg-icon" aria-hidden="true">
-        <img style="height: 100%; width: 100%; object-fit: cover;" src="imagens/urbanoidcircle.png" alt="">
-    </div>
-    <div class="ai-typing-bubble">
-        <span style="font-size:11px;margin-right:4px">Digitando</span>
-        <div class="ai-typing-dots" aria-hidden="true">
-            <span></span><span></span><span></span>
+        <!-- Localize no index.html e adicione 'hidden': -->
+        <!-- Correção: adicionando style="display: none;" para garantir ocultação imediata pelo browser -->
+        <div class="ai-typing-row" id="ai-typing-row" hidden style="display: none;" aria-live="polite"
+            aria-label="Assistente está digitando">
+            <div class="ai-msg-icon" aria-hidden="true">
+                <img style="height: 100%; width: 100%; object-fit: cover;" src="imagens/urbanoidcircle.png" alt="">
+            </div>
+            <div class="ai-typing-bubble">
+                <span style="font-size:11px;margin-right:4px">Digitando</span>
+                <div class="ai-typing-dots" aria-hidden="true">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
         <!-- Área de entrada -->
         <div class="ai-input-area">

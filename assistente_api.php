@@ -2,8 +2,7 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-// Chave da OpenRouter fornecida
-define('OPENROUTER_API_KEY', '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');
+$openRouterApiKey = trim((string) (getenv('OPENROUTER_API_KEY') ?: ($_SERVER['OPENROUTER_API_KEY'] ?? '')));
 
 // Mesmas credenciais/config usadas em api.php — o assistente lê do mesmo banco.
 define('DB_HOST', 'localhost');
@@ -377,6 +376,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 1. Recebe os dados de requisições JSON e FormData
     $rawInput = file_get_contents('php://input');
     $jsonInput = json_decode($rawInput, true);
+    $apiKeyFromRequest = trim((string) ($jsonInput['apiKey'] ?? ''));
+    $openRouterApiKey = $openRouterApiKey !== '' ? $openRouterApiKey : $apiKeyFromRequest;
 
     $messagesPayload = [];
 
@@ -445,6 +446,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $respostaTexto = '';
     $ultimoErro = 'Erro desconhecido ao conectar com a API.';
 
+    if ($openRouterApiKey === '') {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => ['message' => 'A chave OPENROUTER_API_KEY não está configurada no servidor.']
+        ]);
+        exit;
+    }
+
     // 2. Loop de execução tentando os modelos da lista caso um falhe
     foreach ($modelosDisponiveis as $model) {
         $url = "https://openrouter.ai/api/v1/chat/completions";
@@ -459,7 +469,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
-            'Authorization: Bearer ' . OPENROUTER_API_KEY,
+            'Authorization: Bearer ' . $openRouterApiKey,
             'HTTP-Referer: http://localhost',
             'X-Title: Agente Urbano IA'
         ]);
@@ -481,6 +491,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $sucesso = true;
                 break; // Requisição funcionou, interrompe o loop
             }
+        } elseif ($httpCode === 401 || $httpCode === 403) {
+            $ultimoErro = 'A chave da OpenRouter foi rejeitada. Gere uma nova chave e configure OPENROUTER_API_KEY no servidor.';
         } else {
             $data = json_decode($response, true);
             $ultimoErro = $data['error']['message'] ?? "Status HTTP {$httpCode}";
